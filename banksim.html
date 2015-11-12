@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+  
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-2.1.4.js"></script>
+
+  <!-- Knockout.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js"></script>
+  
+  <!-- highcharts -->
+  <script src="https://code.highcharts.com/highcharts.js"></script>
+  <script src="https://code.highcharts.com/modules/exporting.js"></script>
+
+  <!-- stylesheet -->
+  <link rel="stylesheet" type="text/css" href="style.css">
+ 
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <script src="banksim.js"></script>
+  
+  <title>Geldsimulator</title>
+</head>
+<body>
+
+<h1>BankSim</h1>
+<div id="controls">
+  <table>
+    <tr>
+      <td><input type="button" value="Simulate" data-bind="click: simulateClicked"/></td>
+      <td><input type="text" data-bind="value: step"/></td>
+    </tr>
+    <tr>
+      <td><input type="button" value="Reset" data-bind="click: reset"/></td>
+    </tr>
+    <tr>
+      <td class="label">Jahre pro Schritt: </td>
+      <td><input data-bind="value: yearsPerStep" id="slider1" type="range" min="1" max="100" step="5" /> <span data-bind="text: yearsPerStep"></span></td>
+    </tr>
+    <tr>
+      <td class="label">Autorun</td>
+      <td><button  data-bind='text: autorun, click: autorunClicked'></button></td>
+    </tr>
+    <tr>
+      <td class="label">Visualisierung</td>
+      <td><select multiple="multiple" data-bind="click: vizClicked, options: optionValues, selectedOptions: multipleSelectedOptionValues"></select></td>
+    </tr>
+  </table>
+</div>
+
+<h2>Parameter</h2>
+<div id="params">
+  <table>
+    <tr>
+      <td class="label">Max Transaktionen pro Jahr</td>
+      <td><input type="number" data-bind="value:max_trx" name="max_trx" min="1" max="10"></td>
+    </tr>
+    <tr>
+      <td class="label">Leitzins: ZB Kredite</td>
+      <td><input data-bind="value: prime_rate" id="slider_lz" type="range" min="1" max="10" step="1" /> <span data-bind="text: prime_rate"></span>%</td>
+    </tr>
+
+    <tr>
+      <td class="label">Leitzins: ZB Konten</td>
+      <td><input data-bind="value: prime_rate_giro" id="slider_lz" type="range" min="-5" max="10" step="1" /> <span data-bind="text: prime_rate_giro"></span>%</td>
+    </tr>
+    <tr>
+      <td class="label">Eigenkapitalvorschrift</td>
+      <td><input data-bind="value: cap_req" id="slider_lz" type="range" min="1" max="30" step="1" /> <span data-bind="text: cap_req"></span>%</td>
+    </tr>
+    <tr>
+      <td class="label">Mindestreserve</td>
+      <td><input data-bind="value: minimal_reserves" id="slider_lz" type="range" min="1" max="10" step="1" /> <span data-bind="text: minimal_reserves"></span>%</td>
+    </tr>
+  </table>
+</div>
+
+<div id="viz">
+  <h2>SNB</h2>
+  <div id="table_cb" style="min-width: 310px; margin: 0 auto"></div>
+  <div id="cb_graph" style="min-width: 310px;  margin: 0 auto"></div> 
+
+  <h2>Banken</h2>
+  <div id="table_banks" style="min-width: 310px; margin: 0 auto"></div>
+  <div id="banks_graph" style="min-width: 310px; margin: 0 auto"></div>
+</div>
+</body>
+</html>
