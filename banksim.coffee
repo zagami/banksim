@@ -1,24 +1,35 @@
 LANG = 'DE'
-translate = (translations) ->
-  if LANG == 'DE'
-    translations[1]
-  else if LANG == 'EN'
-    translations[0]
+translate = (engl_word) ->
+  if LANG == 'EN'
+    engl_word
+  else if LANG == 'DE'
+    for e, d of DICT
+      if engl_word == e
+        return d
+    console.log "TODO: translate - #{e}"
 
 DICT =
-  tab: ["table", "Tabelle"]
-  diagram: ["diagram", "Diagramm"] 
-  interest: ["interest", "Zins"]
-  res: ["reserves", "Reserven"]
-  cb: ["central bank", "Zentralbank"]
-  cap: ["capital", "Eigenkapital"]
-  assets: ["assets", "Aktiven"]
-  liab: ["liabilities", "Passiven"]
-  bal: ["balance sheet", "Bilanz"]
-  pr: ["prime rate", "Leitzins"]
+  "table": "Tabelle"
+  "diagram": "Diagramm" 
+  "interest": "Zins"
+  "reserves": "Reserven"
+  "banks": "Banken"
+  "central bank": "Zentralbank"
+  "capital": "Eigenkapital"
+  "assets": "Aktiven"
+  "liabilities": "Passiven"
+  "balance sheet": "Bilanz"
+  "prime rate": "Leitzins"
+  "stocks": "Wertschriften"
+  "statistics": "Statistiken"
+  "money supply": "Geldmenge"
+  "credits": "Kredite"
+  "credits to banks": "Kredite an Banken"
+  "debt to central bank": "Schulden an ZB"
+  "bank deposits": "Giralgeld" 
 
 AUTORUN_DELAY = 2000
-DFLT_VIZ = [translate(DICT.tab)]
+DFLT_VIZ = [translate("table")]
 
 
 randomize = (from, to) ->
@@ -41,7 +52,14 @@ class CentralBank
     giro
   capital: ->
     @credits_total() - @giro_total()
-
+  M0: ->
+    @giro_total()
+  M1: ->
+    sum = 0
+    sum += bank.giral for bank in @banks
+    sum
+  M2: ->
+    0
 class Bank
   gameover: false
   constructor: (@reserves, @credits, @credit_cb, @giral, @capital) -> 
@@ -49,7 +67,7 @@ class Bank
       r = randomize(0, 100)
       c = randomize(0, 100)
       credit_cb = r 
-      giral = randomize(0, r + c - credit_cb)
+      giral = randomize(r, r + c - credit_cb)
       capital = r + c - giral - credit_cb
       new Bank(r, c, credit_cb, giral, capital)
   deposit: (amount) ->
@@ -154,12 +172,13 @@ class Simulator
     @cb = new CentralBank(@banks)
   visualize: ->
     @visualizer.visualize()
+
   setVisualizer: (viz) ->
     @visualizer.clear()
     vizArray = []
-    if ~viz.indexOf(translate(DICT.tab))
+    if @params.tableViz_checked() 
       vizArray.push( new TableVisualizer(this) ) 
-    if ~viz.indexOf(translate(DICT.diagram))
+    if @params.diagramViz_checked()
       vizArray.push( new GraphVisualizer(this) )
     @visualizer.vizArray = vizArray
 
@@ -176,34 +195,41 @@ class Visualizer
 class TableVisualizer extends Visualizer
   clear: ->
     super
-    $('#table_cb').empty()
-    $('#table_banks').empty()
-  create_cb_header: ->
-    th = '<th>'
-    th += '<td>' + 'Forderungen an Banken'  + '</td>'
-    th += '<td>' + 'Wertpapiere'  + '</td>'
-    th += '<td>' + 'ZB Giralgeld'  + '</td>'
-    th += '<td>' + translate(DICT.cap)  + '</td>'
-    th +='</th>'
-    th
-  create_cb_row: (cb) ->
+    $('#cb_table').empty()
+    $('#banks_table').empty()
+
+  create_row: (entries...) ->
     tr = '<tr>'
-    tr += '<td></td>'
-    tr += '<td>' + cb.credits_total().toFixed(2)  + '</td>'
-    tr += '<td>' + 0  + '</td>'
-    tr += '<td>' + cb.giro_total().toFixed(2)  + '</td>'
-    tr += '<td>' + cb.capital().toFixed(2)  + '</td>'
+    tr += '<td>' + entry + '</td>' for entry in entries
     tr +='</tr>'
-    tr
+
+  create_cb_table: (cb) ->
+    # balance sheet of central bank
+    $('#cb_table').append( '<table>' )   
+    row_h = @create_row(translate('assets'), '', translate('liabilities'), '')
+    row_1 = @create_row('Forderungen an Banken', cb.credits_total().toFixed(2), 'ZB Giralgeld', cb.giro_total().toFixed(2) )    
+    row_2 = @create_row(translate('stocks'), '0', translate('capital'), cb.capital().toFixed(2)) 
+    $('#cb_table').append(row_h).append(row_1).append(row_2)
+    $('#cb_table').append(  '</table>' )
+
+    # money supply
+    $('#cb_table').append('<h3>'+translate('statistics') + '</h3>')
+    $('#cb_table').append(  '<table>' )
+    row_h = @create_row(translate('money supply'), 'M0', 'M1', 'M2')
+    row = @create_row('', cb.M0(), cb.M1(), cb.M2())
+    $('#cb_table').append(  '<table>' ).append(row_h).append(row)
+    $('#cb_table').append('</table>' )
+
   create_bank_header: ->
     th = '<th>'
-    th += '<td>' + translate(DICT.res)  + '</td>'
-    th += '<td>' + 'Kreditforderungen'  + '</td>'
-    th += '<td>' + 'Schulden ZB'  + '</td>'
-    th += '<td>' + 'Giralgeld'  + '</td>'
-    th += '<td>' + translate(DICT.cap)  + '</td>'
-    th +='</th>'
+    th += '<td>' + translate("reserves")  + '</td>'
+    th += '<td>' + translate('credits')  + '</td>'
+    th += '<td>' + translate('debt to central bank')  + '</td>'
+    th += '<td>' + translate('bank deposits')  + '</td>'
+    th += '<td>' + translate("capital")  + '</td>'
+    th += '</th>'
     th
+
   create_bank_row: (bank) ->
     tr = '<tr>'
     tr += '<td></td>'
@@ -214,19 +240,17 @@ class TableVisualizer extends Visualizer
     tr += '<td>' + bank.capital.toFixed(2)  + '</td>'
     tr +='</tr>'
     tr
+
   visualize: ->
     banks = @simulator.banks
     console.log "creating table for #{banks.length} banks"
     @clear()
-    $('#table_cb').append(  '<table>' );
-    $('#table_cb').append(@create_cb_header)
-    $('#table_cb').append(@create_cb_row(@simulator.cb))      
-    $('#table_cb').append(  '</table>' )
-    $('#table_banks').append(  '<table>' );
-    $('#table_banks').append(@create_bank_header)
+    @create_cb_table(@simulator.cb)
+    $('#banks_table').append(  '<table>' );
+    $('#banks_table').append(@create_bank_header())
     for bank in banks
-      $('#table_banks').append(@create_bank_row(bank))      
-    $('#table_banks').append(  '</table>' )
+      $('#banks_table').append(@create_bank_row(bank))      
+    $('#banks_table').append(  '</table>' )
 
 class GraphVisualizer extends Visualizer
   clear: ->
@@ -237,7 +261,7 @@ class GraphVisualizer extends Visualizer
       chart:
         type: 'column'
       title:
-        text: translate(DICT.cb)
+        text: translate("central bank")
       xAxis:
         categories: []
       yAxis:
@@ -254,21 +278,21 @@ class GraphVisualizer extends Visualizer
         column:
           stacking: 'normal'
       series: [{
-          name: 'Forderungen an Banken'
+          name: translate('credits to banks')
           data: [cb.credits_total()]
-          stack: 'Aktiv'
+          stack: translate('assets')
       }, {
-          name: 'Wertschriften'
+          name: translate('stocks')
           data: [0]
-          stack: 'Aktiv'
+          stack: translate('assets')
       }, {
-          name: 'Girokonten'
+          name: 'M0'
           data: [cb.giro_total()]
-          stack: 'Passiv'
+          stack: translate('liabilities')
       }, {
-          name: translate(DICT.cap)
+          name: translate("capital")
           data: [cb.capital()]
-          stack: 'Passiv'
+          stack: translate('liabilities')
       }]
     })
   drawgraph: (banks) ->
@@ -277,12 +301,11 @@ class GraphVisualizer extends Visualizer
     caps = (bank.capital for bank in banks)
     cbcredits = (bank.credit_cb for bank in banks)
     girals = (bank.giral for bank in banks)
-    console.log("drawgraph..")
     $('#banks_graph').highcharts({
       chart:
         type: 'column'
       title:
-        text: "Bilanzen"
+        text: translate('banks')
       xAxis:
         categories: []
       yAxis:
@@ -299,25 +322,25 @@ class GraphVisualizer extends Visualizer
         column:
           stacking: 'normal'
       series: [{
-          name: translate(DICT.res)
+          name: translate("reserves")
           data: reserves
-          stack: 'Aktiv'
+          stack: translate('assets')
       }, {
-          name: 'Kredite'
+          name: translate('credits')
           data: credits
-          stack: 'Aktiv'
+          stack: translate('assets')
       }, {
-          name: 'Schulden ZB'
+          name: translate('debt to central bank')
           data: cbcredits
-          stack: 'Passiv'
+          stack: translate('liabilities')
       }, {
-          name: 'Giralgeld'
+          name: translate('bank deposits') 
           data: girals
-          stack: 'Passiv'
+          stack: translate('liabilities')
       }, {
-          name: 'Eigenkapital'
+          name: translate("capital")
           data: caps
-          stack: 'Passiv'
+          stack: translate('liabilities')
       }]
     })
   visualize: ->
@@ -339,12 +362,18 @@ params =
   prime_rate_giro: iv(1)
   cap_req: iv(8)  #capital requirements in percent
   minimal_reserves: iv(5)
-  optionValues : [translate(DICT.tab), translate(DICT.diagram)]
-  multipleSelectedOptionValues : ko.observable(DFLT_VIZ)
+  tableViz_checked: iv(true)
+  diagramViz_checked: iv(true)
   vizClicked: ->
-    viz = @multipleSelectedOptionValues()
-    console.log viz
-    _simulator.setVisualizer(viz)
+    console.log "vizClicked"
+    _simulator.setVisualizer()
+    _simulator.visualize()
+    return true # needed by knockout
+  lang_de_clicked: ->
+    LANG = 'DE'
+    _simulator.visualize()
+  lang_en_clicked: ->
+    LANG = 'EN'
     _simulator.visualize()
   simulateClicked: ->
     yps = parseInt(@yearsPerStep())
@@ -367,6 +396,7 @@ _simulator = null
 $ ->
   _simulator = new Simulator(params)
   _simulator.init()
+  _simulator.simulate()
 
   #Knockout.JS specific code
   viewModel = params

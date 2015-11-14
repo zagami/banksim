@@ -1,16 +1,51 @@
 body {
-    background-color: #51D1A0
+    background-color: #51D1A0;
 }
 #controls {
-    background-color: #C0F9F7
+    background-color: #6FFFA2;
+    float: left;
+    width: 40%;
+    min-width: 300px;
+    margin-bottom: 40px;
+    padding: 10px;
 }
 
+
 #params {
-    background-color: #6FFFA2
+    background-color: #6FFFA2;
+    float: right;
+    padding: 10px;
+    width: 50%;
+    margin-bottom: 20px;
 }
 
 #viz {
-    background-color: #C0F9F7
+    margin-top: 20px;
+    background-color: #6FFFA2;
+    padding: 10px;
+    clear: both;
+}
+#cb_table {
+    background-color: #6FFFA2;
+    float: left;
+    max-width: 50%;
+}
+
+#cb_graph {
+    float: right;
+    max-width: 50%;
+    padding: 10px;
+    margin-right: 10px; 
+}
+#banks_table {
+    background-color: #6FFFA2;
+    float: left;
+    max-width: 50%
+    margin: ;
+}
+#banks_graph {
+    float: right;
+    max-width: 50%
 }
 table {
     font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;

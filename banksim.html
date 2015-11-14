@@ -20,23 +20,24 @@
 
   <script src="banksim.js"></script>
   
-  <title>Geldsimulator</title>
+  <title>BankSim</title>
 </head>
+
 <body>
 
 <h1>BankSim</h1>
 <div id="controls">
+  <a href=":blank" data-bind="click: lang_de_clicked">DE</a>
+  <a href=":blank" data-bind="click: lang_en_clicked">EN</a>
+  <h2>Steuerung</h2>
   <table>
-    <tr>
-      <td><input type="button" value="Simulate" data-bind="click: simulateClicked"/></td>
-      <td><input type="text" data-bind="value: step"/></td>
-    </tr>
     <tr>
       <td><input type="button" value="Reset" data-bind="click: reset"/></td>
     </tr>
     <tr>
       <td class="label">Jahre pro Schritt: </td>
-      <td><input data-bind="value: yearsPerStep" id="slider1" type="range" min="1" max="100" step="5" /> <span data-bind="text: yearsPerStep"></span></td>
+      <td><input data-bind="value: yearsPerStep" id="slider1" type="range" min="1" max="100" step="5" /> <span data-bind="text: yearsPerStep"></span>
+      </td>
     </tr>
     <tr>
       <td class="label">Autorun</td>
@@ -44,13 +45,22 @@
     </tr>
     <tr>
       <td class="label">Visualisierung</td>
-      <td><select multiple="multiple" data-bind="click: vizClicked, options: optionValues, selectedOptions: multipleSelectedOptionValues"></select></td>
+
+      <td>
+        Tabelle:<input type="checkbox" data-bind="checked: tableViz_checked, click: vizClicked" /><br>
+
+        Diagramm:<input type="checkbox" data-bind="checked: diagramViz_checked, click: vizClicked"/>
+      </td>
+    </tr>
+    <tr>
+      <td><input type="button" value="Simulate" data-bind="click: simulateClicked"/></td>
+      <td><input type="text" data-bind="value: step"/></td>
     </tr>
   </table>
 </div>
 
-<h2>Parameter</h2>
 <div id="params">
+  <h2>Parameter</h2>
   <table>
     <tr>
       <td class="label">Max Transaktionen pro Jahr</td>
@@ -77,13 +87,21 @@
 </div>
 
 <div id="viz">
-  <h2>SNB</h2>
+
+  <div id="cb_table" style="margin: 0 auto"></div>
+  <div id="cb_graph" style="margin: 0 auto"></div> 
+
+  <div id="banks_table" style="margin: 0 auto"></div>
+  <div id="banks_graph" style="margin: 0 auto"></div>
+</div>
+
+<!--   <h2>SNB</h2>
   <div id="table_cb" style="min-width: 310px; margin: 0 auto"></div>
   <div id="cb_graph" style="min-width: 310px;  margin: 0 auto"></div> 
 
   <h2>Banken</h2>
   <div id="table_banks" style="min-width: 310px; margin: 0 auto"></div>
   <div id="banks_graph" style="min-width: 310px; margin: 0 auto"></div>
-</div>
+</div> -->
 </body>
 </html>
