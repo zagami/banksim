@@ -95,13 +95,18 @@
   <div id="banks_graph" style="margin: 0 auto"></div>
 </div>
 
-<!--   <h2>SNB</h2>
-  <div id="table_cb" style="min-width: 310px; margin: 0 auto"></div>
-  <div id="cb_graph" style="min-width: 310px;  margin: 0 auto"></div> 
+<script type="text/javascript" src="lib/shortcut.js"></script>
 
-  <h2>Banken</h2>
-  <div id="table_banks" style="min-width: 310px; margin: 0 auto"></div>
-  <div id="banks_graph" style="min-width: 310px; margin: 0 auto"></div>
-</div> -->
+<script>
+    shortcut.add("n", function() {
+        // Do something
+        params.simulateClicked();
+    }); 
+    shortcut.add("r", function() {
+        // Do something
+        params.reset();
+    });  
+</script>
+
 </body>
 </html>

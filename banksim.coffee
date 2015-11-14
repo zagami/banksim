@@ -29,8 +29,6 @@ DICT =
   "bank deposits": "Giralgeld" 
 
 AUTORUN_DELAY = 2000
-DFLT_VIZ = [translate("table")]
-
 
 randomize = (from, to) ->
   x = to - from
@@ -63,7 +61,7 @@ class CentralBank
 class Bank
   gameover: false
   constructor: (@reserves, @credits, @credit_cb, @giral, @capital) -> 
-  get_random_bank: ->
+  Bank::get_random_bank= ->
       r = randomize(0, 100)
       c = randomize(0, 100)
       credit_cb = r 
@@ -111,10 +109,12 @@ class TrxMgr
     pr = parseFloat(@params.prime_rate()) / 100.0
     pr_giro = parseFloat(@params.prime_rate_giro()) / 100.0
     for bank in banks
+      #interests from cb to bank
       #reserves an capital
       interest = pr_giro*bank.reserves
       bank.reserves += interest
       bank.capital += interest
+      #interests from bank to cb
       #capital an reserves
       debt = pr*bank.credit_cb
       if debt > bank.reserves or debt > bank.capital
@@ -150,7 +150,7 @@ class Simulator
   constructor: (@params) ->
     @trx_mgr = new TrxMgr(@params, this)
     @visualizer = new Visualizer(this)
-    @setVisualizer(DFLT_VIZ)
+    @setVisualizer()
   banks: []
   cb: null
   trx_mgr: null
@@ -173,7 +173,7 @@ class Simulator
   visualize: ->
     @visualizer.visualize()
 
-  setVisualizer: (viz) ->
+  setVisualizer: ->
     @visualizer.clear()
     vizArray = []
     if @params.tableViz_checked() 
@@ -390,6 +390,7 @@ params =
   reset: ->
     @step(0)
     _simulator.reset()
+    _simulator.visualize()
 
 _simulator = null
 
