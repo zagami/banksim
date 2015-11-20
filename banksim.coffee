@@ -390,7 +390,7 @@ params =
   reset: ->
     @step(0)
     _simulator.reset()
-    _simulator.visualize()
+    
 
 _simulator = null
 

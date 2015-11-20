@@ -665,8 +665,7 @@ params = {
   },
   reset: function() {
     this.step(0);
-    _simulator.reset();
-    return _simulator.visualize();
+    return _simulator.reset();
   }
 };
 
