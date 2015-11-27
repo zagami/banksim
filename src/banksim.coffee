@@ -1,142 +1,145 @@
-        LANG = 'DE'
-        translate = (engl_word) ->
-          if LANG == 'EN'
-            engl_word
-          else if LANG == 'DE'
-            for e, d of DICT
-              if engl_word == e
-                return d
-            console.log "TODO: translate - #{e}"
+LANG = 'DE'
+NUM_BANKS = 20
 
-        DICT =
-          "table": "Tabelle"
-          "diagram": "Diagramm" 
-          "interest": "Zins"
-          "reserves": "Reserven"
-          "banks": "Banken"
-          "central bank": "Zentralbank"
-          "capital": "Eigenkapital"
-          "assets": "Aktiven"
-          "liabilities": "Passiven"
-          "balance sheet": "Bilanz"
-          "prime rate": "Leitzins"
-          "stocks": "Wertschriften"
-          "statistics": "Statistiken"
-          "money supply": "Geldmenge"
-          "credits": "Kredite"
-          "credits to banks": "Kredite an Banken"
-          "debt to central bank": "Schulden an ZB"
-          "bank deposits": "Giralgeld" 
+translate = (engl_word) ->
+  if LANG == 'EN'
+    engl_word
+  else if LANG == 'DE'
+    for e, d of DICT
+      if engl_word == e
+        return d
+    console.log "TODO: translate - #{e}"
 
-        AUTORUN_DELAY = 2000
+DICT =
+  "table": "Tabelle"
+  "diagram": "Diagramm" 
+  "interest": "Zins"
+  "reserves": "Reserven"
+  "banks": "Banken"
+  "central bank": "Zentralbank"
+  "capital": "Eigenkapital"
+  "assets": "Aktiven"
+  "liabilities": "Passiven"
+  "balance sheet": "Bilanz"
+  "prime rate": "Leitzins"
+  "stocks": "Wertschriften"
+  "statistics": "Statistiken"
+  "money supply": "Geldmenge"
+  "credits": "Kredite"
+  "credits to banks": "Kredite an Banken"
+  "debt to central bank": "Schulden an ZB"
+  "bank deposits": "Giralgeld" 
 
-        class Simulator
-          constructor: (@params) ->
-            @trx_mgr = new TrxMgr(@params, this)
-            @visualizer = new Visualizer(this)
-            @setVisualizer()
-          banks: []
-          cb: null
-          trx_mgr: null
-          visualizer: null
-          simulate: (years) ->
-            console.log("simulating..." + years + " years")
-            @simulate_one_year() for [1..years]
-            @visualizer.visualize()
-          simulate_one_year: ->
-            @trx_mgr.create_transactions()
-            @trx_mgr.pay_cb_interests()
-            @trx_mgr.settle_reserves()
-            @trx_mgr.settle_capital_requirement()
-            # @trx_mgr.create_credits()
-          reset: ->
-            @init()
-          init: ->
-            @banks = (Bank::get_random_bank() for i in [1..10])
-            @cb = new CentralBank(@banks)
-          visualize: ->
-            @visualizer.visualize()
+AUTORUN_DELAY = 2000
 
-          setVisualizer: ->
-            @visualizer.clear()
-            vizArray = []
-            if @params.tableViz_checked() 
-              vizArray.push( new TableVisualizer(this) ) 
-            if @params.diagramViz_checked()
-              vizArray.push( new GraphVisualizer(this) )
-            @visualizer.vizArray = vizArray
+class Simulator
+  init: ->
+    banks = (Bank::get_random_bank() for i in [1..NUM_BANKS])
+    cb = new CentralBank(banks)
+    @microeconomy = new MicroEconomy(cb, banks)
 
-        class Visualizer
-          vizArray: []
-          constructor: (@simulator) ->
-          visualize: ->
-            for viz in @vizArray
-              viz.visualize()
-          clear: ->
-            for viz in @vizArray
-              viz.clear()
-          
-        class TableVisualizer extends Visualizer
-          clear: ->
-            super
-            $('#cb_table').empty()
-            $('#banks_table').empty()
+  constructor: (@params) ->
+    @init()
+    @trx_mgr = new TrxMgr(@params, @microeconomy)
+    @params.set_simulator(this)
+    
+  simulate: (years) ->
+    console.log years
+    console.log("simulating..." + years + " years")
+    @simulate_one_year() for [1..years]
 
-          create_row: (entries...) ->
-            tr = '<tr>'
-            tr += '<td>' + entry + '</td>' for entry in entries
-            tr +='</tr>'
+  simulate_one_year: ->
+    @trx_mgr.one_year()
+    
+  reset: ->
+    @init()
 
-          create_cb_table: (cb) ->
-            # balance sheet of central bank
-            $('#cb_table').append( '<table>' )
-            row_h = @create_row(translate('assets'), '', translate('liabilities'), '')
-            row_1 = @create_row('Forderungen an Banken', cb.credits_total().toFixed(2), 'ZB Giralgeld', cb.giro_total().toFixed(2) )    
-            row_2 = @create_row(translate('stocks'), '0', translate('capital'), cb.capital().toFixed(2)) 
-            $('#cb_table').append(row_h).append(row_1).append(row_2)
-            $('#cb_table').append(  '</table>' )
+class VisualizerMgr
+  vizArray: []
+  visualize: ->
+    for viz in @vizArray
+      viz.visualize()
+  clear: ->
+    for viz in @vizArray
+      viz.clear()
+  addViz: (viz) ->
+    @vizArray.push(viz)
+  reset: ->
+    @clear()
+    @vizArray = []
 
-            # money supply
-            $('#cb_table').append('<h3>'+translate('statistics') + '</h3>')
-            $('#cb_table').append(  '<table>' )
-            row_h = @create_row(translate('money supply'), 'M0', 'M1', 'M2')
-            row = @create_row('', cb.M0(), cb.M1(), cb.M2())
-            $('#cb_table').append(  '<table>' ).append(row_h).append(row)
-            $('#cb_table').append('</table>' )
+class Visualizer
+  constructor: (microeconomy) ->
+    @microeconomy = microeconomy
+    @banks = microeconomy.banks
+    @cb = microeconomy.cb
+  clear: ->
+  visualize: ->
 
-          create_bank_header: ->
-            th = '<th>'
-            th += '<td>' + translate("reserves")  + '</td>'
-            th += '<td>' + translate('credits')  + '</td>'
-            th += '<td>' + translate('debt to central bank')  + '</td>'
-            th += '<td>' + translate('bank deposits')  + '</td>'
-            th += '<td>' + translate("capital")  + '</td>'
-            th += '</th>'
-            th
+class TableVisualizer extends Visualizer
+  constructor: (@microeconomy) ->
+    super
+  clear: ->
+    super
+    $('#cb_table').empty()
+    $('#banks_table').empty()
 
-          create_bank_row: (bank) ->
-            tr = '<tr>'
-            tr += '<td></td>'
-            tr += '<td>' + bank.reserves.toFixed(2)  + '</td>'
-            tr += '<td>' + bank.credits.toFixed(2)  + '</td>'
-            tr += '<td>' + bank.credit_cb.toFixed(2)  + '</td>'
-            tr += '<td>' + bank.giral.toFixed(2)  + '</td>'
-            tr += '<td>' + bank.capital.toFixed(2)  + '</td>'
-            tr +='</tr>'
-            tr
+  create_row: (entries...) ->
+    tr = '<tr>'
+    tr += '<td>' + entry + '</td>' for entry in entries
+    tr +='</tr>'
 
-          visualize: ->
-            banks = @simulator.banks
-            console.log "creating table for #{banks.length} banks"
-            @clear()
-            @create_cb_table(@simulator.cb)
-            $('#banks_table').append(  '<table>' );
-            $('#banks_table').append(@create_bank_header())
-            for bank in banks
-              $('#banks_table').append(@create_bank_row(bank))      
-            $('#banks_table').append(  '</table>' )
+  create_cb_table: (cb) ->
+    # balance sheet of central bank
+    $('#cb_table').append( '<table>' )
+    row_h = @create_row(translate('assets'), '', translate('liabilities'), '')
+    row_1 = @create_row('Forderungen an Banken', cb.credits_total().toFixed(2), 'ZB Giralgeld', cb.giro_total().toFixed(2) )    
+    row_2 = @create_row(translate('stocks'), '0', translate('capital'), cb.capital().toFixed(2)) 
+    $('#cb_table').append(row_h).append(row_1).append(row_2)
+    $('#cb_table').append(  '</table>' )
+
+    # money supply
+    $('#cb_table').append('<h3>'+translate('statistics') + '</h3>')
+    $('#cb_table').append(  '<table>' )
+    row_h = @create_row(translate('money supply'), 'M0', 'M1', 'M2')
+    row = @create_row('', cb.M0(), cb.M1(), cb.M2())
+    $('#cb_table').append(  '<table>' ).append(row_h).append(row)
+    $('#cb_table').append('</table>' )
+
+  create_bank_header: ->
+    th = '<th>'
+    th += '<td>' + translate("reserves")  + '</td>'
+    th += '<td>' + translate('credits')  + '</td>'
+    th += '<td>' + translate('debt to central bank')  + '</td>'
+    th += '<td>' + translate('bank deposits')  + '</td>'
+    th += '<td>' + translate("capital")  + '</td>'
+    th += '</th>'
+    th
+
+  create_bank_row: (bank) ->
+    tr = '<tr>'
+    tr += '<td></td>'
+    tr += '<td>' + bank.reserves.toFixed(2)  + '</td>'
+    tr += '<td>' + bank.credits.toFixed(2)  + '</td>'
+    tr += '<td>' + bank.credit_cb.toFixed(2)  + '</td>'
+    tr += '<td>' + bank.giral.toFixed(2)  + '</td>'
+    tr += '<td>' + bank.capital.toFixed(2)  + '</td>'
+    tr +='</tr>'
+    tr
+
+  visualize: ->
+    console.log "creating table for #{@banks.length} banks"
+    @clear()
+    @create_cb_table(@cb)
+    $('#banks_table').append(  '<table>' );
+    $('#banks_table').append(@create_bank_header())
+    for bank in @banks
+      $('#banks_table').append(@create_bank_row(bank))      
+    $('#banks_table').append(  '</table>' )
 
 class GraphVisualizer extends Visualizer
+  constructor: (@microeconomy) ->
+    super
   clear: ->
     $('#banks_graph').empty()
     $('#cb_graph').empty()
@@ -228,69 +231,97 @@ class GraphVisualizer extends Visualizer
       }]
     })
   visualize: ->
-    console.log("drawing graph... #{@simulator.banks.length}")
+    console.log("drawing graph... #{@banks.length}")
     @clear()
-    @draw_cb(@simulator.cb)
-    @drawgraph(@simulator.banks)
+    @draw_cb(@cb)
+    @drawgraph(@banks)
 
 iv = (val) ->
   ko.observable(val)
-
-params =
+  
+class Params
+  # Simulator Control
   step: iv(0)
   yearsPerStep: iv(1)
   autorun: iv("off")
   autorun_id: 0
-  max_trx: iv(5)
-  prime_rate: iv(3)
-  prime_rate_giro: iv(1)
-  cap_req: iv(8)  #capital requirements in percent
-  minimal_reserves: iv(5)
   tableViz_checked: iv(true)
   diagramViz_checked: iv(true)
-  vizClicked: ->
-    console.log "vizClicked"
-    _simulator.setVisualizer()
-    _simulator.visualize()
+
+  # Microeconomy
+  max_trx: iv(50)  # max nr of trx per year
+  prime_rate: iv(3)  # prime rate paid by banks for central bank credits
+  prime_rate_giro: iv(1) # prime rate paid by central bank to banks for deposits
+  cap_req: iv(8)  #capital requirements in percent (leverage ratio)
+  minimal_reserves: iv(5)  # reserve requirements for banks
+  credit_interest: iv(6)
+  deposit_interest: iv(2)
+  
+  # functions
+  set_simulator: (sim) ->
+    @simulator = sim
+    @visualizerMgr = new VisualizerMgr(sim.microeconomy)
+    @set_viz()
+
+  set_viz: ->
+    @visualizerMgr.reset()
+    if @tableViz_checked() 
+      @visualizerMgr.addViz ( new TableVisualizer(@simulator.microeconomy) ) 
+    if @diagramViz_checked()
+      @visualizerMgr.addViz( new GraphVisualizer(@simulator.microeconomy) )
+  
+  # Event Handlers
+  viz_clicked: ->
+    @set_viz()
+    @visualizerMgr.visualize()
     return true # needed by knockout
+
   lang_de_clicked: ->
     LANG = 'DE'
-    _simulator.visualize()
+    @visualizerMgr.visualize()
+
   lang_en_clicked: ->
     LANG = 'EN'
-    _simulator.visualize()
-  simulateClicked: ->
+    @visualizerMgr.visualize()
+    
+  simulate_clicked: ->
     yps = parseInt(@yearsPerStep())
     curr_s = parseInt(@step())
     @step(yps + curr_s)
-    _simulator.simulate(yps)
-  autorunClicked: ->
+    @simulator.simulate(yps)
+    @visualizerMgr.visualize()
+
+  autorun_clicked: ->
     if @autorun() is "off"
       @autorun('on')
       @autorun_id = setInterval("params.simulateClicked()", AUTORUN_DELAY) 
     else
       clearInterval(@autorun_id)
       @autorun("off")
-  reset: ->
-    @step(0)
-    _simulator.reset()
-    
 
-_simulator = null
+  reset_clicked: ->
+    @step(0)
+    @simulator.reset()
+    @visualizerMgr.visualize()
+
+#global objects
+simulator = null
+params = null
 
 $ ->
-  _simulator = new Simulator(params)
-  _simulator.init()
-  _simulator.simulate()
+  params = new Params()
+  simulator = new Simulator(params)
+  # show 1st simulation step after page load
+  params.reset_clicked()
 
   #Knockout.JS specific code
   viewModel = params
   ko.applyBindings(viewModel)
 
 
-
 #Backlog
 # - GUI controls 
+# resetting parameters?
 # - Tilgung der Kredite?
 # - Kreditausfall? (Sicherheit pfänden?)
 # - Interbankenmarkt

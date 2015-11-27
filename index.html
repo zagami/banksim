@@ -33,7 +33,7 @@
   <h2>Steuerung</h2>
   <table>
     <tr>
-      <td><input type="button" value="Reset" data-bind="click: reset"/></td>
+      <td><input type="button" value="Reset" data-bind="click: reset_clicked"/></td>
     </tr>
     <tr>
       <td class="label">Jahre pro Schritt: </td>
@@ -42,19 +42,19 @@
     </tr>
     <tr>
       <td class="label">Autorun</td>
-      <td><button  data-bind='text: autorun, click: autorunClicked'></button></td>
+      <td><button  data-bind='text: autorun, click: autorun_clicked'></button></td>
     </tr>
     <tr>
       <td class="label">Visualisierung</td>
 
       <td>
-        Tabelle:<input type="checkbox" data-bind="checked: tableViz_checked, click: vizClicked" /><br>
+        Tabelle:<input type="checkbox" data-bind="checked: tableViz_checked, click: viz_clicked" /><br>
 
-        Diagramm:<input type="checkbox" data-bind="checked: diagramViz_checked, click: vizClicked"/>
+        Diagramm:<input type="checkbox" data-bind="checked: diagramViz_checked, click: viz_clicked"/>
       </td>
     </tr>
     <tr>
-      <td><input type="button" value="Simulate" data-bind="click: simulateClicked"/></td>
+      <td><input type="button" value="Simulate" data-bind="click: simulate_clicked"/></td>
       <td><input type="text" data-bind="value: step"/></td>
     </tr>
   </table>
@@ -74,7 +74,7 @@
 
     <tr>
       <td class="label">Leitzins: ZB Konten</td>
-      <td><input data-bind="value: prime_rate_giro" id="slider_lz" type="range" min="-5" max="10" step="1" /> <span data-bind="text: prime_rate_giro"></span>%</td>
+      <td><input data-bind="value: prime_rate_giro" id="slider_lz" type="range" min="-15" max="15" step="1" /> <span data-bind="text: prime_rate_giro"></span>%</td>
     </tr>
     <tr>
       <td class="label">Eigenkapitalvorschrift</td>
@@ -83,6 +83,14 @@
     <tr>
       <td class="label">Mindestreserve</td>
       <td><input data-bind="value: minimal_reserves" id="slider_lz" type="range" min="1" max="10" step="1" /> <span data-bind="text: minimal_reserves"></span>%</td>
+    </tr>
+    <tr>
+      <td class="label">Kreditzinsen</td>
+      <td><input data-bind="value: credit_interest" id="slider_lz" type="range" min="1" max="10" step="1" /> <span data-bind="text: credit_interest"></span>%</td>
+    </tr>
+    <tr>
+      <td class="label">Guthabenszinsen</td>
+      <td><input data-bind="value: deposit_interest" id="slider_lz" type="range" min="1" max="10" step="1" /> <span data-bind="text: deposit_interest"></span>%</td>
     </tr>
   </table>
 </div>
@@ -101,11 +109,11 @@
 <script>
     shortcut.add("n", function() {
         // Do something
-        params.simulateClicked();
+        params.simulate_clicked();
     }); 
     shortcut.add("r", function() {
         // Do something
-        params.reset();
+        params.reset_clicked();
     });  
 </script>
 

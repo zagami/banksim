@@ -8,6 +8,16 @@ task :diagram do
 	`dot -Tpng generated/diagram.dot > generated/diagram.png`
 end
 
+desc "run Specrunner"
+task :test do
+	`open SpecRunner.html`
+end
+
+desc "run Simulator"
+task :run do
+	`open index.html`
+end
+
 
 desc "Printing the time"
 task :time do

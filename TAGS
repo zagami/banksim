@@ -1,0 +1,97 @@
+!_TAG_FILE_FORMAT	2	/extended format/
+!_TAG_FILE_SORTED	0	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Łukasz Korecki	/lukasz@korecki.me/
+!_TAG_PROGRAM_NAME	CoffeeTags	//
+!_TAG_PROGRAM_URL	https://github.com/lukaszkorecki/CoffeeTags	/GitHub repository/
+!_TAG_PROGRAM_VERSION	0.6.0	//
+@banks	src/banksim.coffee	/^    @banks = microeconomy.banks$/;"	p	line:79	language:coffee	object:Visualizer
+@banks	src/microeconomy.coffee	/^    @banks = @microeconomy.banks$/;"	p	line:57	language:coffee	object:TrxMgr
+@cb	src/banksim.coffee	/^    @cb = microeconomy.cb$/;"	p	line:80	language:coffee	object:Visualizer
+@cb	src/microeconomy.coffee	/^    @cb = @microeconomy.cb$/;"	p	line:58	language:coffee	object:TrxMgr
+Bank	src/microeconomy.coffee	/^class Bank$/;"	c	line:29	language:coffee
+CentralBank	src/microeconomy.coffee	/^class CentralBank$/;"	c	line:9	language:coffee
+GraphVisualizer	src/banksim.coffee	/^class GraphVisualizer extends Visualizer$/;"	c	line:145	language:coffee
+M0	src/microeconomy.coffee	/^  M0: ->$/;"	p	line:21	language:coffee	object:CentralBank
+M1	src/microeconomy.coffee	/^  M1: ->$/;"	p	line:23	language:coffee	object:CentralBank
+M2	src/microeconomy.coffee	/^  M2: ->$/;"	p	line:27	language:coffee	object:CentralBank
+MicroEconomy	src/microeconomy.coffee	/^class MicroEconomy$/;"	c	line:52	language:coffee
+Params	src/banksim.coffee	/^class Params$/;"	c	line:247	language:coffee
+Simulator	src/banksim.coffee	/^class Simulator$/;"	c	line:35	language:coffee
+TableVisualizer	src/banksim.coffee	/^class TableVisualizer extends Visualizer$/;"	c	line:84	language:coffee
+TrxMgr	src/microeconomy.coffee	/^class TrxMgr$/;"	c	line:55	language:coffee
+Visualizer	src/banksim.coffee	/^class Visualizer$/;"	c	line:76	language:coffee
+VisualizerMgr	src/banksim.coffee	/^class VisualizerMgr$/;"	c	line:62	language:coffee
+addViz	src/banksim.coffee	/^  addViz: (viz) ->$/;"	p	line:70	language:coffee	object:VisualizerMgr
+autorun	src/banksim.coffee	/^  autorun: iv("off")$/;"	p	line:251	language:coffee	object:Params
+autorun_clicked	src/banksim.coffee	/^  autorun_clicked: ->$/;"	p	line:291	language:coffee	object:Params
+autorun_id	src/banksim.coffee	/^  autorun_id: 0$/;"	p	line:252	language:coffee	object:Params
+cap_req	src/banksim.coffee	/^  cap_req: iv(8)  #capital requirements in percent$/;"	p	line:260	language:coffee	object:Params
+capital	src/microeconomy.coffee	/^  capital: ->$/;"	p	line:19	language:coffee	object:CentralBank
+clear	src/banksim.coffee	/^  clear: ->$/;"	p	line:67	language:coffee	object:VisualizerMgr
+constructor	src/banksim.coffee	/^  constructor: (@params) ->$/;"	p	line:41	language:coffee	object:Simulator
+constructor	src/microeconomy.coffee	/^  constructor: (@banks) ->$/;"	p	line:10	language:coffee	object:CentralBank
+create_bank_header	src/banksim.coffee	/^  create_bank_header: ->$/;"	p	line:114	language:coffee	object:TableVisualizer
+create_bank_row	src/banksim.coffee	/^  create_bank_row: (bank) ->$/;"	p	line:124	language:coffee	object:TableVisualizer
+create_cb_table	src/banksim.coffee	/^  create_cb_table: (cb) ->$/;"	p	line:97	language:coffee	object:TableVisualizer
+create_row	src/banksim.coffee	/^  create_row: (entries...) ->$/;"	p	line:92	language:coffee	object:TableVisualizer
+create_transactions	src/microeconomy.coffee	/^  create_transactions: ->$/;"	p	line:75	language:coffee	object:TrxMgr
+credits_total	src/microeconomy.coffee	/^  credits_total: ->$/;"	p	line:11	language:coffee	object:CentralBank
+deposit	src/microeconomy.coffee	/^  deposit: (amount) ->$/;"	p	line:39	language:coffee	object:Bank
+diagramViz_checked	src/banksim.coffee	/^  diagramViz_checked: iv(true)$/;"	p	line:254	language:coffee	object:Params
+draw_cb	src/banksim.coffee	/^  draw_cb: (cb) ->$/;"	p	line:151	language:coffee	object:GraphVisualizer
+drawgraph	src/banksim.coffee	/^  drawgraph: (banks) ->$/;"	p	line:190	language:coffee	object:GraphVisualizer
+for 	src/banksim.coffee	/^    for bank in @banks$/;"	b	line:141	language:coffee
+for 	src/banksim.coffee	/^    for e, d of DICT$/;"	b	line:8	language:coffee
+for 	src/banksim.coffee	/^    for viz in @vizArray$/;"	b	line:65	language:coffee
+for 	src/banksim.coffee	/^    for viz in @vizArray$/;"	b	line:68	language:coffee
+for 	src/microeconomy.coffee	/^    for bank in @banks$/;"	b	line:107	language:coffee
+for 	src/microeconomy.coffee	/^    for bank in @banks$/;"	b	line:116	language:coffee
+for 	src/microeconomy.coffee	/^    for bank in @banks$/;"	b	line:90	language:coffee
+for 	src/microeconomy.coffee	/^    for trx in [1..max_trx]$/;"	b	line:77	language:coffee
+formatter	src/banksim.coffee	/^          formatter: ->$/;"	f	line:165	language:coffee	object:GraphVisualizer.draw_cb.tooltip
+gameover	src/microeconomy.coffee	/^  gameover: false$/;"	p	line:30	language:coffee	object:Bank
+get_random_bank	src/microeconomy.coffee	/^  Bank::get_random_bank= ->$/;"	p	line:32	language:coffee	object:Bank
+giro_total	src/microeconomy.coffee	/^  giro_total: ->$/;"	p	line:15	language:coffee	object:CentralBank
+if 	src/banksim.coffee	/^      if engl_word == e$/;"	b	line:9	language:coffee
+if 	src/banksim.coffee	/^    if @autorun() is "off"$/;"	b	line:292	language:coffee
+if 	src/banksim.coffee	/^    if @diagramViz_checked()$/;"	b	line:272	language:coffee
+if 	src/banksim.coffee	/^    if @tableViz_checked() $/;"	b	line:270	language:coffee
+if 	src/banksim.coffee	/^  if LANG == 'EN'$/;"	b	line:5	language:coffee
+if 	src/microeconomy.coffee	/^        if bank.capital < total * cap_req$/;"	b	line:125	language:coffee
+if 	src/microeconomy.coffee	/^      if bank.capital < total * cap_req$/;"	b	line:118	language:coffee
+if 	src/microeconomy.coffee	/^      if bank.reserves < bank.giral * minimal_reserves$/;"	b	line:108	language:coffee
+if 	src/microeconomy.coffee	/^      if bank_src != bank_tgt and not (bank_src.gameover or bank_tgt.gameover) $/;"	b	line:84	language:coffee
+if 	src/microeconomy.coffee	/^      if debt > bank.reserves or debt > bank.capital$/;"	b	line:99	language:coffee
+if 	src/microeconomy.coffee	/^    if from.reserves > amount$/;"	b	line:61	language:coffee
+init	src/banksim.coffee	/^  init: ->$/;"	p	line:36	language:coffee	object:Simulator
+iv	src/banksim.coffee	/^iv = (val) ->$/;"	f	line:244	language:coffee	object:window
+lang_de_clicked	src/banksim.coffee	/^  lang_de_clicked: ->$/;"	p	line:280	language:coffee	object:Params
+lang_en_clicked	src/banksim.coffee	/^  lang_en_clicked: ->$/;"	p	line:283	language:coffee	object:Params
+max_trx	src/banksim.coffee	/^  max_trx: iv(5)$/;"	p	line:257	language:coffee	object:Params
+minimal_reserves	src/banksim.coffee	/^  minimal_reserves: iv(5)$/;"	p	line:261	language:coffee	object:Params
+one_year	src/microeconomy.coffee	/^  one_year: ->$/;"	p	line:68	language:coffee	object:TrxMgr
+params	src/banksim.coffee	/^  params = new Params()$/;"	o	line:307	language:coffee
+params	src/banksim.coffee	/^params = null$/;"	o	line:304	language:coffee	object:window
+pay_cb_interests	src/microeconomy.coffee	/^  pay_cb_interests: ->$/;"	p	line:87	language:coffee	object:TrxMgr
+prime_rate	src/banksim.coffee	/^  prime_rate: iv(3)$/;"	p	line:258	language:coffee	object:Params
+prime_rate_giro	src/banksim.coffee	/^  prime_rate_giro: iv(1)$/;"	p	line:259	language:coffee	object:Params
+randomize	src/microeconomy.coffee	/^randomize = (from, to) ->$/;"	f	line:1	language:coffee	object:window
+randomizeInt	src/microeconomy.coffee	/^randomizeInt = (from, to) ->$/;"	f	line:5	language:coffee	object:window
+reset	src/banksim.coffee	/^  reset: ->$/;"	p	line:56	language:coffee	object:Simulator
+reset_clicked	src/banksim.coffee	/^  reset_clicked: ->$/;"	p	line:298	language:coffee	object:Params
+set_simulator	src/banksim.coffee	/^  set_simulator: (sim) ->$/;"	p	line:264	language:coffee	object:Params
+set_viz	src/banksim.coffee	/^  set_viz: ->$/;"	p	line:268	language:coffee	object:Params
+settle_capital_requirement	src/microeconomy.coffee	/^  settle_capital_requirement: ->$/;"	p	line:114	language:coffee	object:TrxMgr
+settle_reserves	src/microeconomy.coffee	/^  settle_reserves: ->$/;"	p	line:105	language:coffee	object:TrxMgr
+simulate	src/banksim.coffee	/^  simulate: (years) ->$/;"	p	line:47	language:coffee	object:Simulator
+simulate_clicked	src/banksim.coffee	/^  simulate_clicked: ->$/;"	p	line:286	language:coffee	object:Params
+simulate_one_year	src/banksim.coffee	/^  simulate_one_year: ->$/;"	p	line:53	language:coffee	object:Simulator
+step	src/banksim.coffee	/^  step: iv(0)$/;"	p	line:249	language:coffee	object:Params
+tableViz_checked	src/banksim.coffee	/^  tableViz_checked: iv(true)$/;"	p	line:253	language:coffee	object:Params
+transfer	src/microeconomy.coffee	/^  transfer: (from, to, amount) ->$/;"	p	line:60	language:coffee	object:TrxMgr
+translate	src/banksim.coffee	/^translate = (engl_word) ->$/;"	f	line:4	language:coffee	object:window
+visualize	src/banksim.coffee	/^  visualize: ->$/;"	p	line:59	language:coffee	object:Simulator
+vizArray	src/banksim.coffee	/^  vizArray: []$/;"	p	line:63	language:coffee	object:VisualizerMgr
+viz_clicked	src/banksim.coffee	/^  viz_clicked: ->$/;"	p	line:276	language:coffee	object:Params
+withdraw	src/microeconomy.coffee	/^  withdraw: (amount) ->$/;"	p	line:43	language:coffee	object:Bank
+yearsPerStep	src/banksim.coffee	/^  yearsPerStep: iv(1)$/;"	p	line:250	language:coffee	object:Params
