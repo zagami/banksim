@@ -1,52 +1,60 @@
 body {
     background-color: #51D1A0;
 }
+#left {
+  width: 500px;
+  float:left;
+  margin: 0 auto;
+}
+
 #controls {
     background-color: #6FFFA2;
-    float: left;
-    width: 40%;
-    min-width: 300px;
-    margin-bottom: 40px;
     padding: 10px;
 }
 
 
 #params {
-    background-color: #6FFFA2;
-    float: right;
+    background-color: #3FFFA2;
     padding: 10px;
-    width: 50%;
-    margin-bottom: 20px;
 }
 
 #viz {
-    margin-top: 20px;
-    background-color: #6FFFA2;
-    padding: 10px;
-    clear: both;
-}
-#cb_table {
     background-color: #6FFFA2;
     float: left;
-    max-width: 50%;
+    padding: 20px;
+}
+
+.block {
+  max-width: 800px;
+  padding: 20px;
+}
+
+#graphs {
+  width: 400px;
+  float: left;
+  padding: 20px;
+}
+
+#tables {
+  width: 400px;
+  float: left;
+  padding: 20px;
+}
+
+#cb_table {
+    background-color: lightblue;
 }
 
 #cb_graph {
-    float: right;
-    max-width: 50%;
-    padding: 10px;
-    margin-right: 10px; 
 }
+
 #banks_table {
-    background-color: #6FFFA2;
-    float: left;
-    max-width: 50%
-    margin: ;
+  background-color: orange;
+  padding-top: 30px;
 }
 #banks_graph {
-    float: right;
-    max-width: 50%
 }
+
 table {
     font-family: "Trebuchet MS", Arial, Helvetica, sans-serif;
     width: 100%;

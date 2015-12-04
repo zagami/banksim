@@ -8,35 +8,53 @@ randomizeInt = (from, to) ->
 
 class CentralBank
   constructor: (@banks) ->
+
   credits_total: ->
     sum = 0
     sum += bank.credit_cb for bank in @banks
     sum
+
   giro_total: ->
     giro = 0
     giro += bank.reserves for bank in @banks
     giro
+
+  assets_total: ->
+    @credits_total()
+
+  liabilities_total: ->
+    @giro_total() + @capital()
+
   capital: ->
     @credits_total() - @giro_total()
+
   M0: ->
     @giro_total()
+
   M1: ->
     sum = 0
     sum += bank.giral for bank in @banks
     sum
+
   M2: ->
     0
 
 class Bank
   gameover: false
-  constructor: (@reserves, @credits, @credit_cb, @giral, @capital) -> 
-  Bank::get_random_bank= ->
-      r = randomize(0, 100)
-      c = randomize(r, 300)
-      credit_cb = r 
-      giral = randomize(r, c)
-      capital = r + c - giral - credit_cb
-      new Bank(r, c, credit_cb, giral, capital)
+  constructor: (@reserves, @credits, @credit_cb, @giral, @capital) ->
+  Bank::get_random_bank = ->
+    r = randomize(0, 100)
+    c = randomize(r, 300)
+    credit_cb = r
+    giral = randomize(r, c)
+    capital = r + c - giral - credit_cb
+    new Bank(r, c, credit_cb, giral, capital)
+
+  assets_total: ->
+    @reserves + @credits
+
+  liabilities_total: ->
+    @credit_cb + @giral + @capital
 
   deposit: (amount) ->
     #reserves an GIRAL
@@ -49,7 +67,6 @@ class Bank
     @giral -= amount
 
   gameover: ->
-    console.log "gameover"
     @gameover = true
     @reserves = @credits = @credit_cb = @giral = @capital = 0
 
@@ -68,7 +85,7 @@ class TrxMgr
     else
       # TODO: take loan from bank (interbank)
       console.log "not enough funds"
-      # take a credit from cb
+      # take a credit from centralbank
       diff = amount - from.reserves
       from.credit_cb += diff
       from.reserves += diff
@@ -173,6 +190,7 @@ class TrxMgr
       total = bank.capital + bank.giral + bank.credit_cb
       if bank.capital < total * cap_req
         #try to pay back central bank credit
+        # only necessary in case of deficient capital reqs
         payback = Math.min(bank.credit_cb, bank.reserves)
         #TRX: KREDIT_cb an reserves
         bank.credit_cb -= payback
@@ -180,3 +198,4 @@ class TrxMgr
         total = bank.capital + bank.giral + bank.credit_cb
         if bank.capital < total * cap_req
           bank.gameover()
+

@@ -27,6 +27,7 @@
 <body>
 
 <h1>BankSim</h1>
+<div id="left">
 <div id="controls">
   <a href=":blank" data-bind="click: lang_de_clicked">DE</a>
   <a href=":blank" data-bind="click: lang_en_clicked">EN</a>
@@ -94,19 +95,23 @@
     </tr>
   </table>
 </div>
+</div>
 
 <div id="viz">
-
-  <div id="cb_table" style="margin: 0 auto"></div>
-  <div id="cb_graph" style="margin: 0 auto"></div> 
-
-  <div id="banks_table" style="margin: 0 auto"></div>
-  <div id="banks_graph" style="margin: 0 auto"></div>
+  <div id="graphs">
+    <div id="cb_graph" class="block"style="margin: 0 auto"></div> 
+    <div id="banks_graph" class="block" style="margin: 0 auto"></div>
+  </div>
+  <div id="tables">
+    <div id="cb_table" class="block" style="margin: 0 auto"></div>
+    <div id="banks_table" class="block" style="margin: 0 auto"></div>
+  </div>
 </div>
 
 <script type="text/javascript" src="lib/shortcut.js"></script>
 
 <script>
+<!--http://stackoverflow.com/questions/5061353/how-to-create-a-keyboard-shortcut-for-an-input-button-->
     shortcut.add("n", function() {
         // Do something
         params.simulate_clicked();

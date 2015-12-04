@@ -1,5 +1,5 @@
 LANG = 'DE'
-NUM_BANKS = 20
+NUM_BANKS = 12
 
 translate = (engl_word) ->
   if LANG == 'EN'
@@ -12,7 +12,7 @@ translate = (engl_word) ->
 
 DICT =
   "table": "Tabelle"
-  "diagram": "Diagramm" 
+  "diagram": "Diagramm"
   "interest": "Zins"
   "reserves": "Reserven"
   "banks": "Banken"
@@ -29,6 +29,7 @@ DICT =
   "credits to banks": "Kredite an Banken"
   "debt to central bank": "Schulden an ZB"
   "bank deposits": "Giralgeld" 
+  "total": "Total"
 
 AUTORUN_DELAY = 2000
 
@@ -92,38 +93,44 @@ class TableVisualizer extends Visualizer
   create_cb_table: (cb) ->
     # balance sheet of central bank
     $('#cb_table').append( '<table>' )
+    $('#cb_table').append( '<caption>' + translate('central bank') + '</caption>' )
     row_h = @create_row(translate('assets'), '', translate('liabilities'), '')
-    row_1 = @create_row('Forderungen an Banken', cb.credits_total().toFixed(2), 'ZB Giralgeld', cb.giro_total().toFixed(2) )    
-    row_2 = @create_row(translate('stocks'), '0', translate('capital'), cb.capital().toFixed(2)) 
-    $('#cb_table').append(row_h).append(row_1).append(row_2)
+    row_1 = @create_row('Forderungen an Banken', cb.credits_total().toFixed(2), 'ZB Giralgeld', cb.giro_total().toFixed(2) )
+    row_2 = @create_row(translate('stocks'), '0', translate('capital'), cb.capital().toFixed(2))
+    row_3 = @create_row(translate('total'), cb.assets_total().toFixed(2), '', cb.liabilities_total().toFixed(2)) 
+    
+    $('#cb_table').append(row_h).append(row_1).append(row_2).append(row_3)
     $('#cb_table').append(  '</table>' )
 
     # money supply
     $('#cb_table').append('<h3>'+translate('statistics') + '</h3>')
     $('#cb_table').append(  '<table>' )
     row_h = @create_row(translate('money supply'), 'M0', 'M1', 'M2')
-    row = @create_row('', cb.M0(), cb.M1(), cb.M2())
+    row = @create_row('', cb.M0().toFixed(2), cb.M1().toFixed(2), cb.M2().toFixed(2))
     $('#cb_table').append(  '<table>' ).append(row_h).append(row)
     $('#cb_table').append('</table>' )
 
   create_bank_header: ->
-    th = '<th>'
-    th += '<td>' + translate("reserves")  + '</td>'
-    th += '<td>' + translate('credits')  + '</td>'
-    th += '<td>' + translate('debt to central bank')  + '</td>'
-    th += '<td>' + translate('bank deposits')  + '</td>'
-    th += '<td>' + translate("capital")  + '</td>'
-    th += '</th>'
+    th = '<tr>'
+    th += '<th>' + translate("reserves")  + '</th>'
+    th += '<th>' + translate('credits')  + '</th>'
+    th += '<th>' + translate('debt to central bank')  + '</th>'
+    th += '<th>' + translate('bank deposits')  + '</th>'
+    th += '<th>' + translate("capital")  + '</th>'
+    th += '<th>' + translate("assets")  + '</th>'
+    th += '<th>' + translate("liabilities")  + '</th>'
+    th += '</tr>'
     th
 
   create_bank_row: (bank) ->
     tr = '<tr>'
-    tr += '<td></td>'
     tr += '<td>' + bank.reserves.toFixed(2)  + '</td>'
     tr += '<td>' + bank.credits.toFixed(2)  + '</td>'
     tr += '<td>' + bank.credit_cb.toFixed(2)  + '</td>'
     tr += '<td>' + bank.giral.toFixed(2)  + '</td>'
     tr += '<td>' + bank.capital.toFixed(2)  + '</td>'
+    tr += '<td>' + bank.assets_total().toFixed(2)  + '</td>'
+    tr += '<td>' + bank.liabilities_total().toFixed(2)  + '</td>'
     tr +='</tr>'
     tr
 
@@ -132,6 +139,7 @@ class TableVisualizer extends Visualizer
     @clear()
     @create_cb_table(@cb)
     $('#banks_table').append(  '<table>' );
+    $('#cb_table').append( '<caption>' + translate('banks') + '</caption>' )
     $('#banks_table').append(@create_bank_header())
     for bank in @banks
       $('#banks_table').append(@create_bank_row(bank))      

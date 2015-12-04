@@ -40,6 +40,14 @@ CentralBank = (function() {
     return giro;
   };
 
+  CentralBank.prototype.assets_total = function() {
+    return this.credits_total();
+  };
+
+  CentralBank.prototype.liabilities_total = function() {
+    return this.giro_total() + this.capital();
+  };
+
   CentralBank.prototype.capital = function() {
     return this.credits_total() - this.giro_total();
   };
@@ -88,6 +96,14 @@ Bank = (function() {
     return new Bank(r, c, credit_cb, giral, capital);
   };
 
+  Bank.prototype.assets_total = function() {
+    return this.reserves + this.credits;
+  };
+
+  Bank.prototype.liabilities_total = function() {
+    return this.credit_cb + this.giral + this.capital;
+  };
+
   Bank.prototype.deposit = function(amount) {
     this.reserves += amount;
     return this.giral += amount;
@@ -99,7 +115,6 @@ Bank = (function() {
   };
 
   Bank.prototype.gameover = function() {
-    console.log("gameover");
     this.gameover = true;
     return this.reserves = this.credits = this.credit_cb = this.giral = this.capital = 0;
   };

@@ -6,7 +6,7 @@ var AUTORUN_DELAY, DICT, GraphVisualizer, LANG, NUM_BANKS, Params, Simulator, Ta
 
 LANG = 'DE';
 
-NUM_BANKS = 20;
+NUM_BANKS = 12;
 
 translate = function(engl_word) {
   var d, e;
@@ -41,7 +41,8 @@ DICT = {
   "credits": "Kredite",
   "credits to banks": "Kredite an Banken",
   "debt to central bank": "Schulden an ZB",
-  "bank deposits": "Giralgeld"
+  "bank deposits": "Giralgeld",
+  "total": "Total"
 };
 
 AUTORUN_DELAY = 2000;
@@ -172,42 +173,47 @@ TableVisualizer = (function(superClass) {
   };
 
   TableVisualizer.prototype.create_cb_table = function(cb) {
-    var row, row_1, row_2, row_h;
+    var row, row_1, row_2, row_3, row_h;
     $('#cb_table').append('<table>');
+    $('#cb_table').append('<caption>' + translate('central bank') + '</caption>');
     row_h = this.create_row(translate('assets'), '', translate('liabilities'), '');
     row_1 = this.create_row('Forderungen an Banken', cb.credits_total().toFixed(2), 'ZB Giralgeld', cb.giro_total().toFixed(2));
     row_2 = this.create_row(translate('stocks'), '0', translate('capital'), cb.capital().toFixed(2));
-    $('#cb_table').append(row_h).append(row_1).append(row_2);
+    row_3 = this.create_row(translate('total'), cb.assets_total().toFixed(2), '', cb.liabilities_total().toFixed(2));
+    $('#cb_table').append(row_h).append(row_1).append(row_2).append(row_3);
     $('#cb_table').append('</table>');
     $('#cb_table').append('<h3>' + translate('statistics') + '</h3>');
     $('#cb_table').append('<table>');
     row_h = this.create_row(translate('money supply'), 'M0', 'M1', 'M2');
-    row = this.create_row('', cb.M0(), cb.M1(), cb.M2());
+    row = this.create_row('', cb.M0().toFixed(2), cb.M1().toFixed(2), cb.M2().toFixed(2));
     $('#cb_table').append('<table>').append(row_h).append(row);
     return $('#cb_table').append('</table>');
   };
 
   TableVisualizer.prototype.create_bank_header = function() {
     var th;
-    th = '<th>';
-    th += '<td>' + translate("reserves") + '</td>';
-    th += '<td>' + translate('credits') + '</td>';
-    th += '<td>' + translate('debt to central bank') + '</td>';
-    th += '<td>' + translate('bank deposits') + '</td>';
-    th += '<td>' + translate("capital") + '</td>';
-    th += '</th>';
+    th = '<tr>';
+    th += '<th>' + translate("reserves") + '</th>';
+    th += '<th>' + translate('credits') + '</th>';
+    th += '<th>' + translate('debt to central bank') + '</th>';
+    th += '<th>' + translate('bank deposits') + '</th>';
+    th += '<th>' + translate("capital") + '</th>';
+    th += '<th>' + translate("assets") + '</th>';
+    th += '<th>' + translate("liabilities") + '</th>';
+    th += '</tr>';
     return th;
   };
 
   TableVisualizer.prototype.create_bank_row = function(bank) {
     var tr;
     tr = '<tr>';
-    tr += '<td></td>';
     tr += '<td>' + bank.reserves.toFixed(2) + '</td>';
     tr += '<td>' + bank.credits.toFixed(2) + '</td>';
     tr += '<td>' + bank.credit_cb.toFixed(2) + '</td>';
     tr += '<td>' + bank.giral.toFixed(2) + '</td>';
     tr += '<td>' + bank.capital.toFixed(2) + '</td>';
+    tr += '<td>' + bank.assets_total().toFixed(2) + '</td>';
+    tr += '<td>' + bank.liabilities_total().toFixed(2) + '</td>';
     tr += '</tr>';
     return tr;
   };
@@ -218,6 +224,7 @@ TableVisualizer = (function(superClass) {
     this.clear();
     this.create_cb_table(this.cb);
     $('#banks_table').append('<table>');
+    $('#cb_table').append('<caption>' + translate('banks') + '</caption>');
     $('#banks_table').append(this.create_bank_header());
     ref = this.banks;
     for (j = 0, len = ref.length; j < len; j++) {
