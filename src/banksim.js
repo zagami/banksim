@@ -489,7 +489,7 @@ Params = (function() {
   Params.prototype.autorun_clicked = function() {
     if (this.autorun() === "off") {
       this.autorun('on');
-      return this.autorun_id = setInterval("params.simulateClicked()", AUTORUN_DELAY);
+      return this.autorun_id = setInterval("params.simulate_clicked()", AUTORUN_DELAY);
     } else {
       clearInterval(this.autorun_id);
       return this.autorun("off");

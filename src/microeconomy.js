@@ -255,7 +255,7 @@ TrxMgr = (function() {
       bank = ref[i];
       if (bank.reserves < bank.giral * minimal_reserves) {
         diff = bank.giral * minimal_reserves - bank.reserves;
-        this.credit_cb += diff;
+        bank.credit_cb += diff;
         results.push(bank.reserves += diff);
       } else {
         results.push(void 0);

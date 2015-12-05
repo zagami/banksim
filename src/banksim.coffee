@@ -302,7 +302,7 @@ class Params
   autorun_clicked: ->
     if @autorun() is "off"
       @autorun('on')
-      @autorun_id = setInterval("params.simulateClicked()", AUTORUN_DELAY) 
+      @autorun_id = setInterval("params.simulate_clicked()", AUTORUN_DELAY) 
     else
       clearInterval(@autorun_id)
       @autorun("off")
