@@ -1,6 +1,7 @@
 body {
-    background-color: #51D1A0;
+  background-color: #51D1A0;
 }
+
 #left {
   width: 500px;
   float:left;
@@ -8,20 +9,19 @@ body {
 }
 
 #controls {
-    background-color: #6FFFA2;
-    padding: 10px;
+  background-color: #6FFFA2;
+  padding: 10px;
 }
 
-
 #params {
-    background-color: #3FFFA2;
-    padding: 10px;
+  background-color: #3FFFA2;
+  padding: 10px;
 }
 
 #viz {
-    background-color: #6FFFA2;
-    float: left;
-    padding: 20px;
+  background-color: #6FFFA2;
+  float: left;
+  padding: 20px;
 }
 
 .block {
@@ -36,23 +36,17 @@ body {
 }
 
 #tables {
-  width: 400px;
   float: left;
   padding: 20px;
 }
 
 #cb_table {
-    background-color: lightblue;
-}
-
-#cb_graph {
+  background-color: lightblue;
 }
 
 #banks_table {
   background-color: orange;
   padding-top: 30px;
-}
-#banks_graph {
 }
 
 table {

@@ -6,12 +6,19 @@ randomizeInt = (from, to) ->
   x = to - from + 1
   Math.floor(from + x * Math.random()) 
 
+if (!Array::sum)
+  Array::sum = ->
+    i = @length
+    s = 0
+    s += @[--i] while i > 0
+    s
+
 class CentralBank
   constructor: (@banks) ->
 
   credits_total: ->
     sum = 0
-    sum += bank.credit_cb for bank in @banks
+    sum += bank.debt_cb for bank in @banks
     sum
 
   giro_total: ->
@@ -41,20 +48,20 @@ class CentralBank
 
 class Bank
   gameover: false
-  constructor: (@reserves, @credits, @credit_cb, @giral, @capital) ->
+  constructor: (@reserves, @credits, @debt_cb, @giral, @capital) ->
   Bank::get_random_bank = ->
     r = randomize(0, 100)
     c = randomize(r, 300)
-    credit_cb = r
+    debt_cb = r
     giral = randomize(r, c)
-    capital = r + c - giral - credit_cb
-    new Bank(r, c, credit_cb, giral, capital)
+    capital = r + c - giral - debt_cb
+    new Bank(r, c, debt_cb, giral, capital)
 
   assets_total: ->
     @reserves + @credits
 
   liabilities_total: ->
-    @credit_cb + @giral + @capital
+    @debt_cb + @giral + @capital
 
   deposit: (amount) ->
     #reserves an GIRAL
@@ -68,7 +75,7 @@ class Bank
 
   gameover: ->
     @gameover = true
-    @reserves = @credits = @credit_cb = @giral = @capital = 0
+    @reserves = @credits = @debt_cb = @giral = @capital = 0
 
 class MicroEconomy
   constructor: (@cb, @banks) ->
@@ -87,7 +94,7 @@ class TrxMgr
       console.log "not enough funds"
       # take a credit from centralbank
       diff = amount - from.reserves
-      from.credit_cb += diff
+      from.debt_cb += diff
       from.reserves += diff
       # trying again...
       @transfer(from, to, amount)
@@ -167,7 +174,7 @@ class TrxMgr
       bank.capital += interest
       #interests from bank to cb
       #TRX: capital an reserves
-      debt = pr*bank.credit_cb
+      debt = pr*bank.debt_cb
       if debt > bank.reserves or debt > bank.capital
         console.log "debt: #{debt}, reserves: #{bank.reserves}, capital: #{bank.capital}"
         bank.gameover()
@@ -181,21 +188,21 @@ class TrxMgr
       if bank.reserves < bank.giral * minimal_reserves
         diff = bank.giral * minimal_reserves - bank.reserves
         #TRX: reserves an KREDIT_CB
-        bank.credit_cb += diff
+        bank.debt_cb += diff
         bank.reserves += diff
 
   settle_capital_requirement: ->
     cap_req = parseFloat(@params.cap_req()) / 100.0
     for bank in @banks
-      total = bank.capital + bank.giral + bank.credit_cb
+      total = bank.capital + bank.giral + bank.debt_cb
       if bank.capital < total * cap_req
         #try to pay back central bank credit
         # only necessary in case of deficient capital reqs
-        payback = Math.min(bank.credit_cb, bank.reserves)
+        payback = Math.min(bank.debt_cb, bank.reserves)
         #TRX: KREDIT_cb an reserves
-        bank.credit_cb -= payback
+        bank.debt_cb -= payback
         bank.reserves -= payback
-        total = bank.capital + bank.giral + bank.credit_cb
+        total = bank.capital + bank.giral + bank.debt_cb
         if bank.capital < total * cap_req
           bank.gameover()
 

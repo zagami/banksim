@@ -38,15 +38,13 @@ class Simulator
     banks = (Bank::get_random_bank() for i in [1..NUM_BANKS])
     cb = new CentralBank(banks)
     @microeconomy = new MicroEconomy(cb, banks)
+    @trx_mgr = new TrxMgr(@params, @microeconomy)
 
   constructor: (@params) ->
     @init()
-    @trx_mgr = new TrxMgr(@params, @microeconomy)
     @params.set_simulator(this)
     
   simulate: (years) ->
-    console.log years
-    console.log("simulating..." + years + " years")
     @simulate_one_year() for [1..years]
 
   simulate_one_year: ->
@@ -125,8 +123,8 @@ class TableVisualizer extends Visualizer
   create_bank_row: (bank) ->
     tr = '<tr>'
     tr += '<td>' + bank.reserves.toFixed(2)  + '</td>'
-    tr += '<td>' + bank.credits.toFixed(2)  + '</td>'
-    tr += '<td>' + bank.credit_cb.toFixed(2)  + '</td>'
+    tr += '<td>' + bank.credits.toFixed(2) + '</td>'
+    tr += '<td>' + bank.debt_cb.toFixed(2) + '</td>'
     tr += '<td>' + bank.giral.toFixed(2)  + '</td>'
     tr += '<td>' + bank.capital.toFixed(2)  + '</td>'
     tr += '<td>' + bank.assets_total().toFixed(2)  + '</td>'
@@ -142,15 +140,19 @@ class TableVisualizer extends Visualizer
     $('#cb_table').append( '<caption>' + translate('banks') + '</caption>' )
     $('#banks_table').append(@create_bank_header())
     for bank in @banks
-      $('#banks_table').append(@create_bank_row(bank))      
+      $('#banks_table').append(@create_bank_row(bank))
     $('#banks_table').append(  '</table>' )
 
 class GraphVisualizer extends Visualizer
+
   constructor: (@microeconomy) ->
     super
+
   clear: ->
     $('#banks_graph').empty()
+    $('#banks_total_graph').empty()
     $('#cb_graph').empty()
+
   draw_cb: (cb) ->
     $('#cb_graph').highcharts({
       chart:
@@ -172,6 +174,8 @@ class GraphVisualizer extends Visualizer
       plotOptions:
         column:
           stacking: 'normal'
+        series:
+          animation: false
       series: [{
           name: translate('credits to banks')
           data: [cb.credits_total()]
@@ -190,11 +194,12 @@ class GraphVisualizer extends Visualizer
           stack: translate('liabilities')
       }]
     })
-  drawgraph: (banks) ->
+
+  draw_banks: (banks) ->
     reserves = (bank.reserves for bank in banks)
     credits = (bank.credits for bank in banks)
     caps = (bank.capital for bank in banks)
-    cbcredits = (bank.credit_cb for bank in banks)
+    cbcredits = (bank.debt_cb for bank in banks)
     girals = (bank.giral for bank in banks)
     $('#banks_graph').highcharts({
       chart:
@@ -216,6 +221,8 @@ class GraphVisualizer extends Visualizer
       plotOptions:
         column:
           stacking: 'normal'
+        series:
+          animation: false
       series: [{
           name: translate("reserves")
           data: reserves
@@ -238,11 +245,56 @@ class GraphVisualizer extends Visualizer
           stack: translate('liabilities')
       }]
     })
+
+    $('#banks_total_graph').highcharts({
+      chart:
+        type: 'column'
+      title:
+        text: translate('banks consolidated')
+      xAxis:
+        categories: []
+      yAxis:
+        allowDecimals: false
+        min: 0
+        title:
+          text: 'CHF'
+      tooltip:
+          formatter: ->
+              return '<b>' + this.x + '</b><br/>' +
+                  this.series.name + ': ' + this.y + '<br/>' +
+                  'Total: ' + this.point.stackTotal
+      plotOptions:
+        column:
+          stacking: 'normal'
+        series:
+          animation: false
+      series: [{
+          name: translate("reserves")
+          data: [ reserves.sum() ]
+          stack: translate('assets')
+      }, {
+          name: translate('credits')
+          data: [ credits.sum() ]
+          stack: translate('assets')
+      }, {
+          name: translate('debt to central bank')
+          data: [ cbcredits.sum() ]
+          stack: translate('liabilities')
+      }, {
+          name: translate('bank deposits')
+          data: [ girals.sum() ]
+          stack: translate('liabilities')
+      }, {
+          name: translate("capital")
+          data: [ caps.sum() ]
+          stack: translate('liabilities')
+      }]
+    })
   visualize: ->
     console.log("drawing graph... #{@banks.length}")
     @clear()
     @draw_cb(@cb)
-    @drawgraph(@banks)
+    @draw_banks(@banks)
 
 iv = (val) ->
   ko.observable(val)
@@ -268,13 +320,16 @@ class Params
   # functions
   set_simulator: (sim) ->
     @simulator = sim
-    @visualizerMgr = new VisualizerMgr(sim.microeconomy)
+    @visualizerMgr = new VisualizerMgr()
     @set_viz()
+
+  reset_params: ->
+    @step(0)
 
   set_viz: ->
     @visualizerMgr.reset()
-    if @tableViz_checked() 
-      @visualizerMgr.addViz ( new TableVisualizer(@simulator.microeconomy) ) 
+    if @tableViz_checked()
+      @visualizerMgr.addViz ( new TableVisualizer(@simulator.microeconomy) )
     if @diagramViz_checked()
       @visualizerMgr.addViz( new GraphVisualizer(@simulator.microeconomy) )
   
@@ -308,8 +363,10 @@ class Params
       @autorun("off")
 
   reset_clicked: ->
-    @step(0)
+    @reset_params()
     @simulator.reset()
+    @set_viz()
+    #visualize again after resetting
     @visualizerMgr.visualize()
 
 #global objects
@@ -320,18 +377,9 @@ $ ->
   params = new Params()
   simulator = new Simulator(params)
   # show 1st simulation step after page load
-  params.reset_clicked()
+  params.visualizerMgr.visualize()
 
   #Knockout.JS specific code
   viewModel = params
   ko.applyBindings(viewModel)
 
-
-#Backlog
-# - GUI controls 
-# resetting parameters?
-# - Tilgung der Kredite?
-# - Kreditausfall? (Sicherheit pfänden?)
-# - Interbankenmarkt
-# - individuelle Bankkunden
-# - Repo Geschäfte mit SNB

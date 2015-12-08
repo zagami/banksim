@@ -1,0 +1,10 @@
+#Backlog
+
+- GUI controls im code, uebersetzen
+- resetting parameters?
+- Tilgung der Kredite?
+- Kreditausfall? (Sicherheit pfänden?)
+- Interbankenmarkt
+- individuelle Bankkunden
+- Repo Geschäfte mit SNB
+

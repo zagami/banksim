@@ -79,11 +79,11 @@
     </tr>
     <tr>
       <td class="label">Eigenkapitalvorschrift</td>
-      <td><input data-bind="value: cap_req" id="slider_lz" type="range" min="1" max="30" step="1" /> <span data-bind="text: cap_req"></span>%</td>
+      <td><input data-bind="value: cap_req" id="slider_lz" type="range" min="1" max="50" step="1" /> <span data-bind="text: cap_req"></span>%</td>
     </tr>
     <tr>
       <td class="label">Mindestreserve</td>
-      <td><input data-bind="value: minimal_reserves" id="slider_lz" type="range" min="1" max="10" step="1" /> <span data-bind="text: minimal_reserves"></span>%</td>
+      <td><input data-bind="value: minimal_reserves" id="slider_lz" type="range" min="1" max="50" step="1" /> <span data-bind="text: minimal_reserves"></span>%</td>
     </tr>
     <tr>
       <td class="label">Kreditzinsen</td>
@@ -100,6 +100,7 @@
 <div id="viz">
   <div id="graphs">
     <div id="cb_graph" class="block"style="margin: 0 auto"></div> 
+    <div id="banks_total_graph" class="block"style="margin: 0 auto"></div> 
     <div id="banks_graph" class="block" style="margin: 0 auto"></div>
   </div>
   <div id="tables">

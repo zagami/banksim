@@ -13,28 +13,40 @@ randomizeInt = function(from, to) {
   return Math.floor(from + x * Math.random());
 };
 
+if (!Array.prototype.sum) {
+  Array.prototype.sum = function() {
+    var i, s;
+    i = this.length;
+    s = 0;
+    while (i > 0) {
+      s += this[--i];
+    }
+    return s;
+  };
+}
+
 CentralBank = (function() {
   function CentralBank(banks) {
     this.banks = banks;
   }
 
   CentralBank.prototype.credits_total = function() {
-    var bank, i, len, ref, sum;
+    var bank, j, len, ref, sum;
     sum = 0;
     ref = this.banks;
-    for (i = 0, len = ref.length; i < len; i++) {
-      bank = ref[i];
-      sum += bank.credit_cb;
+    for (j = 0, len = ref.length; j < len; j++) {
+      bank = ref[j];
+      sum += bank.debt_cb;
     }
     return sum;
   };
 
   CentralBank.prototype.giro_total = function() {
-    var bank, giro, i, len, ref;
+    var bank, giro, j, len, ref;
     giro = 0;
     ref = this.banks;
-    for (i = 0, len = ref.length; i < len; i++) {
-      bank = ref[i];
+    for (j = 0, len = ref.length; j < len; j++) {
+      bank = ref[j];
       giro += bank.reserves;
     }
     return giro;
@@ -57,11 +69,11 @@ CentralBank = (function() {
   };
 
   CentralBank.prototype.M1 = function() {
-    var bank, i, len, ref, sum;
+    var bank, j, len, ref, sum;
     sum = 0;
     ref = this.banks;
-    for (i = 0, len = ref.length; i < len; i++) {
-      bank = ref[i];
+    for (j = 0, len = ref.length; j < len; j++) {
+      bank = ref[j];
       sum += bank.giral;
     }
     return sum;
@@ -78,22 +90,22 @@ CentralBank = (function() {
 Bank = (function() {
   Bank.prototype.gameover = false;
 
-  function Bank(reserves, credits, credit_cb1, giral1, capital1) {
+  function Bank(reserves, credits, debt_cb1, giral1, capital1) {
     this.reserves = reserves;
     this.credits = credits;
-    this.credit_cb = credit_cb1;
+    this.debt_cb = debt_cb1;
     this.giral = giral1;
     this.capital = capital1;
   }
 
   Bank.prototype.get_random_bank = function() {
-    var c, capital, credit_cb, giral, r;
+    var c, capital, debt_cb, giral, r;
     r = randomize(0, 100);
     c = randomize(r, 300);
-    credit_cb = r;
+    debt_cb = r;
     giral = randomize(r, c);
-    capital = r + c - giral - credit_cb;
-    return new Bank(r, c, credit_cb, giral, capital);
+    capital = r + c - giral - debt_cb;
+    return new Bank(r, c, debt_cb, giral, capital);
   };
 
   Bank.prototype.assets_total = function() {
@@ -101,7 +113,7 @@ Bank = (function() {
   };
 
   Bank.prototype.liabilities_total = function() {
-    return this.credit_cb + this.giral + this.capital;
+    return this.debt_cb + this.giral + this.capital;
   };
 
   Bank.prototype.deposit = function(amount) {
@@ -116,7 +128,7 @@ Bank = (function() {
 
   Bank.prototype.gameover = function() {
     this.gameover = true;
-    return this.reserves = this.credits = this.credit_cb = this.giral = this.capital = 0;
+    return this.reserves = this.credits = this.debt_cb = this.giral = this.capital = 0;
   };
 
   return Bank;
@@ -149,7 +161,7 @@ TrxMgr = (function() {
     } else {
       console.log("not enough funds");
       diff = amount - from.reserves;
-      from.credit_cb += diff;
+      from.debt_cb += diff;
       from.reserves += diff;
       return this.transfer(from, to, amount);
     }
@@ -165,10 +177,10 @@ TrxMgr = (function() {
   };
 
   TrxMgr.prototype.create_transactions = function() {
-    var amount, bank_src, bank_tgt, i, max_trx, ref, results, trx;
+    var amount, bank_src, bank_tgt, j, max_trx, ref, results, trx;
     max_trx = randomizeInt(1, parseInt(this.params.max_trx()));
     results = [];
-    for (trx = i = 1, ref = max_trx; 1 <= ref ? i <= ref : i >= ref; trx = 1 <= ref ? ++i : --i) {
+    for (trx = j = 1, ref = max_trx; 1 <= ref ? j <= ref : j >= ref; trx = 1 <= ref ? ++j : --j) {
       bank_src = randomizeInt(0, this.banks.length - 1);
       bank_tgt = randomizeInt(0, this.banks.length - 1);
       bank_src = this.banks[bank_src];
@@ -184,13 +196,13 @@ TrxMgr = (function() {
   };
 
   TrxMgr.prototype.pay_customer_interests = function() {
-    var bank, cr, debt_bank, debt_cust, diff, dr, i, len, ref, results;
+    var bank, cr, debt_bank, debt_cust, diff, dr, j, len, ref, results;
     cr = parseFloat(this.params.credit_interest()) / 100.0;
     dr = parseFloat(this.params.deposit_interest()) / 100.0;
     ref = this.banks;
     results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      bank = ref[i];
+    for (j = 0, len = ref.length; j < len; j++) {
+      bank = ref[j];
       debt_cust = cr * bank.giral;
       debt_bank = dr * bank.giral;
       if (bank.giral < debt_cust) {
@@ -208,11 +220,11 @@ TrxMgr = (function() {
   };
 
   TrxMgr.prototype.customer_credits = function() {
-    var amount, bank, i, len, ref, results;
+    var amount, bank, j, len, ref, results;
     ref = this.banks;
     results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      bank = ref[i];
+    for (j = 0, len = ref.length; j < len; j++) {
+      bank = ref[j];
       amount = randomizeInt(0, Math.min(bank.credits, bank.giral));
       bank.credits -= amount;
       bank.giral -= amount;
@@ -224,17 +236,17 @@ TrxMgr = (function() {
   };
 
   TrxMgr.prototype.pay_cb_interests = function() {
-    var bank, debt, i, interest, len, pr, pr_giro, ref, results;
+    var bank, debt, interest, j, len, pr, pr_giro, ref, results;
     pr = parseFloat(this.params.prime_rate()) / 100.0;
     pr_giro = parseFloat(this.params.prime_rate_giro()) / 100.0;
     ref = this.banks;
     results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      bank = ref[i];
+    for (j = 0, len = ref.length; j < len; j++) {
+      bank = ref[j];
       interest = pr_giro * bank.reserves;
       bank.reserves += interest;
       bank.capital += interest;
-      debt = pr * bank.credit_cb;
+      debt = pr * bank.debt_cb;
       if (debt > bank.reserves || debt > bank.capital) {
         console.log("debt: " + debt + ", reserves: " + bank.reserves + ", capital: " + bank.capital);
         results.push(bank.gameover());
@@ -247,15 +259,15 @@ TrxMgr = (function() {
   };
 
   TrxMgr.prototype.settle_reserves = function() {
-    var bank, diff, i, len, minimal_reserves, ref, results;
+    var bank, diff, j, len, minimal_reserves, ref, results;
     minimal_reserves = parseFloat(this.params.minimal_reserves()) / 100.0;
     ref = this.banks;
     results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      bank = ref[i];
+    for (j = 0, len = ref.length; j < len; j++) {
+      bank = ref[j];
       if (bank.reserves < bank.giral * minimal_reserves) {
         diff = bank.giral * minimal_reserves - bank.reserves;
-        bank.credit_cb += diff;
+        bank.debt_cb += diff;
         results.push(bank.reserves += diff);
       } else {
         results.push(void 0);
@@ -265,18 +277,18 @@ TrxMgr = (function() {
   };
 
   TrxMgr.prototype.settle_capital_requirement = function() {
-    var bank, cap_req, i, len, payback, ref, results, total;
+    var bank, cap_req, j, len, payback, ref, results, total;
     cap_req = parseFloat(this.params.cap_req()) / 100.0;
     ref = this.banks;
     results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      bank = ref[i];
-      total = bank.capital + bank.giral + bank.credit_cb;
+    for (j = 0, len = ref.length; j < len; j++) {
+      bank = ref[j];
+      total = bank.capital + bank.giral + bank.debt_cb;
       if (bank.capital < total * cap_req) {
-        payback = Math.min(bank.credit_cb, bank.reserves);
-        bank.credit_cb -= payback;
+        payback = Math.min(bank.debt_cb, bank.reserves);
+        bank.debt_cb -= payback;
         bank.reserves -= payback;
-        total = bank.capital + bank.giral + bank.credit_cb;
+        total = bank.capital + bank.giral + bank.debt_cb;
         if (bank.capital < total * cap_req) {
           results.push(bank.gameover());
         } else {
