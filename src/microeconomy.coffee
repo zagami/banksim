@@ -13,8 +13,14 @@ if (!Array::sum)
     s += @[--i] while i > 0
     s
 
+class Statistics
+  m0: []
+  m1: []
+  inflation: []
+
 class CentralBank
   constructor: (@banks) ->
+    @stats = new Statistics()
 
   credits_total: ->
     sum = 0
@@ -106,6 +112,8 @@ class TrxMgr
     @pay_cb_interests()
     @settle_reserves()
     @settle_capital_requirement()
+    @cb.stats.m0.push @cb.M0()
+    @cb.stats.m1.push @cb.M1()
 
   create_transactions: ->
     # creating a random number of transactions (upper limit is a parameter max_trx)

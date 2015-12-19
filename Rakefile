@@ -1,4 +1,4 @@
-task :default =>[:diagram]
+task :default => [:run]
 
 today = Time.now
 

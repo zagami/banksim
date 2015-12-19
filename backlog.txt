@@ -1,5 +1,6 @@
 #Backlog
 
+- asserts einbauen
 - GUI controls im code, uebersetzen
 - resetting parameters?
 - Tilgung der Kredite?

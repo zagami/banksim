@@ -4,7 +4,7 @@ var AUTORUN_DELAY, DICT, GraphVisualizer, LANG, NUM_BANKS, Params, Simulator, Ta
   hasProp = {}.hasOwnProperty,
   slice = [].slice;
 
-LANG = 'DE';
+LANG = 'EN';
 
 NUM_BANKS = 12;
 
@@ -247,10 +247,53 @@ GraphVisualizer = (function(superClass) {
   GraphVisualizer.prototype.clear = function() {
     $('#banks_graph').empty();
     $('#banks_total_graph').empty();
-    return $('#cb_graph').empty();
+    $('#cb_graph').empty();
+    return $('#stats_graph').empty();
   };
 
-  GraphVisualizer.prototype.draw_cb = function(cb) {
+  GraphVisualizer.prototype.draw_stats = function() {
+    return $('#stats_graph').highcharts({
+      title: {
+        text: translate("statistics")
+      },
+      xAxis: {
+        categories: []
+      },
+      yAxis: {
+        allowDecimals: false,
+        title: {
+          text: 'CHF'
+        }
+      },
+      tooltip: {
+        formatter: function() {
+          return '<b>' + this.x + '</b><br/>' + this.series.name + ': ' + this.y + '<br/>';
+        }
+      },
+      plotOptions: {
+        column: {
+          stacking: 'normal'
+        },
+        series: {
+          animation: false
+        }
+      },
+      series: [
+        {
+          name: translate('money supply M0'),
+          data: this.cb.stats.m0
+        }, {
+          name: translate('money supply M1'),
+          data: this.cb.stats.m1
+        }, {
+          name: translate('inflation'),
+          data: this.cb.stats.inflation
+        }
+      ]
+    });
+  };
+
+  GraphVisualizer.prototype.draw_cb = function() {
     return $('#cb_graph').highcharts({
       chart: {
         type: 'column'
@@ -284,7 +327,7 @@ GraphVisualizer = (function(superClass) {
       series: [
         {
           name: translate('credits to banks'),
-          data: [cb.credits_total()],
+          data: [this.cb.credits_total()],
           stack: translate('assets')
         }, {
           name: translate('stocks'),
@@ -292,64 +335,69 @@ GraphVisualizer = (function(superClass) {
           stack: translate('assets')
         }, {
           name: 'M0',
-          data: [cb.giro_total()],
+          data: [this.cb.giro_total()],
           stack: translate('liabilities')
         }, {
           name: translate("capital"),
-          data: [cb.capital()],
+          data: [this.cb.capital()],
           stack: translate('liabilities')
         }
       ]
     });
   };
 
-  GraphVisualizer.prototype.draw_banks = function(banks) {
+  GraphVisualizer.prototype.draw_banks = function() {
     var bank, caps, cbcredits, credits, girals, reserves;
     reserves = (function() {
-      var j, len, results;
+      var j, len, ref, results;
+      ref = this.banks;
       results = [];
-      for (j = 0, len = banks.length; j < len; j++) {
-        bank = banks[j];
+      for (j = 0, len = ref.length; j < len; j++) {
+        bank = ref[j];
         results.push(bank.reserves);
       }
       return results;
-    })();
+    }).call(this);
     credits = (function() {
-      var j, len, results;
+      var j, len, ref, results;
+      ref = this.banks;
       results = [];
-      for (j = 0, len = banks.length; j < len; j++) {
-        bank = banks[j];
+      for (j = 0, len = ref.length; j < len; j++) {
+        bank = ref[j];
         results.push(bank.credits);
       }
       return results;
-    })();
+    }).call(this);
     caps = (function() {
-      var j, len, results;
+      var j, len, ref, results;
+      ref = this.banks;
       results = [];
-      for (j = 0, len = banks.length; j < len; j++) {
-        bank = banks[j];
+      for (j = 0, len = ref.length; j < len; j++) {
+        bank = ref[j];
         results.push(bank.capital);
       }
       return results;
-    })();
+    }).call(this);
     cbcredits = (function() {
-      var j, len, results;
+      var j, len, ref, results;
+      ref = this.banks;
       results = [];
-      for (j = 0, len = banks.length; j < len; j++) {
-        bank = banks[j];
+      for (j = 0, len = ref.length; j < len; j++) {
+        bank = ref[j];
         results.push(bank.debt_cb);
       }
       return results;
-    })();
+    }).call(this);
     girals = (function() {
-      var j, len, results;
+      var j, len, ref, results;
+      ref = this.banks;
       results = [];
-      for (j = 0, len = banks.length; j < len; j++) {
-        bank = banks[j];
+      for (j = 0, len = ref.length; j < len; j++) {
+        bank = ref[j];
         results.push(bank.giral);
       }
       return results;
-    })();
+    }).call(this);
     $('#banks_graph').highcharts({
       chart: {
         type: 'column'
@@ -463,8 +511,9 @@ GraphVisualizer = (function(superClass) {
   GraphVisualizer.prototype.visualize = function() {
     console.log("drawing graph... " + this.banks.length);
     this.clear();
-    this.draw_cb(this.cb);
-    return this.draw_banks(this.banks);
+    this.draw_cb();
+    this.draw_stats();
+    return this.draw_banks();
   };
 
   return GraphVisualizer;

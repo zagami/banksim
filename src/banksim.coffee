@@ -1,4 +1,4 @@
-LANG = 'DE'
+LANG = 'EN'
 NUM_BANKS = 12
 
 translate = (engl_word) ->
@@ -9,6 +9,13 @@ translate = (engl_word) ->
       if engl_word == e
         return d
     console.log "TODO: translate - #{e}"
+
+assert = (condition, message) ->
+  if (!condition)
+    message = message || "Assertion failed"
+  if (typeof Error != "undefined")
+    throw new Error(message)
+  throw message
 
 DICT =
   "table": "Tabelle"
@@ -28,7 +35,7 @@ DICT =
   "credits": "Kredite"
   "credits to banks": "Kredite an Banken"
   "debt to central bank": "Schulden an ZB"
-  "bank deposits": "Giralgeld" 
+  "bank deposits": "Giralgeld"
   "total": "Total"
 
 AUTORUN_DELAY = 2000
@@ -136,7 +143,7 @@ class TableVisualizer extends Visualizer
     console.log "creating table for #{@banks.length} banks"
     @clear()
     @create_cb_table(@cb)
-    $('#banks_table').append(  '<table>' );
+    $('#banks_table').append(  '<table>' )
     $('#cb_table').append( '<caption>' + translate('banks') + '</caption>' )
     $('#banks_table').append(@create_bank_header())
     for bank in @banks
@@ -144,7 +151,6 @@ class TableVisualizer extends Visualizer
     $('#banks_table').append(  '</table>' )
 
 class GraphVisualizer extends Visualizer
-
   constructor: (@microeconomy) ->
     super
 
@@ -152,8 +158,40 @@ class GraphVisualizer extends Visualizer
     $('#banks_graph').empty()
     $('#banks_total_graph').empty()
     $('#cb_graph').empty()
+    $('#stats_graph').empty()
 
-  draw_cb: (cb) ->
+  draw_stats: ->
+    $('#stats_graph').highcharts({
+      title:
+        text: translate("statistics")
+      xAxis:
+        categories: []
+      yAxis:
+        allowDecimals: false
+        title:
+          text: 'CHF'
+      tooltip:
+          formatter: ->
+              return '<b>' + this.x + '</b><br/>' +
+                  this.series.name + ': ' + this.y + '<br/>' 
+      plotOptions:
+        column:
+          stacking: 'normal'
+        series:
+          animation: false
+      series: [{
+          name: translate('money supply M0')
+          data: @cb.stats.m0
+      }, {
+          name: translate('money supply M1')
+          data: @cb.stats.m1
+      }, {
+          name: translate('inflation')
+          data: @cb.stats.inflation
+      }]
+    })
+    
+  draw_cb: ->
     $('#cb_graph').highcharts({
       chart:
         type: 'column'
@@ -178,7 +216,7 @@ class GraphVisualizer extends Visualizer
           animation: false
       series: [{
           name: translate('credits to banks')
-          data: [cb.credits_total()]
+          data: [@cb.credits_total()]
           stack: translate('assets')
       }, {
           name: translate('stocks')
@@ -186,21 +224,21 @@ class GraphVisualizer extends Visualizer
           stack: translate('assets')
       }, {
           name: 'M0'
-          data: [cb.giro_total()]
+          data: [@cb.giro_total()]
           stack: translate('liabilities')
       }, {
           name: translate("capital")
-          data: [cb.capital()]
+          data: [@cb.capital()]
           stack: translate('liabilities')
       }]
     })
 
-  draw_banks: (banks) ->
-    reserves = (bank.reserves for bank in banks)
-    credits = (bank.credits for bank in banks)
-    caps = (bank.capital for bank in banks)
-    cbcredits = (bank.debt_cb for bank in banks)
-    girals = (bank.giral for bank in banks)
+  draw_banks: ->
+    reserves = (bank.reserves for bank in @banks)
+    credits = (bank.credits for bank in @banks)
+    caps = (bank.capital for bank in @banks)
+    cbcredits = (bank.debt_cb for bank in @banks)
+    girals = (bank.giral for bank in @banks)
     $('#banks_graph').highcharts({
       chart:
         type: 'column'
@@ -290,11 +328,13 @@ class GraphVisualizer extends Visualizer
           stack: translate('liabilities')
       }]
     })
+
   visualize: ->
     console.log("drawing graph... #{@banks.length}")
     @clear()
-    @draw_cb(@cb)
-    @draw_banks(@banks)
+    @draw_cb()
+    @draw_stats()
+    @draw_banks()
 
 iv = (val) ->
   ko.observable(val)
