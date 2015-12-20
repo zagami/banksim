@@ -156,6 +156,7 @@ TableVisualizer = (function(superClass) {
   TableVisualizer.prototype.clear = function() {
     TableVisualizer.__super__.clear.apply(this, arguments);
     $('#cb_table').empty();
+    $('#ms_table').empty();
     return $('#banks_table').empty();
   };
 
@@ -170,59 +171,51 @@ TableVisualizer = (function(superClass) {
     return tr += '</tr>';
   };
 
+  TableVisualizer.prototype.create_header = function() {
+    var entries, entry, j, len, tr;
+    entries = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+    tr = '<tr>';
+    for (j = 0, len = entries.length; j < len; j++) {
+      entry = entries[j];
+      tr += '<th>' + entry + '</th>';
+    }
+    return tr += '</tr>';
+  };
+
   TableVisualizer.prototype.create_cb_table = function(cb) {
-    var row, row_1, row_2, row_3, row_h;
+    var row_1, row_2, row_3, row_h;
     $('#cb_table').append('<table>');
     $('#cb_table').append('<caption>' + translate('central bank') + '</caption>');
-    row_h = this.create_row(translate('assets'), '', translate('liabilities'), '');
+    row_h = this.create_header(translate('assets'), '', translate('liabilities'), '');
     row_1 = this.create_row('Forderungen an Banken', cb.credits_total().toFixed(2), 'ZB Giralgeld', cb.giro_total().toFixed(2));
     row_2 = this.create_row(translate('stocks'), '0', translate('capital'), cb.capital().toFixed(2));
     row_3 = this.create_row(translate('total'), cb.assets_total().toFixed(2), '', cb.liabilities_total().toFixed(2));
     $('#cb_table').append(row_h).append(row_1).append(row_2).append(row_3);
-    $('#cb_table').append('</table>');
-    $('#cb_table').append('<h3>' + translate('statistics') + '</h3>');
-    $('#cb_table').append('<table>');
-    row_h = this.create_row(translate('money supply'), 'M0', 'M1', 'M2');
-    row = this.create_row('', cb.M0().toFixed(2), cb.M1().toFixed(2), cb.M2().toFixed(2));
-    $('#cb_table').append('<table>').append(row_h).append(row);
     return $('#cb_table').append('</table>');
   };
 
+  TableVisualizer.prototype.create_ms_table = function(cb) {
+    var row, row_h;
+    $('#ms_table').append('<table>');
+    $('#ms_table').append('<caption>' + translate('money supply') + '</caption>');
+    row_h = this.create_header('M0', 'M1', 'M2');
+    row = this.create_row(cb.M0().toFixed(2), cb.M1().toFixed(2), cb.M2().toFixed(2));
+    $('#ms_table').append(row_h).append(row);
+    return $('#ms_table').append('</table>');
+  };
+
   TableVisualizer.prototype.create_bank_header = function() {
-    var th;
-    th = '<tr>';
-    th += '<th>' + translate("reserves") + '</th>';
-    th += '<th>' + translate('credits') + '</th>';
-    th += '<th>' + translate('debt to central bank') + '</th>';
-    th += '<th>' + translate('bank deposits') + '</th>';
-    th += '<th>' + translate("capital") + '</th>';
-    th += '<th>' + translate("assets") + '</th>';
-    th += '<th>' + translate("liabilities") + '</th>';
-    th += '</tr>';
-    return th;
+    return this.create_header(translate("reserves"), translate('credits'), translate('debt to central bank'), translate('bank deposits'), translate("capital"), translate("assets"), translate("liabilities"));
   };
 
   TableVisualizer.prototype.create_bank_row = function(bank) {
-    var tr;
-    tr = '<tr>';
-    tr += '<td>' + bank.reserves.toFixed(2) + '</td>';
-    tr += '<td>' + bank.credits.toFixed(2) + '</td>';
-    tr += '<td>' + bank.debt_cb.toFixed(2) + '</td>';
-    tr += '<td>' + bank.giral.toFixed(2) + '</td>';
-    tr += '<td>' + bank.capital.toFixed(2) + '</td>';
-    tr += '<td>' + bank.assets_total().toFixed(2) + '</td>';
-    tr += '<td>' + bank.liabilities_total().toFixed(2) + '</td>';
-    tr += '</tr>';
-    return tr;
+    return this.create_row(bank.reserves.toFixed(2), bank.credits.toFixed(2), bank.debt_cb.toFixed(2), bank.giral.toFixed(2), bank.capital.toFixed(2), bank.assets_total().toFixed(2), bank.liabilities_total().toFixed(2));
   };
 
-  TableVisualizer.prototype.visualize = function() {
+  TableVisualizer.prototype.create_banks_table = function(banks) {
     var bank, j, len, ref;
-    console.log("creating table for " + this.banks.length + " banks");
-    this.clear();
-    this.create_cb_table(this.cb);
     $('#banks_table').append('<table>');
-    $('#cb_table').append('<caption>' + translate('banks') + '</caption>');
+    $('#banks_table').append('<caption>' + translate('banks') + '</caption>');
     $('#banks_table').append(this.create_bank_header());
     ref = this.banks;
     for (j = 0, len = ref.length; j < len; j++) {
@@ -230,6 +223,13 @@ TableVisualizer = (function(superClass) {
       $('#banks_table').append(this.create_bank_row(bank));
     }
     return $('#banks_table').append('</table>');
+  };
+
+  TableVisualizer.prototype.visualize = function() {
+    this.clear();
+    this.create_cb_table(this.cb);
+    this.create_ms_table(this.cb);
+    return this.create_banks_table(this.banks);
   };
 
   return TableVisualizer;
@@ -252,9 +252,9 @@ GraphVisualizer = (function(superClass) {
   };
 
   GraphVisualizer.prototype.draw_stats = function() {
-    return $('#stats_graph').highcharts({
+    $('#stats_graph1').highcharts({
       title: {
-        text: translate("statistics")
+        text: translate("money supply")
       },
       xAxis: {
         categories: []
@@ -285,9 +285,42 @@ GraphVisualizer = (function(superClass) {
         }, {
           name: translate('money supply M1'),
           data: this.cb.stats.m1
+        }
+      ]
+    });
+    return $('#stats_graph2').highcharts({
+      title: {
+        text: translate("inflation")
+      },
+      xAxis: {
+        categories: []
+      },
+      yAxis: {
+        allowDecimals: false,
+        title: {
+          text: '%'
+        }
+      },
+      tooltip: {
+        formatter: function() {
+          return '<b>' + this.x + '</b><br/>' + this.series.name + ': ' + this.y + '<br/>';
+        }
+      },
+      plotOptions: {
+        column: {
+          stacking: 'normal'
+        },
+        series: {
+          animation: false
+        }
+      },
+      series: [
+        {
+          name: translate('inflation M0'),
+          data: this.cb.stats.inflation_m0
         }, {
-          name: translate('inflation'),
-          data: this.cb.stats.inflation
+          name: translate('inflation M1'),
+          data: this.cb.stats.inflation_m1
         }
       ]
     });

@@ -1,5 +1,4 @@
 body {
-  background-color: #51D1A0;
 }
 
 #left {
@@ -9,43 +8,36 @@ body {
 }
 
 #controls {
-  background-color: #6FFFA2;
   padding: 10px;
 }
 
 #params {
-  background-color: #3FFFA2;
   padding: 10px;
 }
 
 #viz {
-  background-color: #6FFFA2;
-  float: left;
   padding: 20px;
 }
 
 .block {
-  max-width: 800px;
+  max-width: 400px;
+  float:left;
   padding: 20px;
 }
 
 #graphs {
-  width: 400px;
-  float: left;
   padding: 20px;
 }
 
 #tables {
-  float: left;
   padding: 20px;
+  float:clear;
 }
 
 #cb_table {
-  background-color: lightblue;
 }
 
 #banks_table {
-  background-color: orange;
   padding-top: 30px;
 }
 
@@ -66,11 +58,4 @@ th {
     text-align: left;
     padding-top: 5px;
     padding-bottom: 4px;
-    background-color: #A7C942;
-    color: #ffffff;
-}
-
-tr.alt td {
-    color: #000000;
-    background-color: #EAF2D3;
 }

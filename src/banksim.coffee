@@ -10,13 +10,6 @@ translate = (engl_word) ->
         return d
     console.log "TODO: translate - #{e}"
 
-assert = (condition, message) ->
-  if (!condition)
-    message = message || "Assertion failed"
-  if (typeof Error != "undefined")
-    throw new Error(message)
-  throw message
-
 DICT =
   "table": "Tabelle"
   "diagram": "Diagramm"
@@ -88,6 +81,7 @@ class TableVisualizer extends Visualizer
   clear: ->
     super
     $('#cb_table').empty()
+    $('#ms_table').empty()
     $('#banks_table').empty()
 
   create_row: (entries...) ->
@@ -95,60 +89,97 @@ class TableVisualizer extends Visualizer
     tr += '<td>' + entry + '</td>' for entry in entries
     tr +='</tr>'
 
+  create_header: (entries...) ->
+    tr = '<tr>'
+    tr += '<th>' + entry + '</th>' for entry in entries
+    tr +='</tr>'
+
   create_cb_table: (cb) ->
     # balance sheet of central bank
     $('#cb_table').append( '<table>' )
     $('#cb_table').append( '<caption>' + translate('central bank') + '</caption>' )
-    row_h = @create_row(translate('assets'), '', translate('liabilities'), '')
-    row_1 = @create_row('Forderungen an Banken', cb.credits_total().toFixed(2), 'ZB Giralgeld', cb.giro_total().toFixed(2) )
-    row_2 = @create_row(translate('stocks'), '0', translate('capital'), cb.capital().toFixed(2))
-    row_3 = @create_row(translate('total'), cb.assets_total().toFixed(2), '', cb.liabilities_total().toFixed(2)) 
+
+    row_h = @create_header(
+      translate('assets'),
+      '',
+      translate('liabilities'),
+      ''
+    )
+
+    row_1 = @create_row(
+      'Forderungen an Banken',
+      cb.credits_total().toFixed(2),
+      'ZB Giralgeld',
+      cb.giro_total().toFixed(2)
+    )
+
+    row_2 = @create_row(
+      translate('stocks'),
+      '0',
+      translate('capital'),
+      cb.capital().toFixed(2)
+    )
+
+    row_3 = @create_row(
+      translate('total'),
+      cb.assets_total().toFixed(2),
+      '',
+      cb.liabilities_total().toFixed(2)
+    )
     
     $('#cb_table').append(row_h).append(row_1).append(row_2).append(row_3)
-    $('#cb_table').append(  '</table>' )
+    $('#cb_table').append('</table>')
 
+  create_ms_table: (cb) ->
     # money supply
-    $('#cb_table').append('<h3>'+translate('statistics') + '</h3>')
-    $('#cb_table').append(  '<table>' )
-    row_h = @create_row(translate('money supply'), 'M0', 'M1', 'M2')
-    row = @create_row('', cb.M0().toFixed(2), cb.M1().toFixed(2), cb.M2().toFixed(2))
-    $('#cb_table').append(  '<table>' ).append(row_h).append(row)
-    $('#cb_table').append('</table>' )
+    $('#ms_table').append('<table>')
+    $('#ms_table').append( '<caption>' + translate('money supply') + '</caption>' )
+    row_h = @create_header(
+      'M0',
+      'M1',
+      'M2'
+    )
+    row = @create_row(
+      cb.M0().toFixed(2),
+      cb.M1().toFixed(2),
+      cb.M2().toFixed(2)
+    )
+    $('#ms_table').append(row_h).append(row)
+    $('#ms_table').append('</table>' )
 
   create_bank_header: ->
-    th = '<tr>'
-    th += '<th>' + translate("reserves")  + '</th>'
-    th += '<th>' + translate('credits')  + '</th>'
-    th += '<th>' + translate('debt to central bank')  + '</th>'
-    th += '<th>' + translate('bank deposits')  + '</th>'
-    th += '<th>' + translate("capital")  + '</th>'
-    th += '<th>' + translate("assets")  + '</th>'
-    th += '<th>' + translate("liabilities")  + '</th>'
-    th += '</tr>'
-    th
+    @create_header(
+      translate("reserves"),
+      translate('credits'),
+      translate('debt to central bank'),
+      translate('bank deposits'),
+      translate("capital"),
+      translate("assets"),
+      translate("liabilities"))
 
   create_bank_row: (bank) ->
-    tr = '<tr>'
-    tr += '<td>' + bank.reserves.toFixed(2)  + '</td>'
-    tr += '<td>' + bank.credits.toFixed(2) + '</td>'
-    tr += '<td>' + bank.debt_cb.toFixed(2) + '</td>'
-    tr += '<td>' + bank.giral.toFixed(2)  + '</td>'
-    tr += '<td>' + bank.capital.toFixed(2)  + '</td>'
-    tr += '<td>' + bank.assets_total().toFixed(2)  + '</td>'
-    tr += '<td>' + bank.liabilities_total().toFixed(2)  + '</td>'
-    tr +='</tr>'
-    tr
+    @create_row(
+      bank.reserves.toFixed(2),
+      bank.credits.toFixed(2),
+      bank.debt_cb.toFixed(2),
+      bank.giral.toFixed(2),
+      bank.capital.toFixed(2),
+      bank.assets_total().toFixed(2),
+      bank.liabilities_total().toFixed(2))
 
-  visualize: ->
-    console.log "creating table for #{@banks.length} banks"
-    @clear()
-    @create_cb_table(@cb)
-    $('#banks_table').append(  '<table>' )
-    $('#cb_table').append( '<caption>' + translate('banks') + '</caption>' )
+  create_banks_table: (banks) ->
+    $('#banks_table').append( '<table>' )
+    $('#banks_table').append( '<caption>' + translate('banks') + '</caption>' )
     $('#banks_table').append(@create_bank_header())
     for bank in @banks
       $('#banks_table').append(@create_bank_row(bank))
     $('#banks_table').append(  '</table>' )
+
+  visualize: ->
+    @clear()
+    @create_cb_table(@cb)
+    @create_ms_table(@cb)
+    @create_banks_table(@banks)
 
 class GraphVisualizer extends Visualizer
   constructor: (@microeconomy) ->
@@ -161,9 +192,9 @@ class GraphVisualizer extends Visualizer
     $('#stats_graph').empty()
 
   draw_stats: ->
-    $('#stats_graph').highcharts({
+    $('#stats_graph1').highcharts({
       title:
-        text: translate("statistics")
+        text: translate("money supply")
       xAxis:
         categories: []
       yAxis:
@@ -185,12 +216,35 @@ class GraphVisualizer extends Visualizer
       }, {
           name: translate('money supply M1')
           data: @cb.stats.m1
-      }, {
-          name: translate('inflation')
-          data: @cb.stats.inflation
       }]
     })
     
+    $('#stats_graph2').highcharts({
+      title:
+        text: translate("inflation")
+      xAxis:
+        categories: []
+      yAxis:
+        allowDecimals: false
+        title:
+          text: '%'
+      tooltip:
+          formatter: ->
+              return '<b>' + this.x + '</b><br/>' +
+                  this.series.name + ': ' + this.y + '<br/>' 
+      plotOptions:
+        column:
+          stacking: 'normal'
+        series:
+          animation: false
+      series: [{
+          name: translate('inflation M0')
+          data: @cb.stats.inflation_m0
+      }, {
+          name: translate('inflation M1')
+          data: @cb.stats.inflation_m1
+      }]
+    })
   draw_cb: ->
     $('#cb_graph').highcharts({
       chart:
@@ -397,7 +451,7 @@ class Params
   autorun_clicked: ->
     if @autorun() is "off"
       @autorun('on')
-      @autorun_id = setInterval("params.simulate_clicked()", AUTORUN_DELAY) 
+      @autorun_id = setInterval("params.simulate_clicked()", AUTORUN_DELAY)
     else
       clearInterval(@autorun_id)
       @autorun("off")

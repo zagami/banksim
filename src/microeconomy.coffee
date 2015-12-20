@@ -1,3 +1,10 @@
+assert = (condition, message) ->
+  if (!condition)
+    message = message || "Assertion failed"
+  if (typeof Error != "undefined")
+    throw new Error(message)
+  throw message
+
 randomize = (from, to) ->
   x = to - from
   parseFloat(from + x * Math.random())
@@ -16,7 +23,8 @@ if (!Array::sum)
 class Statistics
   m0: []
   m1: []
-  inflation: []
+  inflation_m0: []
+  inflation_m1: []
 
 class CentralBank
   constructor: (@banks) ->
@@ -87,6 +95,7 @@ class MicroEconomy
   constructor: (@cb, @banks) ->
 
 class TrxMgr
+
   constructor: (@params, @microeconomy) ->
     @banks = @microeconomy.banks
     @cb = @microeconomy.cb
@@ -112,9 +121,17 @@ class TrxMgr
     @pay_cb_interests()
     @settle_reserves()
     @settle_capital_requirement()
+    @make_statistics()
+
+  make_statistics: ->
     @cb.stats.m0.push @cb.M0()
     @cb.stats.m1.push @cb.M1()
-
+    len = @cb.stats.m1.length
+    if len > 1
+      infl_m0 = (@cb.stats.m0[len-1] / @cb.stats.m0[len-2] - 1)*100
+      @cb.stats.inflation_m0.push infl_m0
+      infl_m1 = (@cb.stats.m1[len-1] / @cb.stats.m1[len-2] - 1)*100
+      @cb.stats.inflation_m1.push infl_m1
   create_transactions: ->
     # creating a random number of transactions (upper limit is a parameter max_trx)
     # the amounts transferred are randomly chosen based on reserves of bank??
