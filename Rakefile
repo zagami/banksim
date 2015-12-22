@@ -18,6 +18,11 @@ task :run do
 	`open index.html`
 end
 
+desc "generate coffeetags"
+task :coffeetags do
+	`coffeetags -f tags src/*.coffee`
+end
+
 
 desc "Printing the time"
 task :time do

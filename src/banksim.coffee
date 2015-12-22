@@ -1,5 +1,7 @@
 LANG = 'EN'
-NUM_BANKS = 12
+NUM_BANKS = 30
+CHART_WIDTH = 400
+INFLATION_HIST = 20 #data points of inflation graph
 
 translate = (engl_word) ->
   if LANG == 'EN'
@@ -149,30 +151,36 @@ class TableVisualizer extends Visualizer
 
   create_bank_header: ->
     @create_header(
+      '',
       translate("reserves"),
       translate('credits'),
       translate('debt to central bank'),
       translate('bank deposits'),
       translate("capital"),
       translate("assets"),
-      translate("liabilities"))
+      translate("liabilities")
+    )
 
-  create_bank_row: (bank) ->
+  create_bank_row: (id, bank) ->
     @create_row(
+      id,
       bank.reserves.toFixed(2),
       bank.credits.toFixed(2),
       bank.debt_cb.toFixed(2),
       bank.giral.toFixed(2),
       bank.capital.toFixed(2),
       bank.assets_total().toFixed(2),
-      bank.liabilities_total().toFixed(2))
+      bank.liabilities_total().toFixed(2)
+    )
 
   create_banks_table: (banks) ->
     $('#banks_table').append( '<table>' )
     $('#banks_table').append( '<caption>' + translate('banks') + '</caption>' )
     $('#banks_table').append(@create_bank_header())
+    i = 0
     for bank in @banks
-      $('#banks_table').append(@create_bank_row(bank))
+      $('#banks_table').append(@create_bank_row(i, bank))
+      i += 1
     $('#banks_table').append(  '</table>' )
 
   visualize: ->
@@ -193,6 +201,8 @@ class GraphVisualizer extends Visualizer
 
   draw_stats: ->
     $('#stats_graph1').highcharts({
+      chart:
+        width: CHART_WIDTH
       title:
         text: translate("money supply")
       xAxis:
@@ -220,6 +230,8 @@ class GraphVisualizer extends Visualizer
     })
     
     $('#stats_graph2').highcharts({
+      chart:
+        width: CHART_WIDTH
       title:
         text: translate("inflation")
       xAxis:
@@ -239,16 +251,19 @@ class GraphVisualizer extends Visualizer
           animation: false
       series: [{
           name: translate('inflation M0')
-          data: @cb.stats.inflation_m0
+          data: @cb.stats.inflation_m0[-INFLATION_HIST..]
       }, {
           name: translate('inflation M1')
-          data: @cb.stats.inflation_m1
+          data: @cb.stats.inflation_m1[-INFLATION_HIST..]
       }]
     })
+
+
   draw_cb: ->
     $('#cb_graph').highcharts({
       chart:
         type: 'column'
+        width: CHART_WIDTH
       title:
         text: translate("central bank")
       xAxis:
@@ -296,6 +311,7 @@ class GraphVisualizer extends Visualizer
     $('#banks_graph').highcharts({
       chart:
         type: 'column'
+        width: CHART_WIDTH
       title:
         text: translate('banks')
       xAxis:
@@ -338,9 +354,42 @@ class GraphVisualizer extends Visualizer
       }]
     })
 
+    $('#banks_graph2').highcharts({
+      chart:
+        type: 'column'
+        width: CHART_WIDTH
+      title:
+        text: translate("central bank deposits")
+      xAxis:
+        categories: []
+      yAxis:
+        allowDecimals: false
+        title:
+          text: '%'
+      tooltip:
+          formatter: ->
+              return '<b>' + this.x + '</b><br/>' +
+                  this.series.name + ': ' + this.y + '<br/>' 
+      plotOptions:
+        column:
+          stacking: 'normal'
+        series:
+          animation: false
+      series: [{
+          name: translate('central bank deposits')
+          data: reserves
+          stack: '1'
+      }, {
+          name: translate('central bank debt')
+          data: cbcredits
+          stack: '2'
+      }]
+    })
+
     $('#banks_total_graph').highcharts({
       chart:
         type: 'column'
+        width: CHART_WIDTH
       title:
         text: translate('banks consolidated')
       xAxis:
@@ -384,7 +433,6 @@ class GraphVisualizer extends Visualizer
     })
 
   visualize: ->
-    console.log("drawing graph... #{@banks.length}")
     @clear()
     @draw_cb()
     @draw_stats()
@@ -397,18 +445,18 @@ class Params
   # Simulator Control
   step: iv(0)
   yearsPerStep: iv(1)
-  autorun: iv("off")
+  autorun: iv(false)
   autorun_id: 0
   tableViz_checked: iv(true)
   diagramViz_checked: iv(true)
 
   # Microeconomy
   max_trx: iv(50)  # max nr of trx per year
-  prime_rate: iv(3)  # prime rate paid by banks for central bank credits
+  prime_rate: iv(2)  # prime rate paid by banks for central bank credits
   prime_rate_giro: iv(1) # prime rate paid by central bank to banks for deposits
   cap_req: iv(8)  #capital requirements in percent (leverage ratio)
   minimal_reserves: iv(5)  # reserve requirements for banks
-  credit_interest: iv(6)
+  credit_interest: iv(3)
   deposit_interest: iv(2)
   
   # functions
@@ -449,12 +497,13 @@ class Params
     @visualizerMgr.visualize()
 
   autorun_clicked: ->
-    if @autorun() is "off"
-      @autorun('on')
+    if not @autorun() 
+      @autorun(true)
       @autorun_id = setInterval("params.simulate_clicked()", AUTORUN_DELAY)
     else
       clearInterval(@autorun_id)
-      @autorun("off")
+      @autorun(false)
+    return true # needed by knockout
 
   reset_clicked: ->
     @reset_params()

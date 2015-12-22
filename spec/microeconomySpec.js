@@ -5,9 +5,15 @@ test = {};
 
 describe("Bank", function() {
   beforeEach(function() {
-    return test.bank = 234;
+    return test.bank = Bank.prototype.get_random_bank();
   });
-  return it("dummy test", function() {
+  it("dummy test", function() {
     return expect(true).toBe(true);
+  });
+  return it("should return the right credit potential", function() {
+    var b, limit;
+    b = new Bank(1, 2, 1, 1, 1);
+    limit = b.compute_credit_potential(0.1, 0.1);
+    return expect(limit).toBeCloseTo(7, 4);
   });
 });

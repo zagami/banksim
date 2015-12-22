@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  
+ <!--JS Libraries -->
   <!-- jQuery -->
   <script src="https://code.jquery.com/jquery-2.1.4.js"></script>
 
@@ -43,7 +43,8 @@
     </tr>
     <tr>
       <td class="label">Autorun</td>
-      <td><button  data-bind='text: autorun, click: autorun_clicked'></button></td>
+      <!--<td><button  data-bind='text: autorun, click: autorun_clicked'></button></td>-->
+      <td><input type="checkbox" id="autorun_chk" data-bind="checked: autorun, click: autorun_clicked"> </td>
     </tr>
     <tr>
       <td class="label">Visualisierung</td>
@@ -66,33 +67,35 @@
   <table>
     <tr>
       <td class="label">Max Transaktionen pro Jahr</td>
-      <td><input type="number" data-bind="value:max_trx" name="max_trx" min="1" max="10"></td>
+      <!--<td><input type="number" data-bind="value:max_trx" name="max_trx" min="1" max="1000"></td>-->
+      <td><input type="range" id="foo"  min="1" max="1000" step="5" data-bind="value: max_trx"/><span data-bind="text: max_trx"></td>
     </tr>
     <tr>
       <td class="label">Leitzins: ZB Kredite</td>
-      <td><input data-bind="value: prime_rate" id="slider_lz" type="range" min="1" max="10" step="1" /> <span data-bind="text: prime_rate"></span>%</td>
+      <td><input data-bind="value: prime_rate" id="slider_lz" type="range" min="0" max="15" step="0.1" /> <span data-bind="text: prime_rate"></span>%</td>
     </tr>
 
     <tr>
       <td class="label">Leitzins: ZB Konten</td>
-      <td><input data-bind="value: prime_rate_giro" id="slider_lz" type="range" min="-15" max="15" step="1" /> <span data-bind="text: prime_rate_giro"></span>%</td>
+      <td><input data-bind="value: prime_rate_giro" id="slider_lz" type="range" min="-15" max="15" step="0.1" /> <span data-bind="text: prime_rate_giro"></span>%</td>
     </tr>
     <tr>
       <td class="label">Eigenkapitalvorschrift</td>
-      <td><input data-bind="value: cap_req" id="slider_lz" type="range" min="1" max="50" step="1" /> <span data-bind="text: cap_req"></span>%</td>
+      <td><input data-bind="value: cap_req" id="slider_lz" type="range" min="0" max="50" step="1" /> <span data-bind="text: cap_req"></span>%</td>
     </tr>
     <tr>
       <td class="label">Mindestreserve</td>
-      <td><input data-bind="value: minimal_reserves" id="slider_lz" type="range" min="1" max="50" step="1" /> <span data-bind="text: minimal_reserves"></span>%</td>
+      <td><input data-bind="value: minimal_reserves" id="slider_lz" type="range" min="0" max="50" step="1" /> <span data-bind="text: minimal_reserves"></span>%</td>
     </tr>
     <tr>
       <td class="label">Kreditzinsen</td>
-      <td><input data-bind="value: credit_interest" id="slider_lz" type="range" min="1" max="10" step="1" /> <span data-bind="text: credit_interest"></span>%</td>
+      <td><input data-bind="value: credit_interest" id="slider_lz" type="range" min="0" max="10" step="0.1" /> <span data-bind="text: credit_interest"></span>%</td>
     </tr>
     <tr>
       <td class="label">Guthabenszinsen</td>
-      <td><input data-bind="value: deposit_interest" id="slider_lz" type="range" min="1" max="10" step="1" /> <span data-bind="text: deposit_interest"></span>%</td>
+      <td><input data-bind="value: deposit_interest" id="slider_lz" type="range" min="0" max="10" step="0.1" /> <span data-bind="text: deposit_interest"></span>%</td>
     </tr>
+
   </table>
 </div>
 </div>
@@ -104,6 +107,7 @@
     <div id="stats_graph1" class="block" style="margin: 0 auto"></div>
     <div id="stats_graph2" class="block" style="margin: 0 auto"></div>
     <div id="banks_graph" class="block" style="margin: 0 auto"></div>
+    <div id="banks_graph2" class="block" style="margin: 0 auto"></div>
   </div>
 
   <div id="tables">
@@ -143,13 +147,33 @@
 ## Assuptions of the simulation
 - There is 1 central bank
 - There is a fixed number of banks
+- The simulation runs year by year. For every year, the following steps will be performed:
+  * a random number of transactions is performed:
+    - the upper limit of the number of transactions can be set as a parameter
+    - the amount of each transaction is random as well, its upper limit is the amount of bank deposits
+    - if a bank has not enough reserves to make the transaction it can take a loan from the central bank first
+    - interbank credits are not implemented yet
+    - for every transaction 2 random banks are chosen  
+
 - A bank can go bankrupt if...
     * the capital requirements cannot be met
     * the minimal reserves requirements cannot be fulfilled
-- A bank that is bankrupt is out of the game
-- The debts of the bank to the central bank or to customers is lost if it goes bankrupt
+    * A bank that is bankrupt is out of the game
+
+- The debts of the bank to the central bank or to customers is lost if it goes bankrupt, the money supply shrinks accordingly
+
+- minimal reserves requirements are in relation to the customer deposits, not central bank debt or interbank debt
+- capital requirements are in relation to all liabilities (leverage ratio), not as in BASEL II only to a subset of risky assets
+
+- custumers pay back their loans every year:
+  * the amount is random, the upper limit is of course the bank deposits
+
+- custumers are taking loans every year:
+  * the amount is random with an upper limit based on the credit potential of the bank. This potential is computed according to the reserves and the capital of the bank. 
+
 </xmp>
 
 <script src="http://strapdownjs.com/v/0.2/strapdown.js"></script>
+<!-- <script type="text/javascript" src="lib/strapdown.js"></script> -->
 </body>
 </html>
