@@ -2,6 +2,7 @@ LANG = 'EN'
 NUM_BANKS = 30
 CHART_WIDTH = 400
 INFLATION_HIST = 20 #data points of inflation graph
+AUTORUN_DELAY = 2000
 
 translate = (engl_word) ->
   if LANG == 'EN'
@@ -32,8 +33,6 @@ DICT =
   "debt to central bank": "Schulden an ZB"
   "bank deposits": "Giralgeld"
   "total": "Total"
-
-AUTORUN_DELAY = 2000
 
 class Simulator
   init: ->
@@ -308,6 +307,9 @@ class GraphVisualizer extends Visualizer
     caps = (bank.capital for bank in @banks)
     cbcredits = (bank.debt_cb for bank in @banks)
     girals = (bank.giral for bank in @banks)
+    interbank_credits = (bank.get_interbank_credits() for bank in @banks)
+    interbank_debts = (bank.get_interbank_debt() for bank in @banks)
+
     $('#banks_graph').highcharts({
       chart:
         type: 'column'
@@ -336,12 +338,20 @@ class GraphVisualizer extends Visualizer
           data: reserves
           stack: translate('assets')
       }, {
+          name: translate('interbank credits')
+          data: interbank_credits
+          stack: translate('assets')
+      }, {
           name: translate('credits')
           data: credits
           stack: translate('assets')
       }, {
           name: translate('debt to central bank')
           data: cbcredits
+          stack: translate('liabilities')
+      }, {
+          name: translate('interbank debt')
+          data: interbank_debts
           stack: translate('liabilities')
       }, {
           name: translate('bank deposits') 
@@ -383,6 +393,10 @@ class GraphVisualizer extends Visualizer
           name: translate('central bank debt')
           data: cbcredits
           stack: '2'
+      }, {
+          name: translate('interbank debt')
+          data: interbank_debts
+          stack: '3'
       }]
     })
 

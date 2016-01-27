@@ -393,7 +393,7 @@ GraphVisualizer = (function(superClass) {
   };
 
   GraphVisualizer.prototype.draw_banks = function() {
-    var bank, caps, cbcredits, credits, girals, reserves;
+    var bank, caps, cbcredits, credits, girals, interbank_credits, interbank_debts, reserves;
     reserves = (function() {
       var j, len, ref, results;
       ref = this.banks;
@@ -444,6 +444,26 @@ GraphVisualizer = (function(superClass) {
       }
       return results;
     }).call(this);
+    interbank_credits = (function() {
+      var j, len, ref, results;
+      ref = this.banks;
+      results = [];
+      for (j = 0, len = ref.length; j < len; j++) {
+        bank = ref[j];
+        results.push(bank.get_interbank_credits());
+      }
+      return results;
+    }).call(this);
+    interbank_debts = (function() {
+      var j, len, ref, results;
+      ref = this.banks;
+      results = [];
+      for (j = 0, len = ref.length; j < len; j++) {
+        bank = ref[j];
+        results.push(bank.get_interbank_debt());
+      }
+      return results;
+    }).call(this);
     $('#banks_graph').highcharts({
       chart: {
         type: 'column',
@@ -481,12 +501,20 @@ GraphVisualizer = (function(superClass) {
           data: reserves,
           stack: translate('assets')
         }, {
+          name: translate('interbank credits'),
+          data: interbank_credits,
+          stack: translate('assets')
+        }, {
           name: translate('credits'),
           data: credits,
           stack: translate('assets')
         }, {
           name: translate('debt to central bank'),
           data: cbcredits,
+          stack: translate('liabilities')
+        }, {
+          name: translate('interbank debt'),
+          data: interbank_debts,
           stack: translate('liabilities')
         }, {
           name: translate('bank deposits'),
@@ -538,6 +566,10 @@ GraphVisualizer = (function(superClass) {
           name: translate('central bank debt'),
           data: cbcredits,
           stack: '2'
+        }, {
+          name: translate('interbank debt'),
+          data: interbank_debts,
+          stack: '3'
         }
       ]
     });

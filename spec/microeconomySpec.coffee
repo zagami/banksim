@@ -13,4 +13,12 @@ describe "Bank", ->
     limit = b.compute_credit_potential(0.1, 0.1)
     expect(limit).toBeCloseTo(7, 4)
 
+  it "shoud return interbank credits", ->
+    a = Bank::get_random_bank()
+    b = Bank::get_random_bank()
+    expect(b.get_interbank_credits()).toBe(0)
+    b.give_interbank_credit(a, 100)
+    expect(a.interbank).not.toEqual(b.interbank)
+    expect(b.get_interbank_credits()).toBe(100)
+    expect(a.get_interbank_debt()).toBe(100)
 

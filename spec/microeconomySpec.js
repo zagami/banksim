@@ -10,10 +10,20 @@ describe("Bank", function() {
   it("dummy test", function() {
     return expect(true).toBe(true);
   });
-  return it("should return the right credit potential", function() {
+  it("should return the right credit potential", function() {
     var b, limit;
     b = new Bank(1, 2, 1, 1, 1);
     limit = b.compute_credit_potential(0.1, 0.1);
     return expect(limit).toBeCloseTo(7, 4);
+  });
+  return it("shoud return interbank credits", function() {
+    var a, b;
+    a = Bank.prototype.get_random_bank();
+    b = Bank.prototype.get_random_bank();
+    expect(b.get_interbank_credits()).toBe(0);
+    b.give_interbank_credit(a, 100);
+    expect(a.interbank).not.toEqual(b.interbank);
+    expect(b.get_interbank_credits()).toBe(100);
+    return expect(a.get_interbank_debt()).toBe(100);
   });
 });

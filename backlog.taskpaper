@@ -1,7 +1,8 @@
-#Backlog
+Backlog:
 
 - asserts einbauen
 - GUI controls im code, uebersetzen
+- GUI Builder class
 - resetting parameters?
 - Tilgung der Kredite?
 - Kreditausfall? (Sicherheit pfänden?)
@@ -9,3 +10,7 @@
 - individuelle Bankkunden
 - Repo Geschäfte mit SNB
 
+DevTools:
+	- quick file switch plugin?
+	- bookmarks after restart?
+	- 

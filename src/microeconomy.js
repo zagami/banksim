@@ -126,6 +126,7 @@ Bank = (function() {
     this.giral = giral1;
     this.capital = capital1;
     assert(Math.round(1000 * this.assets_total()) - Math.round(1000 * this.liabilities_total()) === 0, "balance sheet inconsistent: " + (this.assets_total()) + " != " + (this.liabilities_total()));
+    this.interbank = {};
   }
 
   Bank.prototype.get_random_bank = function() {
@@ -139,11 +140,57 @@ Bank = (function() {
   };
 
   Bank.prototype.assets_total = function() {
-    return this.reserves + this.credits;
+    return this.reserves + this.credits + this.get_interbank_credits();
   };
 
   Bank.prototype.liabilities_total = function() {
-    return this.debt_cb + this.giral + this.capital;
+    return this.debt_cb + this.get_interbank_debt() + this.giral + this.capital;
+  };
+
+  Bank.prototype.get_interbank_credits = function() {
+    var b, ref, total, v;
+    total = 0;
+    ref = this.interbank;
+    for (b in ref) {
+      v = ref[b];
+      if (v > 0) {
+        total += v;
+      }
+      console.log(b + " x " + v);
+    }
+    return total;
+  };
+
+  Bank.prototype.get_interbank_debt = function() {
+    var b, ref, total, v;
+    total = 0;
+    ref = this.interbank;
+    for (b in ref) {
+      v = ref[b];
+      if (v < 0) {
+        total += Math.abs(v);
+      }
+    }
+    return total;
+  };
+
+  Bank.prototype.give_interbank_credit = function(to, amount) {
+    if (this.interbank[to] != null) {
+      this.interbank[to] += amount;
+      console.log("foo");
+    } else {
+      this.interbank[to] = amount;
+      console.log("bar");
+    }
+    assert(to.interbank !== this.interbank, "fuck");
+    console.log(this.dump + " ");
+    if (to.interbank[this] != null) {
+      to.interbank[this] -= amount;
+      return console.log("asd " + to.interbank[this] + " ");
+    } else {
+      to.interbank[this] = -amount;
+      return console.log("bim");
+    }
   };
 
   Bank.prototype.deposit = function(amount) {
@@ -193,6 +240,7 @@ TrxMgr = (function() {
     this.microeconomy = microeconomy;
     this.banks = this.microeconomy.banks;
     this.cb = this.microeconomy.cb;
+    this.interbank = this.microeconomy.interbank;
   }
 
   TrxMgr.prototype.one_year = function() {
@@ -201,6 +249,7 @@ TrxMgr = (function() {
     this.get_customer_credit_interests();
     this.get_cb_deposit_interests();
     this.pay_cb_credit_interests();
+    this.pay_interbank_interests();
     this.repay_cb_credits();
     this.new_cb_credits();
     this.repay_customer_credits();
@@ -231,16 +280,14 @@ TrxMgr = (function() {
   };
 
   TrxMgr.prototype.transfer = function(from, to, amount) {
-    var diff;
     if (from.reserves >= amount) {
       from.withdraw(amount);
       return to.deposit(amount);
     } else {
       console.log("not enough funds: " + from.reserves + " < " + amount);
-      diff = amount - from.reserves;
-      from.debt_cb += diff;
-      from.reserves += diff;
-      return this.transfer(from, to, amount);
+      to.give_interbank_credit(from, amount);
+      from.giral -= amount;
+      return to.giral += amount;
     }
   };
 
@@ -312,6 +359,8 @@ TrxMgr = (function() {
     }
     return results;
   };
+
+  TrxMgr.prototype.pay_interbank_interests = function() {};
 
   TrxMgr.prototype.repay_cb_credits = function() {
     var bank, j, len1, minimal_reserves, payback, pr, prg, ref, reserve_surplus, results;

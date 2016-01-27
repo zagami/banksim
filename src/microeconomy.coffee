@@ -66,6 +66,8 @@ class Bank
   gameover: false
   constructor: (@reserves, @credits, @debt_cb, @giral, @capital) ->
     assert(Math.round(1000*@assets_total()) - Math.round(1000*@liabilities_total()) == 0, "balance sheet inconsistent: #{@assets_total()} != #{@liabilities_total()}")
+    @interbank = {}
+
   Bank::get_random_bank = ->
     r = randomize(0, 100)
     c = randomize(r, 300)
@@ -75,10 +77,34 @@ class Bank
     new Bank(r, c, debt_cb, giral, capital)
 
   assets_total: ->
-    @reserves + @credits
+    @reserves + @credits + @get_interbank_credits()
 
   liabilities_total: ->
-    @debt_cb + @giral + @capital
+    @debt_cb + @get_interbank_debt() + @giral + @capital
+
+  get_interbank_credits: ->
+    total = 0
+    for b,v of @interbank
+      total += v if v > 0
+      console.log "#{b} x #{v}"
+    return total
+
+  get_interbank_debt: ->
+    total = 0
+    for b,v of @interbank
+      total += Math.abs(v) if v < 0
+    return total
+
+  give_interbank_credit: (to, amount) ->
+    if @interbank[to]?
+      @interbank[to] += amount
+    else
+      @interbank[to] = amount
+
+    if to.interbank[this]?
+      to.interbank[this] -= amount
+    else
+      to.interbank[this] = -amount
 
   deposit: (amount) ->
     #reserves an GIRAL
@@ -114,6 +140,7 @@ class TrxMgr
   constructor: (@params, @microeconomy) ->
     @banks = @microeconomy.banks
     @cb = @microeconomy.cb
+    @interbank = @microeconomy.interbank
 
   one_year: ->
     @create_transactions()
@@ -121,6 +148,7 @@ class TrxMgr
     @get_customer_credit_interests()
     @get_cb_deposit_interests()
     @pay_cb_credit_interests()
+    @pay_interbank_interests()
     @repay_cb_credits()
     @new_cb_credits()
     @repay_customer_credits()
@@ -150,15 +178,17 @@ class TrxMgr
       from.withdraw(amount)
       to.deposit(amount)
     else
-      # TODO: take loan from bank (interbank)
       console.log "not enough funds: #{from.reserves} < #{amount}"
-      # take a credit from centralbank
-      diff = amount - from.reserves
+      #taking interbank credit
+      to.give_interbank_credit(from, amount)
+      from.giral -= amount
+      to.giral += amount
       #TRX reserves an debt_cb
-      from.debt_cb += diff
-      from.reserves += diff
+      # take a credit from centralbank
+      # from.debt_cb += diff
+      # from.reserves += diff
       # trying again...
-      @transfer(from, to, amount)
+      # @transfer(from, to, amount)
 
   pay_customer_deposit_interests: ->
     dr = parseFloat(@params.deposit_interest())/100.0
@@ -214,6 +244,8 @@ class TrxMgr
       else
         bank.reserves -= debt
         bank.capital -= debt
+
+  pay_interbank_interests: ->
 
   repay_cb_credits: ->
     pr = parseFloat(@params.prime_rate()) / 100.0
