@@ -22,6 +22,15 @@ if (!Array::sum)
     s += @[--i] while i > 0
     s
 
+class Params
+  max_trx: 50 # max nr of trx per year
+  prime_rate: 0.02  # prime rate paid by banks for central bank credits
+  prime_rate_giro: 0.01 # prime rate paid by central bank to banks for deposits
+  cap_req: 0.08  #capital requirements (leverage ratio)
+  minimal_reserves: 0.05  # reserve requirements for banks
+  credit_interest: 0.03
+  deposit_interest: 0.02
+
 class Statistics
   m0: []
   m1: []
@@ -134,13 +143,14 @@ class Bank
     Math.min(limit_cap, limit_mr)
 
 class MicroEconomy
-  constructor: (@cb, @banks) ->
+  constructor: (@cb, @banks, @params) ->
 
 class TrxMgr
-  constructor: (@params, @microeconomy) ->
+  constructor: (@microeconomy) ->
     @banks = @microeconomy.banks
     @cb = @microeconomy.cb
     @interbank = @microeconomy.interbank
+    @params = @microeconomy.params
 
   one_year: ->
     @create_transactions()
@@ -161,7 +171,7 @@ class TrxMgr
     # creating a random number of transactions (upper limit is a parameter max_trx)
     # the amounts transferred are randomly chosen based on reserves of bank??
     # random transactions represent economic activity
-    max_trx = randomizeInt(1,parseInt(@params.max_trx()))
+    max_trx = randomizeInt(1,@params.max_trx)
     console.log "performing #{max_trx} transactions"
     for trx in [1..max_trx]
       bank_src = randomizeInt(0, @banks.length - 1)
@@ -191,7 +201,7 @@ class TrxMgr
       # @transfer(from, to, amount)
 
   pay_customer_deposit_interests: ->
-    dr = parseFloat(@params.deposit_interest())/100.0
+    dr = @params.deposit_interest / 100.0
     for bank in @banks
       debt_bank = dr * bank.giral
       # pay deposit interest to customer
@@ -200,7 +210,7 @@ class TrxMgr
       bank.capital -= debt_bank
       
   get_customer_credit_interests: ->
-    cr = parseFloat(@params.credit_interest())/100.0
+    cr = @params.credit_interest / 100.0
     for bank in @banks
       # get credit interest from customer
       # TRX: giral AN capital
@@ -223,16 +233,16 @@ class TrxMgr
         bank.capital += debt_cust
 
   get_cb_deposit_interests: ->
-    pr_giro = parseFloat(@params.prime_rate_giro()) / 100.0
+    pr_giro = @params.prime_rate_giro / 100.0
     for bank in @banks
       #interests from cb to bank
       #TRX: reserves an capital
-      interest = pr_giro*bank.reserves
+      interest = pr_giro * bank.reserves
       bank.reserves += interest
       bank.capital += interest
 
   pay_cb_credit_interests: ->
-    pr = parseFloat(@params.prime_rate()) / 100.0
+    pr = @params.prime_rate
     for bank in @banks
       #interests from bank to cb
       #TRX: capital an reserves
@@ -248,9 +258,9 @@ class TrxMgr
   pay_interbank_interests: ->
 
   repay_cb_credits: ->
-    pr = parseFloat(@params.prime_rate()) / 100.0
-    prg = parseFloat(@params.prime_rate_giro()) / 100.0
-    minimal_reserves = parseFloat(@params.minimal_reserves()) / 100.0
+    pr = @params.prime_rate
+    prg = @params.prime_rate_giro
+    minimal_reserves = @params.minimal_reserves
     for bank in @banks
       if (pr*bank.debt_cb > prg.reserves)
         reserve_surplus = Math.max(bank.giral*minimal_reserves - bank.reserves, 0)
@@ -260,11 +270,11 @@ class TrxMgr
         bank.reserves -= payback
 
   new_cb_credits: ->
-    pr = parseFloat(@params.prime_rate()) / 100.0
-    prg = parseFloat(@params.prime_rate_giro()) / 100.0
-    cr = parseFloat(@params.credit_interest()) / 100.0
-    dr = parseFloat(@params.deposit_interest()) / 100.0
-    cap_req = parseFloat(@params.cap_req()) / 100.0
+    pr = @params.prime_rate
+    prg = @params.prime_rate_giro
+    cr = @params.credit_interest
+    dr = @params.deposit_interest
+    cap_req = @params.cap_req
 
     for bank in @banks
       if (pr*bank.debt_cb < prg.reserves)
@@ -288,14 +298,14 @@ class TrxMgr
       # customers taking new loans
       # money creation
       # TRX: credits AN giral
-      cr = parseFloat(@params.cap_req()) / 100.0
-      mr = parseFloat(@params.minimal_reserves()) / 100.0
+      cr = @params.cap_req / 100.0
+      mr = @params.minimal_reserves / 100.0
       amount = randomizeInt(0, bank.compute_credit_potential(cr, mr))
       bank.credits += amount
       bank.giral += amount
 
   settle_reserves: ->
-    minimal_reserves = parseFloat(@params.minimal_reserves()) / 100.0
+    minimal_reserves = @params.minimal_reserves / 100.0
     for bank in @banks
       if bank.reserves < bank.giral * minimal_reserves
         #bank has not enough reserves and needs a credit from central bank
@@ -305,7 +315,7 @@ class TrxMgr
         bank.reserves += diff
 
   settle_capital_requirement: ->
-    cap_req = parseFloat(@params.cap_req()) / 100.0
+    cap_req = @params.cap_req / 100.0
     for bank in @banks
       total = bank.liabilities_total()
       if bank.capital < total * cap_req

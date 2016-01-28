@@ -34,16 +34,24 @@ DICT =
   "bank deposits": "Giralgeld"
   "total": "Total"
 
+
+iv = (val) ->
+  ko.observable(val)
+
 class Simulator
   init: ->
     banks = (Bank::get_random_bank() for i in [1..NUM_BANKS])
     cb = new CentralBank(banks)
-    @microeconomy = new MicroEconomy(cb, banks)
-    @trx_mgr = new TrxMgr(@params, @microeconomy)
+    @params = new Params()
+    @microeconomy = new MicroEconomy(cb, banks, @params)
+    @trx_mgr = new TrxMgr(@microeconomy)
+    @visualizerMgr = new VisualizerMgr()
+    @visualizerMgr.addViz ( new TableVisualizer(@microeconomy) )
+    @visualizerMgr.addViz( new GraphVisualizer(@microeconomy) )
+    @init_params()
 
   constructor: (@params) ->
     @init()
-    @params.set_simulator(this)
     
   simulate: (years) ->
     @simulate_one_year() for [1..years]
@@ -53,6 +61,109 @@ class Simulator
     
   reset: ->
     @init()
+
+  # Simulator Control
+  step: iv(0)
+  yearsPerStep: iv(1)
+  autorun: iv(false)
+  autorun_id: 0
+
+  init_params: ->
+    @gui_params = ko.mapping.fromJS(@params)
+
+    @prime_rate = ko.computed({
+      read: =>
+        (@gui_params.prime_rate() * 100).toFixed(1)
+      write: (value) =>
+        newval = parseFloat(value)/100
+        @gui_params.prime_rate(newval)
+        @params.prime_rate = newval
+    }, this)
+
+    @prime_rate_giro = ko.computed({
+      read: =>
+        ( @gui_params.prime_rate_giro() * 100 ).toFixed(1)
+      write: (value) =>
+        newval = parseFloat(value)/100
+        @gui_params.prime_rate_giro(newval)
+        @params.prime_rate_giro = newval
+    }, this)
+
+    @cap_req = ko.computed({
+      read: =>
+        ( @gui_params.cap_req() * 100 ).toFixed(1)
+      write: (value) =>
+        newval = parseFloat(value)/100
+        @gui_params.cap_req(newval)
+        @params.cap_req = newval
+    }, this)
+
+    @minimal_reserves = ko.computed({
+      read: =>
+        ( @gui_params.minimal_reserves() * 100 ).toFixed(1)
+      write: (value) =>
+        newval = parseFloat(value)/100
+        @gui_params.minimal_reserves(newval)
+        @params.minimal_reserves = newval
+    }, this)
+
+    @credit_interest = ko.computed({
+      read: =>
+        ( @gui_params.credit_interest() * 100 ).toFixed(1)
+      write: (value) =>
+        newval = parseFloat(value)/100
+        @gui_params.credit_interest(newval)
+        @params.credit_interest = newval
+    }, this)
+
+    @deposit_interest = ko.computed({
+      read: =>
+        ( @gui_params.deposit_interest() * 100 ).toFixed(1)
+      write: (value) =>
+        newval = parseFloat(value)/100
+        @gui_params.deposit_interest(newval)
+        @params.deposit_interest = newval
+    }, this)
+  #prime_rate_giro: 0.01 # prime rate paid by central bank to banks for deposits
+  #cap_req: 0.08  #capital requirements (leverage ratio)
+  #minimal_reserves: 0.05  # reserve requirements for banks
+  #credit_interest: 0.03
+  #deposit_interest: 0.02
+
+  # functions
+  reset_params: ->
+    @step(0)
+
+  lang_de_clicked: ->
+    LANG = 'DE'
+    @visualizerMgr.visualize()
+
+  lang_en_clicked: ->
+    LANG = 'EN'
+    @visualizerMgr.visualize()
+    
+  simulate_clicked: ->
+    yps = parseInt(@yearsPerStep())
+    curr_s = parseInt(@step())
+    @step(yps + curr_s)
+    @simulate(yps)
+    @visualizerMgr.visualize()
+
+  autorun_clicked: ->
+    if not @autorun()
+      @autorun(true)
+      @autorun_id = setInterval("params.simulate_clicked()", AUTORUN_DELAY)
+    else
+      clearInterval(@autorun_id)
+      @autorun(false)
+    return true # needed by knockout
+
+  reset_clicked: ->
+    @reset_params()
+    @reset()
+    #visualize again after resetting
+    #@visualizerMgr.clear()
+    @visualizerMgr.visualize()
 
 class VisualizerMgr
   vizArray: []
@@ -64,9 +175,6 @@ class VisualizerMgr
       viz.clear()
   addViz: (viz) ->
     @vizArray.push(viz)
-  reset: ->
-    @clear()
-    @vizArray = []
 
 class Visualizer
   constructor: (microeconomy) ->
@@ -452,91 +560,15 @@ class GraphVisualizer extends Visualizer
     @draw_stats()
     @draw_banks()
 
-iv = (val) ->
-  ko.observable(val)
-  
-class Params
-  # Simulator Control
-  step: iv(0)
-  yearsPerStep: iv(1)
-  autorun: iv(false)
-  autorun_id: 0
-  tableViz_checked: iv(true)
-  diagramViz_checked: iv(true)
-
-  # Microeconomy
-  max_trx: iv(50)  # max nr of trx per year
-  prime_rate: iv(2)  # prime rate paid by banks for central bank credits
-  prime_rate_giro: iv(1) # prime rate paid by central bank to banks for deposits
-  cap_req: iv(8)  #capital requirements in percent (leverage ratio)
-  minimal_reserves: iv(5)  # reserve requirements for banks
-  credit_interest: iv(3)
-  deposit_interest: iv(2)
-  
-  # functions
-  set_simulator: (sim) ->
-    @simulator = sim
-    @visualizerMgr = new VisualizerMgr()
-    @set_viz()
-
-  reset_params: ->
-    @step(0)
-
-  set_viz: ->
-    @visualizerMgr.reset()
-    if @tableViz_checked()
-      @visualizerMgr.addViz ( new TableVisualizer(@simulator.microeconomy) )
-    if @diagramViz_checked()
-      @visualizerMgr.addViz( new GraphVisualizer(@simulator.microeconomy) )
-  
-  # Event Handlers
-  viz_clicked: ->
-    @set_viz()
-    @visualizerMgr.visualize()
-    return true # needed by knockout
-
-  lang_de_clicked: ->
-    LANG = 'DE'
-    @visualizerMgr.visualize()
-
-  lang_en_clicked: ->
-    LANG = 'EN'
-    @visualizerMgr.visualize()
-    
-  simulate_clicked: ->
-    yps = parseInt(@yearsPerStep())
-    curr_s = parseInt(@step())
-    @step(yps + curr_s)
-    @simulator.simulate(yps)
-    @visualizerMgr.visualize()
-
-  autorun_clicked: ->
-    if not @autorun() 
-      @autorun(true)
-      @autorun_id = setInterval("params.simulate_clicked()", AUTORUN_DELAY)
-    else
-      clearInterval(@autorun_id)
-      @autorun(false)
-    return true # needed by knockout
-
-  reset_clicked: ->
-    @reset_params()
-    @simulator.reset()
-    @set_viz()
-    #visualize again after resetting
-    @visualizerMgr.visualize()
-
 #global objects
 simulator = null
-params = null
 
 $ ->
-  params = new Params()
-  simulator = new Simulator(params)
+  simulator = new Simulator()
   # show 1st simulation step after page load
-  params.visualizerMgr.visualize()
+  simulator.visualizerMgr.visualize()
 
   #Knockout.JS specific code
-  viewModel = params
+  viewModel = simulator
   ko.applyBindings(viewModel)
 

@@ -7,7 +7,8 @@
 
   <!-- Knockout.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js"></script>
-  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.4.1/knockout.mapping.min.js"></script>
+
   <!-- highcharts -->
   <script src="https://code.highcharts.com/highcharts.js"></script>
   <script src="https://code.highcharts.com/modules/exporting.js"></script>
@@ -47,15 +48,6 @@
       <td><input type="checkbox" id="autorun_chk" data-bind="checked: autorun, click: autorun_clicked"> </td>
     </tr>
     <tr>
-      <td class="label">Visualisierung</td>
-
-      <td>
-        Tabelle:<input type="checkbox" data-bind="checked: tableViz_checked, click: viz_clicked" /><br>
-
-        Diagramm:<input type="checkbox" data-bind="checked: diagramViz_checked, click: viz_clicked"/>
-      </td>
-    </tr>
-    <tr>
       <td><input type="button" value="Reset" data-bind="click: reset_clicked"/></td>
       <td><input type="text" data-bind="value: step"/></td>
     </tr>
@@ -65,11 +57,6 @@
 <div id="params">
   <h2>Parameter</h2>
   <table>
-    <tr>
-      <td class="label">Max Transaktionen pro Jahr</td>
-      <!--<td><input type="number" data-bind="value:max_trx" name="max_trx" min="1" max="1000"></td>-->
-      <td><input type="range" id="foo"  min="1" max="1000" step="5" data-bind="value: max_trx"/><span data-bind="text: max_trx"></td>
-    </tr>
     <tr>
       <td class="label">Leitzins: ZB Kredite</td>
       <td><input data-bind="value: prime_rate" id="slider_lz" type="range" min="0" max="15" step="0.1" /> <span data-bind="text: prime_rate"></span>%</td>
@@ -102,18 +89,18 @@
 
 <div id="viz">
   <div id="graphs">
-    <div id="cb_graph" class="block"style="margin: 0 auto"></div> 
-    <div id="banks_total_graph" class="block"style="margin: 0 auto"></div> 
-    <div id="stats_graph1" class="block" style="margin: 0 auto"></div>
-    <div id="stats_graph2" class="block" style="margin: 0 auto"></div>
-    <div id="banks_graph" class="block" style="margin: 0 auto"></div>
-    <div id="banks_graph2" class="block" style="margin: 0 auto"></div>
+    <div id="cb_graph"></div> 
+    <div id="banks_total_graph"></div> 
+    <div id="stats_graph1"></div>
+    <div id="stats_graph2"></div>
+    <div id="banks_graph"></div>
+    <div id="banks_graph2"></div>
   </div>
 
   <div id="tables">
-    <div id="cb_table" class="block" style="margin: 0 auto"></div>
-    <div id="ms_table" class="block" style="margin: 0 auto"></div>
-    <div id="banks_table" class="block" style="margin: 0 auto"></div>
+    <div id="cb_table"></div>
+    <div id="ms_table"></div>
+    <div id="banks_table"></div>
   </div>
 </div>
 
@@ -123,18 +110,17 @@
 <!--http://stackoverflow.com/questions/5061353/how-to-create-a-keyboard-shortcut-for-an-input-button-->
     shortcut.add("n", function() {
         // Do something
-        params.simulate_clicked();
+        simulator.simulate_clicked();
     }); 
     shortcut.add("r", function() {
         // Do something
-        params.reset_clicked();
+        simulator.reset_clicked();
     });  
     shortcut.add("a", function() {
         // Do something
-        params.autorun_clicked();
+        simulator.autorun_clicked();
     });  
 </script>
-
 <xmp theme="superhero" style="display:none;">
 # Money Simulator
 
