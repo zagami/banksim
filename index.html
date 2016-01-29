@@ -19,6 +19,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
+  <script src="lib/hashtable.js"></script>
+
   <script src="src/microeconomy.js"></script>
   <script src="src/banksim.js"></script>
   
@@ -28,10 +30,14 @@
 <body>
 
 <h1>BankSim</h1>
+
 <div id="left">
+
 <div id="controls">
+
   <a href=":blank" data-bind="click: lang_de_clicked">DE</a>
   <a href=":blank" data-bind="click: lang_en_clicked">EN</a>
+
   <h2>Steuerung</h2>
   <table>
     <tr>
@@ -121,7 +127,10 @@
         simulator.autorun_clicked();
     });  
 </script>
-<xmp theme="superhero" style="display:none;">
+<div id="foo" style= "clear: both">
+</div>
+<div id="instructions">
+  
 # Money Simulator
 
 ## Shortcuts
@@ -157,9 +166,6 @@
 - custumers are taking loans every year:
   * the amount is random with an upper limit based on the credit potential of the bank. This potential is computed according to the reserves and the capital of the bank. 
 
-</xmp>
-
-<script src="http://strapdownjs.com/v/0.2/strapdown.js"></script>
-<!-- <script type="text/javascript" src="lib/strapdown.js"></script> -->
+</div>
 </body>
 </html>

@@ -8,7 +8,7 @@ LANG = 'EN';
 
 NUM_BANKS = 30;
 
-CHART_WIDTH = 400;
+CHART_WIDTH = 200;
 
 INFLATION_HIST = 20;
 
@@ -76,8 +76,7 @@ Simulator = (function() {
     return this.init_params();
   };
 
-  function Simulator(params) {
-    this.params = params;
+  function Simulator() {
     this.init();
   }
 
@@ -95,6 +94,7 @@ Simulator = (function() {
   };
 
   Simulator.prototype.reset = function() {
+    InterbankMarket.prototype.reset();
     return this.init();
   };
 
@@ -226,7 +226,7 @@ Simulator = (function() {
   Simulator.prototype.autorun_clicked = function() {
     if (!this.autorun()) {
       this.autorun(true);
-      this.autorun_id = setInterval("params.simulate_clicked()", AUTORUN_DELAY);
+      this.autorun_id = setInterval("simulator.simulate_clicked()", AUTORUN_DELAY);
     } else {
       clearInterval(this.autorun_id);
       this.autorun(false);
@@ -362,7 +362,7 @@ TableVisualizer = (function(superClass) {
   };
 
   TableVisualizer.prototype.create_banks_table = function(banks) {
-    var bank, i, j, len, ref;
+    var bank, i, j, len, ref, row;
     $('#banks_table').append('<table>');
     $('#banks_table').append('<caption>' + translate('banks') + '</caption>');
     $('#banks_table').append(this.create_bank_header());
@@ -370,7 +370,11 @@ TableVisualizer = (function(superClass) {
     ref = this.banks;
     for (j = 0, len = ref.length; j < len; j++) {
       bank = ref[j];
-      $('#banks_table').append(this.create_bank_row(i, bank));
+      row = $(this.create_bank_row(i, bank));
+      if (bank.gameover) {
+        row.addClass('bankrupt');
+      }
+      $('#banks_table').append(row);
       i += 1;
     }
     return $('#banks_table').append('</table>');

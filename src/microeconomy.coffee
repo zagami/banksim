@@ -4,6 +4,7 @@ assert = (condition, message) ->
     if (typeof Error != "undefined")
       e = new Error(message)
       console.log e.stack
+      alert message
       throw e
     throw message
 
@@ -71,11 +72,82 @@ class CentralBank
   M2: ->
     0
 
+# Helper class to manage interbank market.
+class InterbankMarket
+  @instance: null
+
+  InterbankMarket::get_instance = ->
+    if not @instance?
+      @instance = new InterbankMarket()
+    @instance
+
+  constructor: ->
+    @interbank = new Hashtable()
+
+  InterbankMarket::reset = ->
+    @instance = null
+
+  give_interbank_credit: (from, to, amount) ->
+    assert(from != to, "banks not different")
+    assert(amount > 0, "credit amount must be > 0")
+    assert(from.reserves >= amount, "not enough reserves for interbank credit")
+    assert(@interbank != null, "interbank null")
+
+    from.reserves -= amount
+    to.reserves += amount
+
+    if not @interbank.containsKey(from)
+      hash = new Hashtable()
+      hash.put(to, amount)
+      @interbank.put(from, hash)
+    else
+      if @interbank.get(from).containsKey(to)
+        val = @interbank.get(from).get(to)
+        @interbank.get(from).put(to, val + amount)
+      else
+        @interbank.get(from).put(to, amount)
+
+    if not @interbank.containsKey(to)
+      hash = new Hashtable()
+      hash.put(from, -amount)
+      @interbank.put(to, hash)
+    else
+      if @interbank.get(to).containsKey(from)
+        val = @interbank.get(to).get(from)
+        @interbank.get(to).put(from, val - amount)
+      else
+        @interbank.get(to).put(from, -amount)
+
+  get_interbank_credits: (bank) ->
+    total = 0
+    if @interbank.containsKey(bank)
+      for v in @interbank.get(bank).values()
+        total += v if v > 0
+    total
+
+  get_interbank_debt: (bank) ->
+    total = 0
+    if @interbank.containsKey(bank)
+      for v in @interbank.get(bank).values()
+        total += Math.abs(v) if v < 0
+    total
+
+  set_gameover: (bank) ->
+    if @interbank.containsKey(bank)
+      for b in @interbank.get(bank).keys()
+        if @interbank.containsKey(b)
+          @interbank.get(b).put(bank, 0)
+        @interbank.get(bank).clear()
+
 class Bank
   gameover: false
+  interbank_market: null
+
   constructor: (@reserves, @credits, @debt_cb, @giral, @capital) ->
-    assert(Math.round(1000*@assets_total()) - Math.round(1000*@liabilities_total()) == 0, "balance sheet inconsistent: #{@assets_total()} != #{@liabilities_total()}")
-    @interbank = {}
+    @interbank_market = InterbankMarket::get_instance()
+
+  #toString: ->
+  #  "r:#{@reserves},c: #{@credits}, dcb:#{@debt_cb}, g:#{@giral},c:#{@capital}"
 
   Bank::get_random_bank = ->
     r = randomize(0, 100)
@@ -92,45 +164,19 @@ class Bank
     @debt_cb + @get_interbank_debt() + @giral + @capital
 
   get_interbank_credits: ->
-    total = 0
-    for b,v of @interbank
-      total += v if v > 0
-      console.log "#{b} x #{v}"
-    return total
+    @interbank_market.get_interbank_credits(this)
 
   get_interbank_debt: ->
-    total = 0
-    for b,v of @interbank
-      total += Math.abs(v) if v < 0
-    return total
+    @interbank_market.get_interbank_debt(this)
 
   give_interbank_credit: (to, amount) ->
-    if @interbank[to]?
-      @interbank[to] += amount
-    else
-      @interbank[to] = amount
-
-    if to.interbank[this]?
-      to.interbank[this] -= amount
-    else
-      to.interbank[this] = -amount
-
-  deposit: (amount) ->
-    #reserves an GIRAL
-    @reserves += amount
-    @giral += amount
-
-  withdraw: (amount) ->
-    #GIRAL an reserves
-    assert(amount <= @reserves, "withdrawing too much")
-    @reserves -= amount
-    @giral -= amount
-
+    @interbank_market.give_interbank_credit(this, to, amount)
+  
   set_gameover: ->
     @gameover = true
-    console.log "bank gameover:"
     console.log "central bank just lost #{@debt_cb - @reserves}"
     @reserves = @credits = @debt_cb = @giral = @capital = 0
+    @interbank_market.set_gameover(this)
 
   compute_credit_potential: (cap_req, min_res) ->
     # compute upper limit regarding capital requirement
@@ -149,7 +195,7 @@ class TrxMgr
   constructor: (@microeconomy) ->
     @banks = @microeconomy.banks
     @cb = @microeconomy.cb
-    @interbank = @microeconomy.interbank
+    @interbank_market = InterbankMarket::get_instance()
     @params = @microeconomy.params
 
   one_year: ->
@@ -166,6 +212,18 @@ class TrxMgr
     @settle_reserves()
     @settle_capital_requirement()
     @make_statistics()
+    @check_consistency()
+
+  check_consistency: ->
+    @check_balance(@cb)
+    console.log "central bank ok"
+    for b in @banks
+      @check_balance(b)
+
+  check_balance: (bank) ->
+    assets = bank.assets_total()
+    liabilities = bank.liabilities_total()
+    assert(Math.round(1000*assets) - Math.round(1000*liabilities) == 0, "balance sheet inconsistent: #{assets} != #{liabilities}  #{bank.toString()} ")
 
   create_transactions: ->
     # creating a random number of transactions (upper limit is a parameter max_trx)
@@ -184,21 +242,24 @@ class TrxMgr
         @transfer(bank_src, bank_tgt, amount)
 
   transfer: (from, to, amount) ->
-    if from.reserves >= amount
-      from.withdraw(amount)
-      to.deposit(amount)
-    else
+
+    if from.reserves < amount
       console.log "not enough funds: #{from.reserves} < #{amount}"
-      #taking interbank credit
-      to.give_interbank_credit(from, amount)
-      from.giral -= amount
-      to.giral += amount
-      #TRX reserves an debt_cb
-      # take a credit from centralbank
-      # from.debt_cb += diff
-      # from.reserves += diff
-      # trying again...
-      # @transfer(from, to, amount)
+      if to.reserves > amount
+        # if interbank interest rate is lower than cb prime rate
+        #taking interbank credit, full amount of transfer
+        to.give_interbank_credit(from, amount)
+      else
+        # take a credit from centralbank
+        from.debt_cb += amount
+        from.reserves += amount
+    
+    #GIRAL an reserves
+    from.reserves -= amount
+    from.giral -= amount
+    #reserves an GIRAL
+    to.reserves += amount
+    to.giral += amount
 
   pay_customer_deposit_interests: ->
     dr = @params.deposit_interest / 100.0

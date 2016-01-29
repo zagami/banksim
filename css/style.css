@@ -2,9 +2,10 @@ body {
 }
 
 #left {
-  width: 500px;
+  width: 30%;
   float:left;
   margin: 0 auto;
+  background: blue;
 }
 
 #controls {
@@ -16,30 +17,21 @@ body {
 }
 
 #viz {
-  padding: 20px;
 }
 
-.block {
-  margin: 0 auto
-  max-width: 400px;
-  float:left;
+#graphs div {
   padding: 20px;
-}
-
-#graphs {
-  padding: 20px;
+  height: 300px;
+  background: yellow;
+  float: left;
 }
 
 #tables {
-  padding: 20px;
-  float:clear;
+  clear: both;
 }
 
-#cb_table {
-}
-
-#banks_table {
-  padding-top: 30px;
+.bankrupt {
+  color: red
 }
 
 table {

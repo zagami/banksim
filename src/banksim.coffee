@@ -1,6 +1,6 @@
 LANG = 'EN'
 NUM_BANKS = 30
-CHART_WIDTH = 400
+CHART_WIDTH = 200
 INFLATION_HIST = 20 #data points of inflation graph
 AUTORUN_DELAY = 2000
 
@@ -50,7 +50,7 @@ class Simulator
     @visualizerMgr.addViz( new GraphVisualizer(@microeconomy) )
     @init_params()
 
-  constructor: (@params) ->
+  constructor: ->
     @init()
     
   simulate: (years) ->
@@ -60,6 +60,7 @@ class Simulator
     @trx_mgr.one_year()
     
   reset: ->
+    InterbankMarket::reset()
     @init()
 
   # Simulator Control
@@ -124,11 +125,6 @@ class Simulator
         @gui_params.deposit_interest(newval)
         @params.deposit_interest = newval
     }, this)
-  #prime_rate_giro: 0.01 # prime rate paid by central bank to banks for deposits
-  #cap_req: 0.08  #capital requirements (leverage ratio)
-  #minimal_reserves: 0.05  # reserve requirements for banks
-  #credit_interest: 0.03
-  #deposit_interest: 0.02
 
   # functions
   reset_params: ->
@@ -152,7 +148,7 @@ class Simulator
   autorun_clicked: ->
     if not @autorun()
       @autorun(true)
-      @autorun_id = setInterval("params.simulate_clicked()", AUTORUN_DELAY)
+      @autorun_id = setInterval("simulator.simulate_clicked()", AUTORUN_DELAY)
     else
       clearInterval(@autorun_id)
       @autorun(false)
@@ -286,7 +282,9 @@ class TableVisualizer extends Visualizer
     $('#banks_table').append(@create_bank_header())
     i = 0
     for bank in @banks
-      $('#banks_table').append(@create_bank_row(i, bank))
+      row = $(@create_bank_row(i, bank))
+      row.addClass('bankrupt') if bank.gameover
+      $('#banks_table').append(row)
       i += 1
     $('#banks_table').append(  '</table>' )
 
@@ -507,7 +505,6 @@ class GraphVisualizer extends Visualizer
           stack: '3'
       }]
     })
-
     $('#banks_total_graph').highcharts({
       chart:
         type: 'column'
