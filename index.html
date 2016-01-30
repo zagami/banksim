@@ -70,7 +70,11 @@
 
     <tr>
       <td class="label">Leitzins: ZB Konten</td>
-      <td><input data-bind="value: prime_rate_giro" id="slider_lz" type="range" min="-15" max="15" step="0.1" /> <span data-bind="text: prime_rate_giro"></span>%</td>
+      <td><input data-bind="value: prime_rate_giro" id="slider_lzg" type="range" min="-15" max="15" step="0.1" /> <span data-bind="text: prime_rate_giro"></span>%</td>
+    </tr>
+    <tr>
+      <td class="label">LIBOR</td>
+      <td><input data-bind="value: libor" id="slider_libor" type="range" min="0" max="15" step="0.1" /> <span data-bind="text: libor"></span>%</td>
     </tr>
     <tr>
       <td class="label">Eigenkapitalvorschrift</td>
@@ -130,7 +134,8 @@
 <div id="foo" style= "clear: both">
 </div>
 <div id="instructions">
-  
+<pre>
+
 # Money Simulator
 
 ## Shortcuts
@@ -140,32 +145,119 @@
 * You can press **a** to toggle Autorun mode
 
 ## Assuptions of the simulation
+
 - There is 1 central bank
 - There is a fixed number of banks
+- All money is book money, there is no cash for simplicity
+- Customers have only 1 bank account
 - The simulation runs year by year. For every year, the following steps will be performed:
-  * a random number of transactions is performed:
-    - the upper limit of the number of transactions can be set as a parameter
-    - the amount of each transaction is random as well, its upper limit is the amount of bank deposits
-    - if a bank has not enough reserves to make the transaction it can take a loan from the central bank first
-    - interbank credits are not implemented yet
-    - for every transaction 2 random banks are chosen  
+  * for every transaction type a random number of transactions is performed
+  * a check is made which bank has gone bankrupt
+  * depending on the write offs, a chain reaction for other banks can follow
+  * if the central bank has a negative capital, the simulation stops
 
-- A bank can go bankrupt if...
-    * the capital requirements cannot be met
-    * the minimal reserves requirements cannot be fulfilled
-    * A bank that is bankrupt is out of the game
+### PAYMENTS CC1
+    - the amount of each payment is random 
+    - 2 random banks are chosen for each transaction
+    - its upper limit is the amount of bank deposits
+    - there is no withdrawal limit except bank deposit
+    - if a bank has not enough reserves to make the transaction it can take a loan from the central bank (prime rate) or from the target bank (libor rate)
+    - if the target bank has enough reserves to give an interbank credit it will be preferred over a central bank credit, if the libor is below the prime rate
 
-- The debts of the bank to the central bank or to customers is lost if it goes bankrupt, the money supply shrinks accordingly
+### CUSTOMER DEPOSITS AND LOANS BC1, BC2, CB1, CB2
 
-- minimal reserves requirements are in relation to the customer deposits, not central bank debt or interbank debt
-- capital requirements are in relation to all liabilities (leverage ratio), not as in BASEL II only to a subset of risky assets
+  - the interest rates for deposits and loans are fixed for every bank, there is no market yet
 
-- custumers pay back their loans every year:
-  * the amount is random, the upper limit is of course the bank deposits
+  - overdrafts: a negative deposit is not possible, this is the same as a loan
 
-- custumers are taking loans every year:
-  * the amount is random with an upper limit based on the credit potential of the bank. This potential is computed according to the reserves and the capital of the bank. 
+  - customers are taking loans every year:
+    * the loans are not yet secured by collaterals
+    * customers don't have to be elligible for a loan
+    * the amount is random with an upper limit based on the credit potential of the bank. This potential is computed according to the capital and reserve requirements of the bank. 
+    * customers take maximal loan they can get without further consideration
+    * TODO: upper limit determined by deposits of customer? > interest rates?
 
+  - customers can pay back their loans every year:
+    * the payback amount is random
+    * the upper limit is of course the available bank deposits
+
+### INTERBANK LOANS
+  - the libor rate is fixed for every bank, there is no market yet
+  - there is no upper limit for interbank loans 
+  - interbank loans are not payed back
+  - TODO: pay back interbank loans if libor > prime rate and enough reserves
+
+### CENTRAL BANK DEPOSITS AND LOANS
+  - the prime rates are the main parameters of the simulation
+  - the loans are not secured by collaterals of the banks
+  - the central bank will provide as many loans as requested by banks, but the capital of the central bank must allow it
+
+### BANKRUPCY OF CUSTOMER
+  - since the loans are not secured, the bank will seize the remaining deposits and write off the rest as a loss
+  - customers are not implemented as individuals yet, only as an aggregate
+
+### BANKRUPCY OF BANK
+  - A bank can go bankrupt if...
+      * the capital requirements cannot be met 
+      * the minimal reserves requirements cannot be met
+  
+  - The debts of the bank to the central bank, other banks or  customers are lost if it goes bankrupt, the money supply  M0 and M1 shrinks accordingly
+  - A bank that is bankrupt is out of the game for good
+
+### BASEL II
+  - minimal reserves requirements are in relation to the customer deposits, central bank debt and interbank debt
+
+  - capital requirements are in relation to all liabilities (leverage ratio), not as in BASEL II only to a subset of risky assets
+
+
+## Transactions
+Transactions in () are not implemented yet
+
+Customers will become Persons and Corporations soon.
+
+Customer - Customer
+  * CC1: payment
+    - innerbank transfer 
+    - interbank transfer -> BB1, can trigger BB2 or CBB2
+  * (new private loan) subtype of CC1
+  * (pay interest for private loan) subtype of CC1
+  * (payback private loan) subtype of CC1
+
+Bank -> Customer
+  * BC1: pay deposit interest
+  * BC2: new loan
+  * 
+Customer -> Bank
+  * CB1: credit interest (-> BC2 paying interest with more debt?)
+  * CB2: payback loan
+  * (CB3: new deposit (customer changes bank, creates new account), ->BB1)
+
+Bank -> Bank
+  * BB1: interbank payment settlement
+  * BB2: new interbank loan, subtype of BB1
+  * BB3: pay interbank interest, subtype of BB1
+  * (payback interbank loan?)
+
+Central Bank -> Bank
+  * CBB1: pay interest for giro deposit
+  * CBB2: new central bank credit
+
+Bank -> Central Bank
+  * BCB1: pay interest for central bank credit
+  * BCB2: payback central bank credit
+
+VOC:
+personal loans: private Darlehen 
+corporate bonds: Obligation?
+overdraft: if account "overdrawn"
+to default: pleite gehen
+
+In finance, a loan is a debt provided by an entity (organization or individual) to another entity at an interest rate, and evidenced by a note which specifies, among other things, the principal amount, interest rate, and date of repayment. A loan entails the reallocation of the subject asset(s) for a period of time, between the lender and the borrower.
+
+The borrower is obligated to pay back or repay an equal amount of money to the lender at a later time.
+
+A secured loan is a loan in which the borrower pledges some asset (e.g. a car or property) as collateral.
+</pre>
 </div>
 </body>
 </html>

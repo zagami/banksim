@@ -1,6 +1,6 @@
 LANG = 'EN'
-NUM_BANKS = 30
-CHART_WIDTH = 200
+NUM_BANKS = 10
+CHART_WIDTH = 300
 INFLATION_HIST = 20 #data points of inflation graph
 AUTORUN_DELAY = 2000
 
@@ -88,6 +88,15 @@ class Simulator
         newval = parseFloat(value)/100
         @gui_params.prime_rate_giro(newval)
         @params.prime_rate_giro = newval
+    }, this)
+
+    @libor = ko.computed({
+      read: =>
+        ( @gui_params.libor() * 100 ).toFixed(1)
+      write: (value) =>
+        newval = parseFloat(value)/100
+        @gui_params.libor(newval)
+        @params.libor = newval
     }, this)
 
     @cap_req = ko.computed({
@@ -363,7 +372,6 @@ class GraphVisualizer extends Visualizer
       }]
     })
 
-
   draw_cb: ->
     $('#cb_graph').highcharts({
       chart:
@@ -481,7 +489,7 @@ class GraphVisualizer extends Visualizer
       yAxis:
         allowDecimals: false
         title:
-          text: '%'
+          text: 'CHF'
       tooltip:
           formatter: ->
               return '<b>' + this.x + '</b><br/>' +

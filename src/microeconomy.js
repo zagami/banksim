@@ -44,9 +44,11 @@ Params = (function() {
 
   Params.prototype.max_trx = 50;
 
-  Params.prototype.prime_rate = 0.02;
+  Params.prototype.prime_rate = 0.004;
 
-  Params.prototype.prime_rate_giro = 0.01;
+  Params.prototype.prime_rate_giro = 0.003;
+
+  Params.prototype.libor = 0.002;
 
   Params.prototype.cap_req = 0.08;
 
@@ -220,19 +222,47 @@ InterbankMarket = (function() {
     return total;
   };
 
+  InterbankMarket.prototype.settle_interbank_interests = function(libor) {
+    var b, j, key, len1, ref, results, val;
+    ref = this.interbank.keys();
+    results = [];
+    for (j = 0, len1 = ref.length; j < len1; j++) {
+      b = ref[j];
+      results.push((function() {
+        var k, len2, ref1, results1;
+        ref1 = this.interbank.get(b).keys();
+        results1 = [];
+        for (k = 0, len2 = ref1.length; k < len2; k++) {
+          key = ref1[k];
+          val = this.interbank.get(b).get(key);
+          this.interbank.get(b).put(key, val * (1 + libor));
+          results1.push(b.capital += val * libor);
+        }
+        return results1;
+      }).call(this));
+    }
+    return results;
+  };
+
   InterbankMarket.prototype.set_gameover = function(bank) {
-    var b, j, len1, ref, results;
+    var b, bank_loss, j, len1, ref;
     if (this.interbank.containsKey(bank)) {
       ref = this.interbank.get(bank).keys();
-      results = [];
       for (j = 0, len1 = ref.length; j < len1; j++) {
         b = ref[j];
         if (this.interbank.containsKey(b)) {
-          this.interbank.get(b).put(bank, 0);
+          bank_loss = this.interbank.get(b).get(bank);
+          if (bank_loss > 0) {
+            console.log("bank just lost " + bank_loss + " from a bankcupcy");
+            b.capital -= bank_loss;
+          } else if (bank_loss < 0) {
+            console.log("bank just gained " + (Math.abs(bank_loss)) + " a from bankrupcy");
+            b.capital += Math.abs(bank_loss);
+          }
+          this.interbank.get(b).remove(bank);
         }
-        results.push(this.interbank.get(bank).clear());
       }
-      return results;
+      return this.interbank.get(bank).clear();
     }
   };
 
@@ -258,7 +288,7 @@ Bank = (function() {
     var c, capital, debt_cb, giral, r;
     r = randomize(0, 100);
     c = randomize(r, 300);
-    debt_cb = r;
+    debt_cb = 1.1 * r;
     giral = randomize(r, c);
     capital = r + c - giral - debt_cb;
     return new Bank(r, c, debt_cb, giral, capital);
@@ -282,13 +312,6 @@ Bank = (function() {
 
   Bank.prototype.give_interbank_credit = function(to, amount) {
     return this.interbank_market.give_interbank_credit(this, to, amount);
-  };
-
-  Bank.prototype.set_gameover = function() {
-    this.gameover = true;
-    console.log("central bank just lost " + (this.debt_cb - this.reserves));
-    this.reserves = this.credits = this.debt_cb = this.giral = this.capital = 0;
-    return this.interbank_market.set_gameover(this);
   };
 
   Bank.prototype.compute_credit_potential = function(cap_req, min_res) {
@@ -331,34 +354,45 @@ TrxMgr = (function() {
     this.get_cb_deposit_interests();
     this.pay_cb_credit_interests();
     this.pay_interbank_interests();
-    this.repay_cb_credits();
-    this.new_cb_credits();
-    this.repay_customer_credits();
-    this.new_customer_credits();
-    this.settle_reserves();
-    this.settle_capital_requirement();
     this.make_statistics();
-    return this.check_consistency();
+    this.check_consistency();
+    return this.check_bankrupcy();
   };
 
   TrxMgr.prototype.check_consistency = function() {
-    var b, j, len1, ref, results;
-    this.check_balance(this.cb);
-    console.log("central bank ok");
+    var a, bank, j, l, len1, ref, results;
+    a = this.cb.assets_total();
+    l = this.cb.liabilities_total();
+    assert(Math.round(1000 * a) - Math.round(1000 * l) === 0, "central bank balance sheet inconsistent: " + a + " != " + l + " ");
     ref = this.banks;
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
-      b = ref[j];
-      results.push(this.check_balance(b));
+      bank = ref[j];
+      a = bank.assets_total();
+      l = bank.liabilities_total();
+      results.push(assert(Math.round(1000 * a) - Math.round(1000 * l) === 0, "bank balance sheet inconsistent: " + a + " != " + l + " "));
     }
     return results;
   };
 
-  TrxMgr.prototype.check_balance = function(bank) {
-    var assets, liabilities;
-    assets = bank.assets_total();
-    liabilities = bank.liabilities_total();
-    return assert(Math.round(1000 * assets) - Math.round(1000 * liabilities) === 0, "balance sheet inconsistent: " + assets + " != " + liabilities + "  " + (bank.toString()) + " ");
+  TrxMgr.prototype.check_bankrupcy = function() {
+    var bank, j, len1, ref, results;
+    if (this.cb.capital() <= -0.01) {
+      alert("central bank capital cannot be negative, " + (this.cb.capital()));
+    }
+    ref = this.banks;
+    results = [];
+    for (j = 0, len1 = ref.length; j < len1; j++) {
+      bank = ref[j];
+      if (bank.capital < -0.01 && !bank.gameover) {
+        console.log("bank capital cannot be negative " + bank.capital);
+        this.set_gameover(bank);
+        results.push(this.check_bankrupcy());
+      } else {
+        results.push(void 0);
+      }
+    }
+    return results;
   };
 
   TrxMgr.prototype.create_transactions = function() {
@@ -383,8 +417,7 @@ TrxMgr = (function() {
 
   TrxMgr.prototype.transfer = function(from, to, amount) {
     if (from.reserves < amount) {
-      console.log("not enough funds: " + from.reserves + " < " + amount);
-      if (to.reserves > amount) {
+      if (to.reserves > amount && this.params.prime_rate > this.params.libor) {
         to.give_interbank_credit(from, amount);
       } else {
         from.debt_cb += amount;
@@ -399,7 +432,7 @@ TrxMgr = (function() {
 
   TrxMgr.prototype.pay_customer_deposit_interests = function() {
     var bank, debt_bank, dr, j, len1, ref, results;
-    dr = this.params.deposit_interest / 100.0;
+    dr = this.params.deposit_interest;
     ref = this.banks;
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
@@ -412,17 +445,17 @@ TrxMgr = (function() {
   };
 
   TrxMgr.prototype.get_customer_credit_interests = function() {
-    var bank, cr, debt_cust, j, len1, ref, results;
-    cr = this.params.credit_interest / 100.0;
+    var bank, cr, debt_cust, diff, j, len1, ref, results;
+    cr = this.params.credit_interest;
     ref = this.banks;
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
       debt_cust = cr * bank.credits;
       if (bank.giral < debt_cust) {
-        bank.capital -= bank.credits;
-        bank.credits = 0;
-        bank.capital += bank.giral;
+        diff = debt_cust - bank.giral;
+        bank.credits += diff;
+        bank.capital += debt_cust;
         results.push(bank.giral = 0);
       } else {
         bank.giral -= debt_cust;
@@ -434,7 +467,7 @@ TrxMgr = (function() {
 
   TrxMgr.prototype.get_cb_deposit_interests = function() {
     var bank, interest, j, len1, pr_giro, ref, results;
-    pr_giro = this.params.prime_rate_giro / 100.0;
+    pr_giro = this.params.prime_rate_giro;
     ref = this.banks;
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
@@ -447,17 +480,18 @@ TrxMgr = (function() {
   };
 
   TrxMgr.prototype.pay_cb_credit_interests = function() {
-    var bank, debt, j, len1, pr, ref, results;
+    var bank, debt, diff, j, len1, pr, ref, results;
     pr = this.params.prime_rate;
     ref = this.banks;
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
       debt = pr * bank.debt_cb;
-      if (debt > bank.reserves || debt > bank.capital) {
-        console.log("debt: " + debt + ", reserves: " + bank.reserves + ", capital: " + bank.capital);
-        console.log("bankrupt because of debt to central bank");
-        results.push(bank.set_gameover());
+      if (debt > bank.reserves) {
+        diff = debt - bank.reserves;
+        bank.capital -= debt;
+        bank.reserves = 0;
+        results.push(bank.debt_cb += diff);
       } else {
         bank.reserves -= debt;
         results.push(bank.capital -= debt);
@@ -466,20 +500,23 @@ TrxMgr = (function() {
     return results;
   };
 
-  TrxMgr.prototype.pay_interbank_interests = function() {};
+  TrxMgr.prototype.pay_interbank_interests = function() {
+    return this.interbank_market.settle_interbank_interests(this.params.libor);
+  };
 
   TrxMgr.prototype.repay_cb_credits = function() {
-    var bank, j, len1, minimal_reserves, payback, pr, prg, ref, reserve_surplus, results;
+    var bank, j, len1, max_payback, mr, payback, pr, prg, ref, reserve_surplus, results;
     pr = this.params.prime_rate;
     prg = this.params.prime_rate_giro;
-    minimal_reserves = this.params.minimal_reserves;
     ref = this.banks;
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
-      if (pr * bank.debt_cb > prg.reserves) {
-        reserve_surplus = Math.max(bank.giral * minimal_reserves - bank.reserves, 0);
-        payback = Math.min(bank.debt_cb, reserve_surplus);
+      mr = this.compute_minimal_reserves(bank);
+      if (pr > prg) {
+        reserve_surplus = Math.max(bank.reserves - mr, 0);
+        max_payback = Math.min(bank.debt_cb, reserve_surplus);
+        payback = randomize(0, max_payback);
         bank.debt_cb -= payback;
         results.push(bank.reserves -= payback);
       } else {
@@ -490,19 +527,17 @@ TrxMgr = (function() {
   };
 
   TrxMgr.prototype.new_cb_credits = function() {
-    var bank, c, cap_req, cr, dr, j, len1, potential, pr, prg, ref, results;
+    var bank, c, cap_req, j, len1, max_credit, pr, prg, ref, results;
     pr = this.params.prime_rate;
     prg = this.params.prime_rate_giro;
-    cr = this.params.credit_interest;
-    dr = this.params.deposit_interest;
     cap_req = this.params.cap_req;
     ref = this.banks;
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
-      if (pr * bank.debt_cb < prg.reserves) {
-        potential = cap_req * bank.liabilities_total() - bank.capital;
-        c = Math.min(potential, this.cb.capital());
+      if (pr < prg) {
+        max_credit = (bank.capital - cap_req * bank.liabilities_total()) / cap_req;
+        c = randomize(0, max_credit);
         bank.debt_cb += c;
         results.push(bank.reserves += c);
       } else {
@@ -513,75 +548,52 @@ TrxMgr = (function() {
   };
 
   TrxMgr.prototype.repay_customer_credits = function() {
-    var amount, bank, j, len1, ref, results;
+    var amount, bank, cr, dr, j, len1, max_payback, ref, results;
+    dr = this.params.deposit_interest;
+    cr = this.params.credit_interest;
     ref = this.banks;
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
-      amount = randomizeInt(0, Math.min(bank.credits, bank.giral));
-      bank.credits -= amount;
-      results.push(bank.giral -= amount);
+      if (dr < cr) {
+        max_payback = Math.min(bank.credits, bank.giral);
+        amount = randomize(0, max_payback);
+        bank.credits -= amount;
+        results.push(bank.giral -= amount);
+      } else {
+        results.push(void 0);
+      }
     }
     return results;
   };
 
   TrxMgr.prototype.new_customer_credits = function() {
-    var amount, bank, cr, j, len1, mr, ref, results;
+    var amount, bank, cr, j, len1, max_credit, mr, ref, results;
     ref = this.banks;
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
-      cr = this.params.cap_req / 100.0;
-      mr = this.params.minimal_reserves / 100.0;
-      amount = randomizeInt(0, bank.compute_credit_potential(cr, mr));
+      cr = this.params.cap_req;
+      mr = this.params.minimal_reserves;
+      max_credit = bank.compute_credit_potential(cr, mr);
+      amount = randomize(0, max_credit);
       bank.credits += amount;
       results.push(bank.giral += amount);
     }
     return results;
   };
 
-  TrxMgr.prototype.settle_reserves = function() {
-    var bank, diff, j, len1, minimal_reserves, ref, results;
-    minimal_reserves = this.params.minimal_reserves / 100.0;
-    ref = this.banks;
-    results = [];
-    for (j = 0, len1 = ref.length; j < len1; j++) {
-      bank = ref[j];
-      if (bank.reserves < bank.giral * minimal_reserves) {
-        diff = bank.giral * minimal_reserves - bank.reserves;
-        bank.debt_cb += diff;
-        results.push(bank.reserves += diff);
-      } else {
-        results.push(void 0);
-      }
-    }
-    return results;
+  TrxMgr.prototype.compute_minimal_reserves = function(bank) {
+    var mr;
+    mr = this.params.minimal_reserves;
+    return mr * (bank.giral + bank.debt_cb + bank.get_interbank_debt());
   };
 
-  TrxMgr.prototype.settle_capital_requirement = function() {
-    var bank, cap_req, j, len1, payback, ref, results, total;
-    cap_req = this.params.cap_req / 100.0;
-    ref = this.banks;
-    results = [];
-    for (j = 0, len1 = ref.length; j < len1; j++) {
-      bank = ref[j];
-      total = bank.liabilities_total();
-      if (bank.capital < total * cap_req) {
-        payback = Math.min(bank.debt_cb, bank.reserves);
-        bank.debt_cb -= payback;
-        bank.reserves -= payback;
-        total = bank.liabilities_total();
-        if (bank.capital < total * cap_req) {
-          console.log("bankrupt because of capital requirements");
-          results.push(bank.set_gameover());
-        } else {
-          results.push(void 0);
-        }
-      } else {
-        results.push(void 0);
-      }
-    }
-    return results;
+  TrxMgr.prototype.settle_basel2 = function() {
+    var cap_req, libor, pr;
+    cap_req = this.params.cap_req;
+    pr = this.params.prime_rate;
+    return libor = this.params.libor;
   };
 
   TrxMgr.prototype.make_statistics = function() {
@@ -595,6 +607,20 @@ TrxMgr = (function() {
       infl_m1 = (this.cb.stats.m1[len - 1] / this.cb.stats.m1[len - 2] - 1) * 100;
       return this.cb.stats.inflation_m1.push(infl_m1);
     }
+  };
+
+  TrxMgr.prototype.set_gameover = function(bank) {
+    var cb_loss;
+    assert(!bank.gameover, "bank is already gameover");
+    bank.gameover = true;
+    cb_loss = bank.debt_cb - bank.reserves;
+    if (cb_loss > 0) {
+      console.log("central bank just lost " + cb_loss + " from a bankrupcy");
+    } else if (cb_loss < 0) {
+      console.log("central bank just won " + (-cb_loss) + " from a bankrupcy");
+    }
+    this.interbank_market.set_gameover(bank);
+    return bank.reserves = bank.credits = bank.debt_cb = bank.giral = bank.capital = 0;
   };
 
   return TrxMgr;

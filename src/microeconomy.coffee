@@ -25,8 +25,9 @@ if (!Array::sum)
 
 class Params
   max_trx: 50 # max nr of trx per year
-  prime_rate: 0.02  # prime rate paid by banks for central bank credits
-  prime_rate_giro: 0.01 # prime rate paid by central bank to banks for deposits
+  prime_rate: 0.004  # prime rate paid by banks for central bank credits
+  prime_rate_giro: 0.003 # prime rate paid by central bank to banks for deposits
+  libor: 0.002 # interbank offered rate
   cap_req: 0.08  #capital requirements (leverage ratio)
   minimal_reserves: 0.05  # reserve requirements for banks
   credit_interest: 0.03
@@ -132,12 +133,30 @@ class InterbankMarket
         total += Math.abs(v) if v < 0
     total
 
+  settle_interbank_interests: (libor) ->
+    #iterate table, multiply credits / debts with libor
+    for b in @interbank.keys()
+      for key in @interbank.get(b).keys()
+        val = @interbank.get(b).get(key)
+        @interbank.get(b).put(key, val * (1 + libor))
+        b.capital += val * libor
+
   set_gameover: (bank) ->
+    #interbank write offs can trigger chain reaction of bankcupcy
+    #TrxMgr must check if other banks affected
     if @interbank.containsKey(bank)
       for b in @interbank.get(bank).keys()
         if @interbank.containsKey(b)
-          @interbank.get(b).put(bank, 0)
-        @interbank.get(bank).clear()
+          bank_loss = @interbank.get(b).get(bank)
+          if bank_loss > 0
+            console.log "bank just lost #{bank_loss} from a bankcupcy"
+            b.capital -= bank_loss
+          else if bank_loss < 0
+            console.log "bank just gained #{Math.abs(bank_loss)} a from bankrupcy"
+            b.capital += Math.abs(bank_loss)
+          @interbank.get(b).remove(bank)
+
+      @interbank.get(bank).clear()
 
 class Bank
   gameover: false
@@ -152,7 +171,7 @@ class Bank
   Bank::get_random_bank = ->
     r = randomize(0, 100)
     c = randomize(r, 300)
-    debt_cb = r
+    debt_cb = 1.1 * r # allow cb some initial capital
     giral = randomize(r, c)
     capital = r + c - giral - debt_cb
     new Bank(r, c, debt_cb, giral, capital)
@@ -172,11 +191,6 @@ class Bank
   give_interbank_credit: (to, amount) ->
     @interbank_market.give_interbank_credit(this, to, amount)
   
-  set_gameover: ->
-    @gameover = true
-    console.log "central bank just lost #{@debt_cb - @reserves}"
-    @reserves = @credits = @debt_cb = @giral = @capital = 0
-    @interbank_market.set_gameover(this)
 
   compute_credit_potential: (cap_req, min_res) ->
     # compute upper limit regarding capital requirement
@@ -205,25 +219,35 @@ class TrxMgr
     @get_cb_deposit_interests()
     @pay_cb_credit_interests()
     @pay_interbank_interests()
-    @repay_cb_credits()
-    @new_cb_credits()
-    @repay_customer_credits()
-    @new_customer_credits()
-    @settle_reserves()
-    @settle_capital_requirement()
+    #@repay_cb_credits()
+    #@new_cb_credits()
+    #@repay_customer_credits()
+    #@new_customer_credits()
+    #@settle_basel2()
     @make_statistics()
     @check_consistency()
+    @check_bankrupcy()
 
   check_consistency: ->
-    @check_balance(@cb)
-    console.log "central bank ok"
-    for b in @banks
-      @check_balance(b)
+    a = @cb.assets_total()
+    l = @cb.liabilities_total()
+    assert(Math.round(1000*a) - Math.round(1000*l) == 0, "central bank balance sheet inconsistent: #{a} != #{l} ")
+    for bank in @banks
+      a = bank.assets_total()
+      l = bank.liabilities_total()
+      assert(Math.round(1000*a) - Math.round(1000*l) == 0, "bank balance sheet inconsistent: #{a} != #{l} ")
 
-  check_balance: (bank) ->
-    assets = bank.assets_total()
-    liabilities = bank.liabilities_total()
-    assert(Math.round(1000*assets) - Math.round(1000*liabilities) == 0, "balance sheet inconsistent: #{assets} != #{liabilities}  #{bank.toString()} ")
+  check_bankrupcy: ->
+    #rounding errors considered
+    if @cb.capital() <= -0.01
+      alert "central bank capital cannot be negative, #{@cb.capital()}"
+
+    for bank in @banks
+      if bank.capital < -0.01 and not bank.gameover
+        console.log "bank capital cannot be negative #{bank.capital}"
+        @set_gameover(bank)
+        #check again recursively (chain reaction)
+        @check_bankrupcy()
 
   create_transactions: ->
     # creating a random number of transactions (upper limit is a parameter max_trx)
@@ -244,8 +268,7 @@ class TrxMgr
   transfer: (from, to, amount) ->
 
     if from.reserves < amount
-      console.log "not enough funds: #{from.reserves} < #{amount}"
-      if to.reserves > amount
+      if to.reserves > amount and @params.prime_rate > @params.libor
         # if interbank interest rate is lower than cb prime rate
         #taking interbank credit, full amount of transfer
         to.give_interbank_credit(from, amount)
@@ -262,7 +285,7 @@ class TrxMgr
     to.giral += amount
 
   pay_customer_deposit_interests: ->
-    dr = @params.deposit_interest / 100.0
+    dr = @params.deposit_interest
     for bank in @banks
       debt_bank = dr * bank.giral
       # pay deposit interest to customer
@@ -271,30 +294,32 @@ class TrxMgr
       bank.capital -= debt_bank
       
   get_customer_credit_interests: ->
-    cr = @params.credit_interest / 100.0
+    cr = @params.credit_interest
     for bank in @banks
       # get credit interest from customer
       # TRX: giral AN capital
       debt_cust = cr * bank.credits
       if bank.giral < debt_cust
-        #TODO:new credits if customer can't pay interest??
-        # compund interest
-        #bank.credits += diff
-        #bank.capital += diff
-        #
+        #new credits if customer can't pay interest
+        # resulting in compund interest
         # customer is actually bankrupt now
-        # writing off credits
-        bank.capital -= bank.credits
-        bank.credits = 0
-        # seize the remaining money of customer
-        bank.capital += bank.giral
+        diff = debt_cust - bank.giral
+        bank.credits += diff
+        bank.capital += debt_cust
         bank.giral = 0
+        #
+        # writing off credits
+        # bank.capital -= bank.credits
+        # bank.credits = 0
+        # seize the remaining money of customer
+        # bank.capital += bank.giral
+        # bank.giral = 0
       else
         bank.giral -= debt_cust
         bank.capital += debt_cust
 
   get_cb_deposit_interests: ->
-    pr_giro = @params.prime_rate_giro / 100.0
+    pr_giro = @params.prime_rate_giro
     for bank in @banks
       #interests from cb to bank
       #TRX: reserves an capital
@@ -308,24 +333,28 @@ class TrxMgr
       #interests from bank to cb
       #TRX: capital an reserves
       debt = pr*bank.debt_cb
-      if debt > bank.reserves or debt > bank.capital
-        console.log "debt: #{debt}, reserves: #{bank.reserves}, capital: #{bank.capital}"
-        console.log "bankrupt because of debt to central bank"
-        bank.set_gameover()
+      if debt > bank.reserves
+        #cumulative debt, compound interest, negative capital
+        diff = debt - bank.reserves
+        bank.capital -= debt
+        bank.reserves = 0
+        bank.debt_cb += diff
       else
         bank.reserves -= debt
         bank.capital -= debt
 
   pay_interbank_interests: ->
+    @interbank_market.settle_interbank_interests(@params.libor)
 
   repay_cb_credits: ->
     pr = @params.prime_rate
     prg = @params.prime_rate_giro
-    minimal_reserves = @params.minimal_reserves
     for bank in @banks
-      if (pr*bank.debt_cb > prg.reserves)
-        reserve_surplus = Math.max(bank.giral*minimal_reserves - bank.reserves, 0)
-        payback = Math.min(bank.debt_cb, reserve_surplus)
+      mr = @compute_minimal_reserves(bank)
+      if (pr > prg)
+        reserve_surplus = Math.max(bank.reserves - mr, 0)
+        max_payback = Math.min(bank.debt_cb, reserve_surplus)
+        payback = randomize(0, max_payback)
         #TRX: debt_cb an reserves
         bank.debt_cb -= payback
         bank.reserves -= payback
@@ -333,63 +362,59 @@ class TrxMgr
   new_cb_credits: ->
     pr = @params.prime_rate
     prg = @params.prime_rate_giro
-    cr = @params.credit_interest
-    dr = @params.deposit_interest
     cap_req = @params.cap_req
 
     for bank in @banks
-      if (pr*bank.debt_cb < prg.reserves)
-        potential  = cap_req * bank.liabilities_total() - bank.capital
-        #central bank must have enough capital to grant new credit
-        c = Math.min(potential, @cb.capital())
+      # bank should take more credit if it profits from low prime rate
+      if (pr < prg)
+        # formula to compute max amount for new credit
+        max_credit = (bank.capital - cap_req * bank.liabilities_total()) / cap_req
+        c = randomize(0, max_credit)
         #TRX: reserves an debt_cb
         bank.debt_cb += c
         bank.reserves += c
 
   repay_customer_credits: ->
+    dr = @params.deposit_interest
+    cr = @params.credit_interest
+
     for bank in @banks
       # customers paying back credits
       # TRX: giral AN credits
-      amount = randomizeInt(0, Math.min(bank.credits, bank.giral))
-      bank.credits -= amount
-      bank.giral -= amount
+      if dr < cr
+        max_payback = Math.min(bank.credits, bank.giral)
+        amount = randomize(0, max_payback)
+        bank.credits -= amount
+        bank.giral -= amount
 
   new_customer_credits: ->
     for bank in @banks
       # customers taking new loans
       # money creation
       # TRX: credits AN giral
-      cr = @params.cap_req / 100.0
-      mr = @params.minimal_reserves / 100.0
-      amount = randomizeInt(0, bank.compute_credit_potential(cr, mr))
+      cr = @params.cap_req
+      mr = @params.minimal_reserves
+      max_credit = bank.compute_credit_potential(cr, mr)
+      amount = randomize(0, max_credit)
       bank.credits += amount
       bank.giral += amount
 
-  settle_reserves: ->
-    minimal_reserves = @params.minimal_reserves / 100.0
-    for bank in @banks
-      if bank.reserves < bank.giral * minimal_reserves
-        #bank has not enough reserves and needs a credit from central bank
-        diff = bank.giral * minimal_reserves - bank.reserves
-        #TRX: reserves an debt_cb
-        bank.debt_cb += diff
-        bank.reserves += diff
+  compute_minimal_reserves: (bank) ->
+    mr = @params.minimal_reserves
+    mr * (bank.giral + bank.debt_cb + bank.get_interbank_debt())
 
-  settle_capital_requirement: ->
-    cap_req = @params.cap_req / 100.0
-    for bank in @banks
-      total = bank.liabilities_total()
-      if bank.capital < total * cap_req
-        #try to pay back central bank credit
-        # only necessary in case of deficient capital reqs
-        payback = Math.min(bank.debt_cb, bank.reserves)
-        #TRX: KREDIT_cb an reserves
-        bank.debt_cb -= payback
-        bank.reserves -= payback
-        total = bank.liabilities_total()
-        if bank.capital < total * cap_req
-          console.log "bankrupt because of capital requirements"
-          bank.set_gameover()
+  settle_basel2: () ->
+    # there is a circular dependency between minimal reserve
+    # requirements and capital requirements!!
+    # TODO: compute x to take a new loan (minimal reserves) or y to pay
+    # back debts (capital requirements)
+    # if x > 0 and  y > 0 or y > bank.reserves 
+    # the bank cannot fulfill both requirements and is gameover
+    #
+    cap_req = @params.cap_req
+    pr = @params.prime_rate
+    libor = @params.libor
+
 
   make_statistics: ->
     @cb.stats.m0.push @cb.M0()
@@ -400,3 +425,17 @@ class TrxMgr
       @cb.stats.inflation_m0.push infl_m0
       infl_m1 = (@cb.stats.m1[len-1] / @cb.stats.m1[len-2] - 1)*100
       @cb.stats.inflation_m1.push infl_m1
+
+
+  set_gameover: (bank) ->
+    assert(not bank.gameover, "bank is already gameover")
+    bank.gameover = true
+    cb_loss = bank.debt_cb - bank.reserves
+    if cb_loss > 0
+      console.log "central bank just lost #{cb_loss} from a bankrupcy"
+    else if cb_loss < 0
+      console.log "central bank just won #{-cb_loss} from a bankrupcy"
+      
+    @interbank_market.set_gameover(bank)
+    bank.reserves = bank.credits = bank.debt_cb = bank.giral = bank.capital = 0
+

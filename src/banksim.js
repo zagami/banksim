@@ -6,9 +6,9 @@ var AUTORUN_DELAY, CHART_WIDTH, DICT, GraphVisualizer, INFLATION_HIST, LANG, NUM
 
 LANG = 'EN';
 
-NUM_BANKS = 30;
+NUM_BANKS = 10;
 
-CHART_WIDTH = 200;
+CHART_WIDTH = 300;
 
 INFLATION_HIST = 20;
 
@@ -135,6 +135,21 @@ Simulator = (function() {
           newval = parseFloat(value) / 100;
           _this.gui_params.prime_rate_giro(newval);
           return _this.params.prime_rate_giro = newval;
+        };
+      })(this)
+    }, this);
+    this.libor = ko.computed({
+      read: (function(_this) {
+        return function() {
+          return (_this.gui_params.libor() * 100).toFixed(1);
+        };
+      })(this),
+      write: (function(_this) {
+        return function(value) {
+          var newval;
+          newval = parseFloat(value) / 100;
+          _this.gui_params.libor(newval);
+          return _this.params.libor = newval;
         };
       })(this)
     }, this);
@@ -690,7 +705,7 @@ GraphVisualizer = (function(superClass) {
       yAxis: {
         allowDecimals: false,
         title: {
-          text: '%'
+          text: 'CHF'
         }
       },
       tooltip: {

@@ -139,14 +139,15 @@ describe("InterbankMarket", function() {
     return expect(a.liabilities_total()).toBeCloseTo(liabilities_before + 20);
   });
   return it("should write off interbank debt after bankrupcy", function() {
-    var a, b;
+    var a, b, ib;
     a = Bank.prototype.get_random_bank();
     b = Bank.prototype.get_random_bank();
     b.reserves += 500;
     b.capital += 500;
     b.give_interbank_credit(a, 50);
     expect(b.get_interbank_credits()).toBe(50);
-    a.set_gameover();
+    ib = InterbankMarket.prototype.get_instance();
+    ib.set_gameover(a);
     return expect(b.get_interbank_credits()).toBe(0);
   });
 });

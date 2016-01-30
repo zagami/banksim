@@ -129,5 +129,6 @@ describe "InterbankMarket", ->
     b.capital += 500
     b.give_interbank_credit(a, 50)
     expect(b.get_interbank_credits()).toBe(50)
-    a.set_gameover()
+    ib = InterbankMarket::get_instance()
+    ib.set_gameover(a)
     expect(b.get_interbank_credits()).toBe(0)
