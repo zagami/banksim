@@ -213,38 +213,85 @@
 ## Transactions
 Transactions in () are not implemented yet
 
-Customers will become Persons and Corporations soon.
+Customers will be subdivided into Persons and Corporations soon.
 
 Customer - Customer
-  * CC1: payment
+  * payment
     - innerbank transfer 
-    - interbank transfer -> BB1, can trigger BB2 or CBB2
-  * (new private loan) subtype of CC1
-  * (pay interest for private loan) subtype of CC1
-  * (payback private loan) subtype of CC1
+    - interbank transfer 
+      -> triggers interbank settlement
+  * (new private loan) 
+  * (pay interest for private loan) 
+  * (payback private loan)
 
 Bank -> Customer
-  * BC1: pay deposit interest
-  * BC2: new loan
-  * 
+  * pay deposit interest
+  * new loan
+   
 Customer -> Bank
-  * CB1: credit interest (-> BC2 paying interest with more debt?)
-  * CB2: payback loan
-  * (CB3: new deposit (customer changes bank, creates new account), ->BB1)
+  * credit interest (-> can trigger new customer loan, paying interest with new debt)
+  * payback loan
 
 Bank -> Bank
-  * BB1: interbank payment settlement
-  * BB2: new interbank loan, subtype of BB1
-  * BB3: pay interbank interest, subtype of BB1
-  * (payback interbank loan?)
+  * interbank payment settlement (can trigger new ib or cb loan)
+  * new interbank loan
+  * pay interbank interest (can trigger new ib or cb loan)
+  * payback interbank loan
 
 Central Bank -> Bank
-  * CBB1: pay interest for giro deposit
-  * CBB2: new central bank credit
+  * pay interest for giro deposit
+  * new central bank credit
 
 Bank -> Central Bank
-  * BCB1: pay interest for central bank credit
-  * BCB2: payback central bank credit
+  * pay interest for central bank credit
+  * payback central bank credit
+
+
+# Formulas
+
+MR = Minimal Reserve Requirement
+CR = Capital Requirement
+
+MR < B.Reserves / (B.CB_Debt + B.IB_Debt + B.Giral)
+CR < B.Capital / B.Liabilities
+
+upper limit for customer loans:
+
+X: new loan to customer
+B.Debt = (B.CB_Debt + B.IB_Debt + B.Giral)
+
+MR < B.Reserves / (B.CB_Debt + B.IB_Debt + (B.Giral + X))
+=> MR * (B.Debt + X) < B.Reserves
+=> MR * X < B.Reserves - MR * B.Debt
+=> X < (B.Reserves - MR * B.Debt) / MR
+
+CR < B.Assets + X - (B.Debt + X) / (B.Liabilities + X) 
+=> CR * B.Liabilities + CR * X < B.Assets - B.Debt
+=> CR * X < B.Capital - CR * Liabilities
+=> X < (B.Capital - CR * Liabilities) / CR
+
+the minimum of these 2 upper limits determine the max. possible new customer loan
+
+upper limit for new ib or cb loans:
+
+X: new ib or cb loan
+
+new ib / cb loans are always beneficial to reserve requirements (if B.Reserves < B.Debt)
+
+X < (B.Capital - CR * Liabilities) / CR
+(same formula as for customer loans)
+
+upper limit for payback of ib / cb loans:
+
+X: payback amount
+
+MR < (B.Reserves - X) / (B.Debt - X)
+=> MR * B.Debt - MR * X < B.Reserves - X
+=> X * (1 - MR) < B.Reserves - MR * B.Debt
+=> X < (B.Reserves - MR * B.Debt) / (1 - MR)
+
+paying back loans is always beneficial to capital requirements
+
 
 VOC:
 personal loans: private Darlehen 

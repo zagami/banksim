@@ -163,6 +163,8 @@ InterbankMarket = (function() {
     assert(from !== to, "banks not different");
     assert(amount > 0, "credit amount must be > 0");
     assert(from.reserves >= amount, "not enough reserves for interbank credit");
+    assert(!from.gameover, "bankrupt bank cannot give credit");
+    assert(!to.gameover, "bankrupt bank cannot get credit");
     assert(this.interbank !== null, "interbank null");
     from.reserves -= amount;
     to.reserves += amount;
@@ -302,6 +304,10 @@ Bank = (function() {
     return this.debt_cb + this.get_interbank_debt() + this.giral + this.capital;
   };
 
+  Bank.prototype.debt_total = function() {
+    return this.debt_cb + this.get_interbank_debt() + this.giral;
+  };
+
   Bank.prototype.get_interbank_credits = function() {
     return this.interbank_market.get_interbank_credits(this);
   };
@@ -312,15 +318,6 @@ Bank = (function() {
 
   Bank.prototype.give_interbank_credit = function(to, amount) {
     return this.interbank_market.give_interbank_credit(this, to, amount);
-  };
-
-  Bank.prototype.compute_credit_potential = function(cap_req, min_res) {
-    var limit_cap, limit_mr;
-    limit_cap = (this.capital - cap_req * this.liabilities_total()) / cap_req;
-    limit_cap = Math.max(0, limit_cap);
-    limit_mr = (this.reserves - min_res * this.giral) / min_res;
-    limit_mr = Math.max(0, limit_mr);
-    return Math.min(limit_cap, limit_mr);
   };
 
   return Bank;
@@ -351,9 +348,11 @@ TrxMgr = (function() {
     this.create_transactions();
     this.pay_customer_deposit_interests();
     this.get_customer_credit_interests();
+    this.manage_customer_credits();
     this.get_cb_deposit_interests();
     this.pay_cb_credit_interests();
     this.pay_interbank_interests();
+    this.manage_bank_loans();
     this.make_statistics();
     this.check_consistency();
     return this.check_bankrupcy();
@@ -377,7 +376,7 @@ TrxMgr = (function() {
 
   TrxMgr.prototype.check_bankrupcy = function() {
     var bank, j, len1, ref, results;
-    if (this.cb.capital() <= -0.01) {
+    if (this.cb.capital() < -0.01) {
       alert("central bank capital cannot be negative, " + (this.cb.capital()));
     }
     ref = this.banks;
@@ -385,9 +384,7 @@ TrxMgr = (function() {
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
       if (bank.capital < -0.01 && !bank.gameover) {
-        console.log("bank capital cannot be negative " + bank.capital);
-        this.set_gameover(bank);
-        results.push(this.check_bankrupcy());
+        results.push(alert("bank capital cannot be negative " + bank.capital));
       } else {
         results.push(void 0);
       }
@@ -396,16 +393,16 @@ TrxMgr = (function() {
   };
 
   TrxMgr.prototype.create_transactions = function() {
-    var amount, bank_src, bank_tgt, j, max_trx, ref, results, trx;
+    var amount, bank_src, bank_src_index, bank_tgt, bank_tgt_index, j, max_trx, ref, results, trx;
     max_trx = randomizeInt(1, this.params.max_trx);
     console.log("performing " + max_trx + " transactions");
     results = [];
     for (trx = j = 1, ref = max_trx; 1 <= ref ? j <= ref : j >= ref; trx = 1 <= ref ? ++j : --j) {
-      bank_src = randomizeInt(0, this.banks.length - 1);
-      bank_tgt = randomizeInt(0, this.banks.length - 1);
-      if (bank_src !== bank_tgt && !(bank_src.gameover || bank_tgt.gameover)) {
-        bank_src = this.banks[bank_src];
-        bank_tgt = this.banks[bank_tgt];
+      bank_src_index = randomizeInt(0, this.banks.length - 1);
+      bank_tgt_index = randomizeInt(0, this.banks.length - 1);
+      bank_src = this.banks[bank_src_index];
+      bank_tgt = this.banks[bank_tgt_index];
+      if (bank_src_index !== bank_tgt_index && !(bank_src.gameover || bank_tgt.gameover)) {
         amount = randomize(0, bank_src.giral);
         results.push(this.transfer(bank_src, bank_tgt, amount));
       } else {
@@ -437,6 +434,9 @@ TrxMgr = (function() {
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
+      if (!(!bank.gameover)) {
+        continue;
+      }
       debt_bank = dr * bank.giral;
       bank.giral += debt_bank;
       results.push(bank.capital -= debt_bank);
@@ -451,6 +451,9 @@ TrxMgr = (function() {
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
+      if (!(!bank.gameover)) {
+        continue;
+      }
       debt_cust = cr * bank.credits;
       if (bank.giral < debt_cust) {
         diff = debt_cust - bank.giral;
@@ -472,6 +475,9 @@ TrxMgr = (function() {
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
+      if (!(!bank.gameover)) {
+        continue;
+      }
       interest = pr_giro * bank.reserves;
       bank.reserves += interest;
       results.push(bank.capital += interest);
@@ -486,6 +492,9 @@ TrxMgr = (function() {
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
+      if (!(!bank.gameover)) {
+        continue;
+      }
       debt = pr * bank.debt_cb;
       if (debt > bank.reserves) {
         diff = debt - bank.reserves;
@@ -504,83 +513,40 @@ TrxMgr = (function() {
     return this.interbank_market.settle_interbank_interests(this.params.libor);
   };
 
-  TrxMgr.prototype.repay_cb_credits = function() {
-    var bank, j, len1, max_payback, mr, payback, pr, prg, ref, reserve_surplus, results;
-    pr = this.params.prime_rate;
-    prg = this.params.prime_rate_giro;
-    ref = this.banks;
-    results = [];
-    for (j = 0, len1 = ref.length; j < len1; j++) {
-      bank = ref[j];
-      mr = this.compute_minimal_reserves(bank);
-      if (pr > prg) {
-        reserve_surplus = Math.max(bank.reserves - mr, 0);
-        max_payback = Math.min(bank.debt_cb, reserve_surplus);
-        payback = randomize(0, max_payback);
-        bank.debt_cb -= payback;
-        results.push(bank.reserves -= payback);
-      } else {
-        results.push(void 0);
-      }
-    }
-    return results;
-  };
-
-  TrxMgr.prototype.new_cb_credits = function() {
-    var bank, c, cap_req, j, len1, max_credit, pr, prg, ref, results;
-    pr = this.params.prime_rate;
-    prg = this.params.prime_rate_giro;
-    cap_req = this.params.cap_req;
-    ref = this.banks;
-    results = [];
-    for (j = 0, len1 = ref.length; j < len1; j++) {
-      bank = ref[j];
-      if (pr < prg) {
-        max_credit = (bank.capital - cap_req * bank.liabilities_total()) / cap_req;
-        c = randomize(0, max_credit);
-        bank.debt_cb += c;
-        results.push(bank.reserves += c);
-      } else {
-        results.push(void 0);
-      }
-    }
-    return results;
-  };
-
-  TrxMgr.prototype.repay_customer_credits = function() {
-    var amount, bank, cr, dr, j, len1, max_payback, ref, results;
+  TrxMgr.prototype.manage_customer_credits = function() {
+    var amount, bank, cr, dr, j, len1, max_credit, max_payback, ref, results;
     dr = this.params.deposit_interest;
     cr = this.params.credit_interest;
     ref = this.banks;
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
+      if (!(!bank.gameover)) {
+        continue;
+      }
       if (dr < cr) {
         max_payback = Math.min(bank.credits, bank.giral);
         amount = randomize(0, max_payback);
         bank.credits -= amount;
-        results.push(bank.giral -= amount);
-      } else {
-        results.push(void 0);
+        bank.giral -= amount;
       }
-    }
-    return results;
-  };
-
-  TrxMgr.prototype.new_customer_credits = function() {
-    var amount, bank, cr, j, len1, max_credit, mr, ref, results;
-    ref = this.banks;
-    results = [];
-    for (j = 0, len1 = ref.length; j < len1; j++) {
-      bank = ref[j];
-      cr = this.params.cap_req;
-      mr = this.params.minimal_reserves;
-      max_credit = bank.compute_credit_potential(cr, mr);
+      max_credit = this.customer_credit_potential(bank);
       amount = randomize(0, max_credit);
       bank.credits += amount;
       results.push(bank.giral += amount);
     }
     return results;
+  };
+
+  TrxMgr.prototype.customer_credit_potential = function(bank) {
+    var cr, limit_cap, limit_mr, mr;
+    cr = this.params.cap_req;
+    mr = this.params.minimal_reserves;
+    limit_cap = (bank.capital - cr * bank.liabilities_total()) / cr;
+    limit_cap = Math.max(0, limit_cap);
+    limit_mr = (bank.reserves - this.compute_minimal_reserves(bank)) / mr;
+    limit_mr = Math.max(0, limit_mr);
+    return Math.min(limit_cap, limit_mr);
   };
 
   TrxMgr.prototype.compute_minimal_reserves = function(bank) {
@@ -589,11 +555,56 @@ TrxMgr = (function() {
     return mr * (bank.giral + bank.debt_cb + bank.get_interbank_debt());
   };
 
-  TrxMgr.prototype.settle_basel2 = function() {
-    var cap_req, libor, pr;
-    cap_req = this.params.cap_req;
+  TrxMgr.prototype.manage_bank_loans = function() {
+    var amount, bank, cr, diff, j, len1, potential, pr, prg, ref, results;
+    cr = this.params.cap_req;
     pr = this.params.prime_rate;
-    return libor = this.params.libor;
+    prg = this.params.prime_rate_giro;
+    ref = this.banks;
+    results = [];
+    for (j = 0, len1 = ref.length; j < len1; j++) {
+      bank = ref[j];
+      if (!(!bank.gameover)) {
+        continue;
+      }
+      if (this.compute_minimal_reserves(bank) > bank.reserves) {
+        diff = Math.max(0, this.compute_minimal_reserves(bank) - bank.reserves);
+        potential = this.new_loan_potential(bank);
+        if (diff > potential) {
+          this.set_gameover(bank);
+          continue;
+        }
+        bank.reserves += diff;
+        bank.debt_cb += diff;
+      }
+      if (bank.capital / bank.liabilities_total() < cr) {
+        potential = this.payback_loan_potential(bank);
+        amount = Math.min(potential, bank.debt_cb);
+        bank.debt_cb -= amount;
+        bank.reserves -= amount;
+      }
+      if (bank.capital / bank.liabilities_total() < cr) {
+        this.set_gameover(bank);
+        continue;
+      } else {
+        results.push(void 0);
+      }
+    }
+    return results;
+  };
+
+  TrxMgr.prototype.new_loan_potential = function(bank) {
+    var cr, limit_cap;
+    cr = this.params.cap_req;
+    limit_cap = (bank.capital - cr * bank.liabilities_total()) / cr;
+    return Math.max(0, limit_cap);
+  };
+
+  TrxMgr.prototype.payback_loan_potential = function(bank) {
+    var limit_mr, mr;
+    mr = this.params.minimal_reserves;
+    limit_mr = (bank.reserves - this.compute_minimal_reserves(bank)) / (1 - mr);
+    return Math.max(0, limit_mr);
   };
 
   TrxMgr.prototype.make_statistics = function() {

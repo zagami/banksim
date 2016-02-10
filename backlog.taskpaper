@@ -1,16 +1,17 @@
 Backlog:
 
-- asserts einbauen
-- GUI controls im code, uebersetzen
-- GUI Builder class
+- asserts einbauen @done(2016-02-10)
 - resetting parameters?
 - Tilgung der Kredite?
 - Kreditausfall? (Sicherheit pfänden?)
-- Interbankenmarkt
+- Interbankenmarkt @done(2016-02-10)
 - individuelle Bankkunden
 - Repo Geschäfte mit SNB
-
+- Sparkonten
+- Staat
+- Aufwand/Ertrag
+-
 DevTools:
-	- quick file switch plugin?
-	- bookmarks after restart?
+	- quick file switch plugin? @done(2016-02-10)
+	- bookmarks after restart? @done(2016-02-10)
 	- 

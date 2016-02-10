@@ -6,7 +6,7 @@ var AUTORUN_DELAY, CHART_WIDTH, DICT, GraphVisualizer, INFLATION_HIST, LANG, NUM
 
 LANG = 'EN';
 
-NUM_BANKS = 10;
+NUM_BANKS = 20;
 
 CHART_WIDTH = 300;
 
@@ -369,11 +369,11 @@ TableVisualizer = (function(superClass) {
   };
 
   TableVisualizer.prototype.create_bank_header = function() {
-    return this.create_header('', translate("reserves"), translate('credits'), translate('debt to central bank'), translate('bank deposits'), translate("capital"), translate("assets"), translate("liabilities"));
+    return this.create_header('', translate("reserves"), translate('interbank credits'), translate('credits'), translate('debt to central bank'), translate('interbank debt'), translate('bank deposits'), translate("capital"), translate("assets"), translate("liabilities"));
   };
 
   TableVisualizer.prototype.create_bank_row = function(id, bank) {
-    return this.create_row(id, bank.reserves.toFixed(2), bank.credits.toFixed(2), bank.debt_cb.toFixed(2), bank.giral.toFixed(2), bank.capital.toFixed(2), bank.assets_total().toFixed(2), bank.liabilities_total().toFixed(2));
+    return this.create_row(id, bank.reserves.toFixed(2), bank.get_interbank_credits().toFixed(2), bank.credits.toFixed(2), bank.debt_cb.toFixed(2), bank.get_interbank_debt().toFixed(2), bank.giral.toFixed(2), bank.capital.toFixed(2), bank.assets_total().toFixed(2), bank.liabilities_total().toFixed(2));
   };
 
   TableVisualizer.prototype.create_banks_table = function(banks) {
@@ -778,8 +778,16 @@ GraphVisualizer = (function(superClass) {
           data: [credits.sum()],
           stack: translate('assets')
         }, {
+          name: translate('interbank credits'),
+          data: [interbank_credits.sum()],
+          stack: translate('assets')
+        }, {
           name: translate('debt to central bank'),
           data: [cbcredits.sum()],
+          stack: translate('liabilities')
+        }, {
+          name: translate('interbank debt'),
+          data: [interbank_debts.sum()],
           stack: translate('liabilities')
         }, {
           name: translate('bank deposits'),
