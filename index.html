@@ -3,15 +3,17 @@
 <head>
  <!--JS Libraries -->
   <!-- jQuery -->
-  <script src="https://code.jquery.com/jquery-2.1.4.js"></script>
+  <script src="lib/jquery-2.1.4.js"></script>
 
   <!-- Knockout.js -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.3.0/knockout-min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.4.1/knockout.mapping.min.js"></script>
+  <script src="lib/knockout-min.js"></script>
+  <script src="lib/knockout.mapping.min.js"></script>
 
   <!-- highcharts -->
-  <script src="https://code.highcharts.com/highcharts.js"></script>
-  <script src="https://code.highcharts.com/modules/exporting.js"></script>
+  <script src="lib/highcharts.js"></script>
+  <script src="lib/exporting.js"></script>
+
+  <script src="lib/hashtable.js"></script>
 
   <!-- stylesheet -->
   <link rel="stylesheet" type="text/css" href="css/style.css">
@@ -19,8 +21,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <script src="lib/hashtable.js"></script>
-
+  <!-- application -->
   <script src="src/microeconomy.js"></script>
   <script src="src/banksim.js"></script>
   
@@ -70,7 +71,7 @@
 
     <tr>
       <td class="label">Leitzins: ZB Konten</td>
-      <td><input data-bind="value: prime_rate_giro" id="slider_lzg" type="range" min="-15" max="15" step="0.1" /> <span data-bind="text: prime_rate_giro"></span>%</td>
+      <td><input data-bind="value: prime_rate_giro" id="slider_lzg" type="range" min="0" max="15" step="0.1" /> <span data-bind="text: prime_rate_giro"></span>%</td>
     </tr>
     <tr>
       <td class="label">LIBOR</td>
@@ -103,13 +104,16 @@
     <div id="banks_total_graph"></div> 
     <div id="stats_graph1"></div>
     <div id="stats_graph2"></div>
+    <div id="wealth_graph"></div>
     <div id="banks_graph"></div>
     <div id="banks_graph2"></div>
+    <div id="money_flow_graph1"></div>
   </div>
 
   <div id="tables">
     <div id="cb_table"></div>
     <div id="ms_table"></div>
+    <div id="state_table"></div>
     <div id="banks_table"></div>
   </div>
 </div>
@@ -291,7 +295,8 @@ MR < (B.Reserves - X) / (B.Debt - X)
 => X < (B.Reserves - MR * B.Debt) / (1 - MR)
 
 paying back loans is always beneficial to capital requirements
-
+if prime rate deposit is good, what is minimal amount needed?
+     x = 1/cr * ((cr-1)*B.Assets - B.Debt)
 
 VOC:
 personal loans: private Darlehen 

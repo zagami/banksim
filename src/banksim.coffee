@@ -1,5 +1,4 @@
 LANG = 'EN'
-NUM_BANKS = 20
 CHART_WIDTH = 300
 INFLATION_HIST = 20 #data points of inflation graph
 AUTORUN_DELAY = 2000
@@ -41,12 +40,14 @@ iv = (val) ->
 class Simulator
   init: ->
     banks = (Bank::get_random_bank() for i in [1..NUM_BANKS])
-    cb = new CentralBank(banks)
+    state = new State()
+    cb = new CentralBank(state, banks)
     @params = new Params()
-    @microeconomy = new MicroEconomy(cb, banks, @params)
+    @microeconomy = new MicroEconomy(state, cb, banks, @params)
     @trx_mgr = new TrxMgr(@microeconomy)
     @visualizerMgr = new VisualizerMgr()
     @visualizerMgr.addViz ( new TableVisualizer(@microeconomy) )
+    @visualizerMgr.addViz( new DiagramVisualizer(@microeconomy) )
     @visualizerMgr.addViz( new GraphVisualizer(@microeconomy) )
     @init_params()
 
@@ -182,20 +183,39 @@ class VisualizerMgr
     @vizArray.push(viz)
 
 class Visualizer
-  constructor: (microeconomy) ->
-    @microeconomy = microeconomy
-    @banks = microeconomy.banks
-    @cb = microeconomy.cb
+  constructor: (@microeconomy) ->
+    @banks = @microeconomy.banks
+    @cb = @microeconomy.cb
+    @stats = @microeconomy.stats
+    @state = @microeconomy.state
+
   clear: ->
   visualize: ->
+
+class GraphVisualizer extends Visualizer
+  constructor: (@microeconomy) ->
+    super
+
+  clear: ->
+    super
+    $('#money_flow_graph1').empty()
+
+  draw_money_flow: ->
+    $('#money_flow_graph1').text('foobar')
+
+  visualize: ->
+    @clear()
+    @draw_money_flow()
 
 class TableVisualizer extends Visualizer
   constructor: (@microeconomy) ->
     super
+
   clear: ->
     super
     $('#cb_table').empty()
     $('#ms_table').empty()
+    $('#state_table').empty()
     $('#banks_table').empty()
 
   create_row: (entries...) ->
@@ -244,7 +264,19 @@ class TableVisualizer extends Visualizer
     $('#cb_table').append(row_h).append(row_1).append(row_2).append(row_3)
     $('#cb_table').append('</table>')
 
-  create_ms_table: (cb) ->
+  create_state_table: (state) ->
+    $('#state_table').append('<table>')
+    $('#state_table').append( '<caption>' + translate('state') + '</caption>' )
+    len = @state.income_tax_series.length
+    if len > 0
+      r1 = @create_row('taxes current year', @state.income_tax_series[len-1].toFixed(2))
+      r2 = @create_row('expenses current year', @state.public_service_series[len-1].toFixed(2))
+      r3 = @create_row('state reserves', @state.reserves.toFixed(2))
+      $('#state_table').append(r1).append(r2).append(r3)
+
+    $('#state_table').append('</table>' )
+
+  create_ms_table: ->
     # money supply
     $('#ms_table').append('<table>')
     $('#ms_table').append( '<caption>' + translate('money supply') + '</caption>' )
@@ -254,9 +286,9 @@ class TableVisualizer extends Visualizer
       'M2'
     )
     row = @create_row(
-      cb.M0().toFixed(2),
-      cb.M1().toFixed(2),
-      cb.M2().toFixed(2)
+      @stats.m0().toFixed(2),
+      @stats.m1().toFixed(2),
+      @stats.m2().toFixed(2),
     )
     $('#ms_table').append(row_h).append(row)
     $('#ms_table').append('</table>' )
@@ -272,21 +304,23 @@ class TableVisualizer extends Visualizer
       translate('bank deposits'),
       translate("capital"),
       translate("assets"),
-      translate("liabilities")
+      translate("liabilities"),
+      translate('number of clients')
     )
 
   create_bank_row: (id, bank) ->
     @create_row(
       id,
       bank.reserves.toFixed(2),
-      bank.get_interbank_credits().toFixed(2),
-      bank.credits.toFixed(2),
-      bank.debt_cb.toFixed(2),
-      bank.get_interbank_debt().toFixed(2),
-      bank.giral.toFixed(2),
+      bank.interbank_loans().toFixed(2),
+      bank.customer_loans().toFixed(2),
+      bank.cb_debt.toFixed(2),
+      bank.interbank_debt().toFixed(2),
+      bank.customer_deposits().toFixed(2),
       bank.capital.toFixed(2),
       bank.assets_total().toFixed(2),
-      bank.liabilities_total().toFixed(2)
+      bank.liabilities_total().toFixed(2),
+      bank.customers.length
     )
 
   create_banks_table: (banks) ->
@@ -304,10 +338,11 @@ class TableVisualizer extends Visualizer
   visualize: ->
     @clear()
     @create_cb_table(@cb)
-    @create_ms_table(@cb)
+    @create_ms_table()
+    @create_state_table(@state)
     @create_banks_table(@banks)
 
-class GraphVisualizer extends Visualizer
+class DiagramVisualizer extends Visualizer
   constructor: (@microeconomy) ->
     super
 
@@ -316,6 +351,7 @@ class GraphVisualizer extends Visualizer
     $('#banks_total_graph').empty()
     $('#cb_graph').empty()
     $('#stats_graph').empty()
+    $('#wealth_graph').empty()
 
   draw_stats: ->
     $('#stats_graph1').highcharts({
@@ -340,10 +376,13 @@ class GraphVisualizer extends Visualizer
           animation: false
       series: [{
           name: translate('money supply M0')
-          data: @cb.stats.m0
+          data: @stats.m0_series
       }, {
           name: translate('money supply M1')
-          data: @cb.stats.m1
+          data: @stats.m1_series
+      }, {
+          name: translate('money supply M2')
+          data: @stats.m2_series
       }]
     })
     
@@ -369,10 +408,40 @@ class GraphVisualizer extends Visualizer
           animation: false
       series: [{
           name: translate('inflation M0')
-          data: @cb.stats.inflation_m0[-INFLATION_HIST..]
+          data: @stats.m0_inflation_series[-INFLATION_HIST..]
       }, {
           name: translate('inflation M1')
-          data: @cb.stats.inflation_m1[-INFLATION_HIST..]
+          data: @stats.m1_inflation_series[-INFLATION_HIST..]
+      }, {
+          name: translate('inflation M2')
+          data: @stats.m2_inflation_series[-INFLATION_HIST..]
+      }]
+    })
+
+  draw_wealth_distribution: ->
+    $('#wealth_graph').highcharts({
+      chart:
+        width: CHART_WIDTH
+      title:
+        text: translate("wealth distribution")
+      xAxis:
+        categories: []
+      yAxis:
+        allowDecimals: false
+        title:
+          text: 'CHF'
+      tooltip:
+          formatter: ->
+              return '<b>' + this.x + '</b><br/>' +
+                  this.series.name + ': ' + this.y + '<br/>' 
+      plotOptions:
+        column:
+          stacking: 'normal'
+        series:
+          animation: false
+      series: [{
+          name: translate('wealth distribution')
+          data: @stats.wealth_distribution()
       }]
     })
 
@@ -421,12 +490,13 @@ class GraphVisualizer extends Visualizer
 
   draw_banks: ->
     reserves = (bank.reserves for bank in @banks)
-    credits = (bank.credits for bank in @banks)
+    loans = (bank.customer_loans() for bank in @banks)
     caps = (bank.capital for bank in @banks)
-    cbcredits = (bank.debt_cb for bank in @banks)
-    girals = (bank.giral for bank in @banks)
-    interbank_credits = (bank.get_interbank_credits() for bank in @banks)
-    interbank_debts = (bank.get_interbank_debt() for bank in @banks)
+    cb_debts = (bank.cb_debt for bank in @banks)
+    deposits = (bank.customer_deposits() for bank in @banks)
+    savings = (bank.customer_savings() for bank in @banks)
+    interbank_loans = (bank.interbank_loans() for bank in @banks)
+    interbank_debts = (bank.interbank_debt() for bank in @banks)
 
     $('#banks_graph').highcharts({
       chart:
@@ -457,23 +527,27 @@ class GraphVisualizer extends Visualizer
           stack: translate('assets')
       }, {
           name: translate('interbank credits')
-          data: interbank_credits
+          data: interbank_loans
           stack: translate('assets')
       }, {
-          name: translate('credits')
-          data: credits
+          name: translate('customer loans')
+          data: loans
           stack: translate('assets')
       }, {
           name: translate('debt to central bank')
-          data: cbcredits
+          data: cb_debts
           stack: translate('liabilities')
       }, {
           name: translate('interbank debt')
           data: interbank_debts
           stack: translate('liabilities')
       }, {
-          name: translate('bank deposits') 
-          data: girals
+          name: translate('deposits') 
+          data: deposits
+          stack: translate('liabilities')
+      }, {
+          name: translate('savings') 
+          data: savings
           stack: translate('liabilities')
       }, {
           name: translate("capital")
@@ -509,7 +583,7 @@ class GraphVisualizer extends Visualizer
           stack: '1'
       }, {
           name: translate('central bank debt')
-          data: cbcredits
+          data: cb_debts
           stack: '2'
       }, {
           name: translate('interbank debt')
@@ -545,16 +619,16 @@ class GraphVisualizer extends Visualizer
           data: [ reserves.sum() ]
           stack: translate('assets')
       }, {
-          name: translate('credits')
-          data: [ credits.sum() ]
+          name: translate('interbank loans')
+          data: [ interbank_loans.sum() ]
           stack: translate('assets')
       }, {
-          name: translate('interbank credits')
-          data: [ interbank_credits.sum() ]
+          name: translate('customer loans')
+          data: [ loans.sum() ]
           stack: translate('assets')
       }, {
           name: translate('debt to central bank')
-          data: [ cbcredits.sum() ]
+          data: [ cb_debts.sum() ]
           stack: translate('liabilities')
       }, {
           name: translate('interbank debt')
@@ -562,7 +636,7 @@ class GraphVisualizer extends Visualizer
           stack: translate('liabilities')
       }, {
           name: translate('bank deposits')
-          data: [ girals.sum() ]
+          data: [ deposits.sum() ]
           stack: translate('liabilities')
       }, {
           name: translate("capital")
@@ -576,6 +650,7 @@ class GraphVisualizer extends Visualizer
     @draw_cb()
     @draw_stats()
     @draw_banks()
+    @draw_wealth_distribution()
 
 #global objects
 simulator = null
