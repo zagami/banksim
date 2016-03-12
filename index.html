@@ -13,6 +13,10 @@
   <script src="lib/highcharts.js"></script>
   <script src="lib/exporting.js"></script>
 
+  <!-- vis -->
+  <script src="lib/vis.js"></script>
+  <link rel="stylesheet" type="text/css" href="lib/vis.css">
+
   <script src="lib/hashtable.js"></script>
 
   <!-- stylesheet -->
@@ -107,7 +111,8 @@
     <div id="wealth_graph"></div>
     <div id="banks_graph"></div>
     <div id="banks_graph2"></div>
-    <div id="money_flow_graph1"></div>
+    <div id="interest_graph" class='graph'></div>
+    <div id="customer_graph" class='graph'></div>
   </div>
 
   <div id="tables">
@@ -135,8 +140,10 @@
         simulator.autorun_clicked();
     });  
 </script>
+
 <div id="foo" style= "clear: both">
 </div>
+
 <div id="instructions">
 <pre>
 

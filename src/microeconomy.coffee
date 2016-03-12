@@ -1,7 +1,7 @@
-NUM_BANKS = 20
-MAX_CUSTOMERS = 100
+NUM_BANKS = 10
+MAX_CUSTOMERS = 10
 DFLT_INITIAL_DEPOSIT_PER_CUST = 10
-DFLT_INITIAL_LOAN_PER_CUST = 10
+DFLT_INITIAL_LOAN_PER_CUST = 15
 TAX_RATE = 0.1
 
 assert = (condition, message) ->
@@ -20,7 +20,7 @@ randomize = (from, to) ->
   
 randomizeInt = (from, to) ->
   x = to - from + 1
-  Math.floor(from + x * Math.random()) 
+  Math.floor(from + x * Math.random())
 
 random_array = (amount, n) ->
   average = amount / n
@@ -40,13 +40,18 @@ if (!Array::sum)
     s += @[--i] while i > 0
     s
 
+if (!Array::last)
+  Array::last = ->
+    i = @length
+    @[i-1]
+
 class Params
   max_trx: 500 # max nr of trx per year
-  prime_rate: 0.004  # prime rate paid by banks for central bank credits
-  prime_rate_giro: 0.003 # prime rate paid by central bank to banks for deposits
-  libor: 0.002 # interbank offered rate
-  cap_req: 0.08  #capital requirements (leverage ratio)
-  minimal_reserves: 0.05  # reserve requirements for banks
+  prime_rate: 0.000  # prime rate paid by banks for central bank credits
+  prime_rate_giro: 0.000 # prime rate paid by central bank to banks for deposits
+  libor: 0.000 # interbank offered rate
+  cap_req: 0.00  #capital requirements (leverage ratio)
+  minimal_reserves: 0.00  # reserve requirements for banks
   credit_interest: 0.00
   deposit_interest: 0.00
 
@@ -67,6 +72,7 @@ class Statistics
     @b_c_flow_series = []
     @b_s_flow_series = []
     @c_b_flow_series = []
+    @c_c_flow_series = []
     @c_s_flow_series = []
     @s_c_flow_series = []
     @s_b_flow_series = []
@@ -80,6 +86,7 @@ class Statistics
     @b_c_flow = 0
     @b_s_flow = 0
     @c_b_flow = 0
+    @c_c_flow = 0
     @c_s_flow = 0
     @s_c_flow = 0
     @s_b_flow = 0
@@ -118,6 +125,7 @@ class Statistics
     @b_s_flow_series.push @b_s_flow
     @c_b_flow_series.push @c_b_flow
     @c_s_flow_series.push @c_s_flow
+    @c_c_flow_series.push @c_c_flow
     @s_c_flow_series.push @s_c_flow
     @s_b_flow_series.push @s_b_flow
 
@@ -311,6 +319,9 @@ class BankCustomer
   profit: ->
     @income - @expenses
 
+  assets_total: ->
+    @giral + @savings  
+
 class MicroEconomy
   constructor: (@state, @cb, @banks, @params) ->
     @stats = new Statistics(this)
@@ -327,7 +338,6 @@ class State
     @public_service_series = []
     @income_tax_series = []
     @reserves = 0
-
 
 class TrxMgr
   constructor: (@microeconomy) ->
@@ -410,7 +420,6 @@ class TrxMgr
     if from.bank != to.bank and from.bank.reserves < amount
       @get_new_bank_loan(from, amount)
 
-
     if from.bank != to.bank
       from.bank.reserves -= amount
       to.bank.reserves += amount
@@ -419,7 +428,8 @@ class TrxMgr
     to.income += amount
     from.giral -= amount
     to.giral += amount
-    
+    @stats.c_c_flow += amount
+
   pay_customer_deposit_interests: ->
     dr = @params.deposit_interest
     for bank in @banks when not bank.gameover
@@ -430,6 +440,7 @@ class TrxMgr
         c.giral += debt_bank
         c.income += debt_bank
         bank.capital -= debt_bank
+        @stats.b_c_flow += debt_bank
       
   get_customer_credit_interests: ->
     cr = @params.credit_interest
@@ -448,6 +459,7 @@ class TrxMgr
           bank.capital += debt_cust
           c.giral = 0
           c.expenses += debt_cust
+          @stats.c_b_flow += debt_cust
           #
           # alternative: writing off credits
           # bank.capital -= c.loan
@@ -459,10 +471,13 @@ class TrxMgr
           c.giral -= debt_cust
           c.expenses += debt_cust
           bank.capital += debt_cust
+          @stats.c_b_flow += debt_cust
 
   get_cb_deposit_interests: ->
     pr_giro = @params.prime_rate_giro
-    @state.reserves += pr_giro * @state.reserves
+    interest = pr_giro * @state.reserves
+    @state.reserves += interest
+    @stats.cb_s_flow += interest
 
     for bank in @banks when not bank.gameover
       #interests from cb to bank
@@ -470,6 +485,7 @@ class TrxMgr
       interest = pr_giro * bank.reserves
       bank.reserves += interest
       bank.capital += interest
+      @stats.cb_b_flow += interest
 
   pay_cb_credit_interests: ->
     pr = @params.prime_rate
@@ -487,6 +503,8 @@ class TrxMgr
         bank.reserves -= debt
         bank.capital -= debt
 
+      @stats.b_cb_flow += debt
+      
   pay_interbank_interests: ->
     @interbank_market.settle_interbank_interests(@params.libor)
 
@@ -513,7 +531,6 @@ class TrxMgr
         # c.loan += amount
         # c.giral += amount
         
-        
   collect_taxes: ->
     income_tax_current_year = 0
     tax_payers = @microeconomy.all_customers()
@@ -527,6 +544,7 @@ class TrxMgr
         c.bank.reserves -= tax
         income_tax_current_year += tax
 
+      @stats.c_s_flow += tax
       c.income = 0
       c.expenses = 0
 
@@ -548,12 +566,10 @@ class TrxMgr
       tax_payers[i].bank.reserves += arr[i]
       tax_payers[i].income += arr[i]
 
+    @stats.s_c_flow += public_service_cost
     @state.reserves -= public_service_cost
     @state.public_service_series.push public_service_cost
 
-  compute_minimal_reserves: (bank) ->
-    mr = @params.minimal_reserves
-    mr * (bank.customer_deposits() + bank.cb_debt + bank.interbank_debt())
 
   manage_bank_debt: ->
     cr = @params.cap_req
@@ -603,6 +619,12 @@ class TrxMgr
       bank.reserves += demand
       bank.cb_debt += demand
 
+  #lower limit of reserves that bank must have
+  compute_minimal_reserves: (bank) ->
+    mr = @params.minimal_reserves
+    mr * (bank.customer_deposits() + bank.cb_debt + bank.interbank_debt())
+
+  #max limit for new customer loan
   compute_max_new_customer_loan: (bank) ->
     cr = @params.cap_req
     mr = @params.minimal_reserves
@@ -616,6 +638,7 @@ class TrxMgr
     #the smaller limit determines the maximal credit potential
     Math.min(limit_cap, limit_mr)
 
+  #max amount of reserves that can be loaned to other banks
   compute_max_new_ib_loan: (bank) ->
     mr = @params.minimal_reserves
 
@@ -623,6 +646,7 @@ class TrxMgr
     limit_mr = bank.reserves -  @compute_minimal_reserves(bank)
     Math.max(0, limit_mr)
 
+  # max limit for new loan that bank can take
   compute_max_new_debt: (bank) ->
     cr = @params.cap_req
 
@@ -630,6 +654,7 @@ class TrxMgr
     limit_cap = (bank.capital - cr * bank.liabilities_total()) / cr
     Math.max(0, limit_cap)
 
+  #max limit of reserves that can be used to payback bank debt
   payback_debt_potential: (bank) ->
     mr = @params.minimal_reserves
 
