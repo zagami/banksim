@@ -143,7 +143,7 @@ Statistics = (function() {
       bank = ref[j];
       sum += bank.customer_deposits();
     }
-    return sum;
+    return this.m0() + sum;
   };
 
   Statistics.prototype.m2 = function() {
@@ -504,6 +504,10 @@ BankCustomer = (function() {
 
   BankCustomer.prototype.assets_total = function() {
     return this.giral + this.savings;
+  };
+
+  BankCustomer.prototype.capital = function() {
+    return this.assets_total() - this.loan;
   };
 
   return BankCustomer;

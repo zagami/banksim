@@ -97,7 +97,7 @@ class Statistics
   m1: ->
     sum = 0
     sum += bank.customer_deposits() for bank in @banks
-    sum
+    @m0() + sum
 
   m2: ->
     sum = 0
@@ -320,7 +320,10 @@ class BankCustomer
     @income - @expenses
 
   assets_total: ->
-    @giral + @savings  
+    @giral + @savings
+
+  capital: ->
+    @assets_total() - @loan
 
 class MicroEconomy
   constructor: (@state, @cb, @banks, @params) ->

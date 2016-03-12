@@ -2,6 +2,10 @@ LANG = 'EN'
 CHART_WIDTH = 300
 INFLATION_HIST = 20 #data points of inflation graph
 AUTORUN_DELAY = 2000
+COL1 = "red"
+COL2 = "blue"
+COL3 = "green"
+COL4 = "yellow"
 
 translate = (engl_word) ->
   if LANG == 'EN'
@@ -52,13 +56,14 @@ class Simulator
       new StateTable(@microeconomy, '#state_table', 'state'),
       new MoneySupplyTable(@microeconomy, '#ms_table', 'money supply'),
       new BanksTable(@microeconomy, '#banks_table', 'banks'),
-      new BanksChart(@microeconomy, '#banks_graph', 'all banks'),
-      new BanksTotalChart(@microeconomy, '#banks_total_graph', 'banks consolidated'),
-      new BanksDebtChart(@microeconomy, '#banks_graph2', 'central bank deposits'),
-      new CentralBankChart(@microeconomy, '#cb_graph', 'central bank'),
-      new MoneySupplyChart(@microeconomy, '#stats_graph1', 'money supply'),
-      new InflationChart(@microeconomy, '#stats_graph2', 'inflation'),
-      new WealthDistributionChart(@microeconomy, '#wealth_graph', 'wealth distribution'),
+      new BanksChart(@microeconomy, '#banks_chart', 'all banks'),
+      new BanksTotalChart(@microeconomy, '#banks_total_chart', 'banks consolidated'),
+      new BanksDebtChart(@microeconomy, '#banks_chart2', 'central bank deposits'),
+      new CustomerTotalChart(@microeconomy, '#customers_total_chart', 'customers consolidated'),
+      new CentralBankChart(@microeconomy, '#cb_chart', 'central bank'),
+      new MoneySupplyChart(@microeconomy, '#stats_chart1', 'money supply'),
+      new InflationChart(@microeconomy, '#stats_chart2', 'inflation'),
+      new WealthDistributionChart(@microeconomy, '#wealth_chart', 'wealth distribution'),
       new InterestGraph(@microeconomy, '#interest_graph', 'flow of interest'),
       #new CustomerGraph(@microeconomy, '#customer_graph', 'Customers')
     ]
@@ -233,7 +238,7 @@ class GraphVisualizer extends Visualizer
       nodes: { font: { size: 12 }, borderWidth: 2, shadow:true },
       edges: { width: 2, shadow:true }
       interaction: {
-        zoomView: true
+        zoomView: false
       }
       #scaling:
       #  customScalingFunction: (min,max,total,value) ->
@@ -264,7 +269,7 @@ class GraphVisualizer extends Visualizer
   updateEdge: (src, tgt, label) ->
     assert(@edges?, 'edges not initialized')
     v = 0
-    v = val.toFixed(0) if val?
+    v = label.toFixed(0) if label?
 
     @edges.update({
       id: src + "_" + tgt,
@@ -564,6 +569,7 @@ class ChartVisualizer extends Visualizer
   set_options: ->
     @y_label = 'CHF'
     @chart_type = 'column'
+    @y_max = null
 
   draw_chart: ->
     $(@element_id).highcharts({
@@ -576,6 +582,7 @@ class ChartVisualizer extends Visualizer
         categories: []
       yAxis:
         allowDecimals: false
+        max: @y_max
         title:
           text: @y_label
       tooltip:
@@ -638,10 +645,15 @@ class WealthDistributionChart extends ChartVisualizer
     }]
 
 class CentralBankChart extends ChartVisualizer
+  set_options: ->
+    super
+    @y_max = 2*@stats.m2()
+
   update_data: ->
     @data = [{
           name: translate('credits to banks')
           data: [@cb.credits_total()]
+          color: COL1
           stack: translate('assets')
       }, {
           name: translate('stocks')
@@ -650,6 +662,7 @@ class CentralBankChart extends ChartVisualizer
       }, {
           name: 'M0'
           data: [@cb.giro_total()]
+          color: COL2
           stack: translate('liabilities')
       }, {
           name: translate("capital")
@@ -703,6 +716,10 @@ class BanksChart extends ChartVisualizer
       }]
 
 class BanksTotalChart extends ChartVisualizer
+  set_options: ->
+    super
+    @y_max = 2*@stats.m2()
+
   update_data: ->
     reserves = (bank.reserves for bank in @banks)
     loans = (bank.customer_loans() for bank in @banks)
@@ -716,6 +733,7 @@ class BanksTotalChart extends ChartVisualizer
     @data = [{
           name: translate("reserves")
           data: [ reserves.sum() ]
+          color: COL2
           stack: translate('assets')
       }, {
           name: translate('interbank loans')
@@ -724,10 +742,12 @@ class BanksTotalChart extends ChartVisualizer
       }, {
           name: translate('customer loans')
           data: [ loans.sum() ]
+          color: COL3
           stack: translate('assets')
       }, {
           name: translate('debt to central bank')
           data: [ cb_debts.sum() ]
+          color: COL1
           stack: translate('liabilities')
       }, {
           name: translate('interbank debt')
@@ -736,10 +756,47 @@ class BanksTotalChart extends ChartVisualizer
       }, {
           name: translate('bank deposits')
           data: [ deposits.sum() ]
+          color: COL4
+          stack: translate('liabilities')
+      }, {
+          name: translate('savings')
+          data: [savings.sum() ]
           stack: translate('liabilities')
       }, {
           name: translate("capital")
           data: [ caps.sum() ]
+          stack: translate('liabilities')
+    }]
+
+class CustomerTotalChart extends ChartVisualizer
+  set_options: ->
+    super
+    @y_max = 2*@stats.m2()
+
+  update_data: ->
+    customers = @microeconomy.all_customers()
+    girals = (c.giral for c in customers)
+    savings = (c.savings for c in customers)
+    loans = (c.loan for c in customers)
+    capital = (c.capital() for c in customers)
+
+    @data = [{
+          name: translate("giral deposits")
+          data: [ girals.sum() ]
+          color: COL4
+          stack: translate('assets')
+      }, {
+          name: translate('savings')
+          data: [ savings.sum() ]
+          stack: translate('assets')
+      }, {
+          name: translate('loans')
+          data: [ loans.sum() ]
+          color: COL3
+          stack: translate('liabilities')
+      }, {
+          name: translate('capital')
+          data: [ capital.sum() ]
           stack: translate('liabilities')
     }]
 
