@@ -5,13 +5,27 @@ Backlog:
 - Tilgung der Kredite?
 - Kreditausfall? (Sicherheit pfänden?)
 - Interbankenmarkt @done(2016-02-10)
-- individuelle Bankkunden
+- individuelle Bankkunden @done(2016-03-20)
 - Repo Geschäfte mit SNB
 - Sparkonten
-- Staat
-- Aufwand/Ertrag
+- eruby gui builder
+-
+- Customers Consolidated
+- Umlaufgeschwindigkeit?
+- Geldvolumen?
+- BIP
+- State
+  - public officials
+  - infrastructure
+  - basic income
+  - welfare
+- Aufwand/Ertrag @done(2016-03-20)
+- steuern banken
+- Vollgeld
+- delayed reserve settlement
 -
 DevTools:
 	- quick file switch plugin? @done(2016-02-10)
+	- quick tag jump plugin @done(2016-03-20)
 	- bookmarks after restart? @done(2016-02-10)
 	- 

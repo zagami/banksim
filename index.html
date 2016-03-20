@@ -50,7 +50,8 @@
     </tr>
     <tr>
       <td class="label">Jahre pro Schritt: </td>
-      <td><input data-bind="value: yearsPerStep" id="slider1" type="range" min="1" max="100" step="5" /> <span data-bind="text: yearsPerStep"></span>
+      <td><input data-bind="value: yearsPerStep" id="slider1" type="range" min="1" max="100" step="5" /> 
+        <span data-bind="text: yearsPerStep"></span>
       </td>
     </tr>
     <tr>
@@ -70,34 +71,55 @@
   <table>
     <tr>
       <td class="label">Leitzins: ZB Kredite</td>
-      <td><input data-bind="value: prime_rate" id="slider_lz" type="range" min="0" max="15" step="0.1" /> <span data-bind="text: prime_rate"></span>%</td>
+      <td><input data-bind="value: prime_rate" id="slider_lz" type="range" min="0" max="15" step="0.1" /> 
+        <span data-bind="text: prime_rate"></span>%</td>
     </tr>
 
     <tr>
       <td class="label">Leitzins: ZB Konten</td>
-      <td><input data-bind="value: prime_rate_giro" id="slider_lzg" type="range" min="0" max="15" step="0.1" /> <span data-bind="text: prime_rate_giro"></span>%</td>
+      <td><input data-bind="value: prime_rate_giro" id="slider_lzg" type="range" min="0" max="15" step="0.1" /> 
+        <span data-bind="text: prime_rate_giro"></span>%</td>
     </tr>
     <tr>
       <td class="label">LIBOR</td>
-      <td><input data-bind="value: libor" id="slider_libor" type="range" min="0" max="15" step="0.1" /> <span data-bind="text: libor"></span>%</td>
+      <td><input data-bind="value: libor" id="slider_libor" type="range" min="0" max="15" step="0.1" /> 
+        <span data-bind="text: libor"></span>%</td>
     </tr>
     <tr>
       <td class="label">Eigenkapitalvorschrift</td>
-      <td><input data-bind="value: cap_req" id="slider_lz" type="range" min="0" max="50" step="1" /> <span data-bind="text: cap_req"></span>%</td>
+      <td><input data-bind="value: cap_req" id="slider_lz" type="range" min="0" max="50" step="1" /> 
+        <span data-bind="text: cap_req"></span>%</td>
     </tr>
     <tr>
       <td class="label">Mindestreserve</td>
-      <td><input data-bind="value: minimal_reserves" id="slider_lz" type="range" min="0" max="50" step="1" /> <span data-bind="text: minimal_reserves"></span>%</td>
+      <td><input data-bind="value: minimal_reserves" id="slider_lz" type="range" min="0" max="50" step="1" /> 
+        <span data-bind="text: minimal_reserves"></span>%</td>
     </tr>
     <tr>
       <td class="label">Kreditzinsen</td>
-      <td><input data-bind="value: credit_interest" id="slider_lz" type="range" min="0" max="10" step="0.1" /> <span data-bind="text: credit_interest"></span>%</td>
+      <td><input data-bind="value: credit_interest" id="slider_ci" type="range" min="0" max="10" step="0.1" /> 
+        <span data-bind="text: credit_interest"></span>%</td>
     </tr>
     <tr>
-      <td class="label">Guthabenszinsen</td>
-      <td><input data-bind="value: deposit_interest" id="slider_lz" type="range" min="0" max="10" step="0.1" /> <span data-bind="text: deposit_interest"></span>%</td>
+      <td class="label">Guthabenszinsen ZV Konto</td>
+      <td><input data-bind="value: deposit_interest" id="slider_di" type="range" min="0" max="10" step="0.1" /> 
+        <span data-bind="text: deposit_interest"></span>%</td>
     </tr>
-
+    <tr>
+      <td class="label">Guthabenszinsen Sparkonto</td>
+      <td><input data-bind="value: deposit_interest_savings" id="slider_dis" type="range" min="0" max="10" step="0.1" /> 
+        <span data-bind="text: deposit_interest_savings"></span>%</td>
+    </tr>
+    <tr>
+      <td class="label">Sparquote</td>
+      <td><input data-bind="value: savings_rate" id="slider_sr" type="range" min="0" max="100" step="1" /> 
+        <span data-bind="text: savings_rate"></span>%</td>
+    </tr>
+    <tr>
+      <td class="label">Einkommenssteuer</td>
+      <td><input data-bind="value: income_tax_rate" id="slider_it" type="range" min="0" max="100" step="1" /> 
+        <span data-bind="text: income_tax_rate"></span>%</td>
+    </tr>
   </table>
 </div>
 </div>
@@ -109,6 +131,7 @@
     <div id="customers_total_chart"></div> 
     <div id="stats_chart1"></div>
     <div id="stats_chart2"></div>
+    <div id="taxes_chart"></div>
     <div id="wealth_chart"></div>
     <div id="banks_chart"></div>
     <div id="banks_chart2"></div>
@@ -119,6 +142,7 @@
     <div id="cb_table"></div>
     <div id="ms_table"></div>
     <div id="state_table"></div>
+    <div id="customers_table"></div>
     <div id="banks_table"></div>
   </div>
 </div>

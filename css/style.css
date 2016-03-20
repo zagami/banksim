@@ -30,6 +30,12 @@ body {
   clear: both;
 }
 
+caption {
+    background: #dbb768;
+    font-weight: bold;
+    font-size: 1.3em;
+}
+      
 .bankrupt {
   color: red
 }

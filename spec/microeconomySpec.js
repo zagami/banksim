@@ -7,14 +7,8 @@ describe("Bank", function() {
   beforeEach(function() {
     return InterbankMarket.prototype.reset();
   });
-  it("dummy test", function() {
+  return it("dummy test", function() {
     return expect(true).toBe(true);
-  });
-  return it("should return the right credit potential", function() {
-    var b, limit;
-    b = new Bank(1, 2, 1, 1, 1);
-    limit = b.compute_credit_potential(0.1, 0.1);
-    return expect(limit).toBeCloseTo(7, 4);
   });
 });
 
@@ -31,6 +25,12 @@ describe("TrxMgr", function() {
     test.cb = new CentralBank(test.banks);
     test.me = new MicroEconomy(test.cb, test.banks, test.params);
     return test.trxMgr = new TrxMgr(test.me);
+  });
+  it("should return the right credit potential", function() {
+    var b, limit;
+    b = new Bank(1, 2, 1, 1, 1);
+    limit = test.trxMgr.compute_credit_potential(0.1, 0.1);
+    return expect(limit).toBeCloseTo(7, 4);
   });
   it("should transfer money if enough funds", function() {
     var amount, ga, gb, ra;

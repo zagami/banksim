@@ -1,6 +1,7 @@
 LANG = 'EN'
 CHART_WIDTH = 300
 INFLATION_HIST = 20 #data points of inflation graph
+MONEY_SUPPLY_HIST = 20 #data points of money supply graph
 AUTORUN_DELAY = 2000
 COL1 = "red"
 COL2 = "blue"
@@ -54,6 +55,7 @@ class Simulator
     vizArray = [
       new CentralBankTable(@microeconomy, '#cb_table', 'central bank'),
       new StateTable(@microeconomy, '#state_table', 'state'),
+      new CustomersTable(@microeconomy, '#customers_table', 'customers'),
       new MoneySupplyTable(@microeconomy, '#ms_table', 'money supply'),
       new BanksTable(@microeconomy, '#banks_table', 'banks'),
       new BanksChart(@microeconomy, '#banks_chart', 'all banks'),
@@ -63,6 +65,7 @@ class Simulator
       new CentralBankChart(@microeconomy, '#cb_chart', 'central bank'),
       new MoneySupplyChart(@microeconomy, '#stats_chart1', 'money supply'),
       new InflationChart(@microeconomy, '#stats_chart2', 'inflation'),
+      new TaxesChart(@microeconomy, '#taxes_chart', 'taxes'),
       new WealthDistributionChart(@microeconomy, '#wealth_chart', 'wealth distribution'),
       new InterestGraph(@microeconomy, '#interest_graph', 'flow of interest'),
       #new CustomerGraph(@microeconomy, '#customer_graph', 'Customers')
@@ -157,6 +160,33 @@ class Simulator
         @params.deposit_interest = newval
     }, this)
 
+    @deposit_interest_savings = ko.computed({
+      read: =>
+        ( @gui_params.deposit_interest_savings() * 100 ).toFixed(1)
+      write: (value) =>
+        newval = parseFloat(value)/100
+        @gui_params.deposit_interest_savings(newval)
+        @params.deposit_interest_savings = newval
+    }, this)
+
+    @savings_rate = ko.computed({
+      read: =>
+        ( @gui_params.savings_rate() * 100 ).toFixed(1)
+      write: (value) =>
+        newval = parseFloat(value)/100
+        @gui_params.savings_rate(newval)
+        @params.savings_rate = newval
+    }, this)
+
+    @income_tax_rate = ko.computed({
+      read: =>
+        ( @gui_params.income_tax_rate() * 100 ).toFixed(1)
+      write: (value) =>
+        newval = parseFloat(value)/100
+        @gui_params.income_tax_rate(newval)
+        @params.income_tax_rate = newval
+    }, this)
+
   # functions
   reset_params: ->
     @step(0)
@@ -235,8 +265,12 @@ class GraphVisualizer extends Visualizer
 
     container = document.getElementById(@element_id.replace('#', ''))
     options = {
-      nodes: { font: { size: 12 }, borderWidth: 2, shadow:true },
-      edges: { width: 2, shadow:true }
+      nodes: { font: { size: 12 }, borderWidth: 2, shadow:true, mass:2 },
+      edges:
+        width: 2,
+        shadow:true,
+        #smooth:
+        #type: 'curvedCW'
       interaction: {
         zoomView: false
       }
@@ -248,6 +282,7 @@ class GraphVisualizer extends Visualizer
     }
     @network = new vis.Network(container, data, options)
     @network.stabilize()
+    @network.startSimulation()
 
   clear: ->
     super
@@ -321,6 +356,10 @@ class InterestGraph extends GraphVisualizer
     @addEdge(cb, b, 0)
     @addEdge(b, cb, 0)
     @addEdge(b, c, 0)
+    @addEdge(s, c, 0)
+    @addEdge(s, b, 0)
+    @addEdge(b, s, 0)
+    @addEdge(c, s, 0)
     @addEdge(c, b, 0)
     @addEdge(cb, s, 0)
 
@@ -335,6 +374,8 @@ class InterestGraph extends GraphVisualizer
     @updateEdge(b, c, @stats.b_c_flow_series.last())
     @updateEdge(c, b, @stats.c_b_flow_series.last())
     @updateEdge(cb, s, @stats.cb_s_flow_series.last())
+    @updateEdge(c, s, @stats.c_s_flow_series.last())
+    @updateEdge(s, c, @stats.s_c_flow_series.last())
 
 class TableVisualizer extends Visualizer
   constructor: (@microeconomy, @element_id, @title) ->
@@ -398,73 +439,35 @@ class CentralBankTable extends TableVisualizer
       @cb.liabilities_total().toFixed(2)
     )
 
+class CustomersTable extends TableVisualizer
+  create_table: ->
+    customers = @microeconomy.all_customers()
+    len = customers.length
+    girals = (c.giral for c in customers)
+    savings = (c.savings for c in customers)
+    stocks = (c.stocks for c in customers)
+    loans = (c.loan for c in customers)
+    caps = (c.capital() for c in customers)
+    incomes = (c.income for c in customers)
+    expenses = (c.expenses for c in customers)
+
+    @create_row('income', incomes.sum().toFixed(2))
+    @create_row('expenses', expenses.sum().toFixed(2))
+    @create_row('average income', (incomes.sum()/len).toFixed(2))
+
 class StateTable extends TableVisualizer
   create_table: ->
+    num_citizens = @microeconomy.all_customers().length
     len = @state.income_tax_series.length
     if len > 0
-      @create_row('taxes current year', @state.income_tax_series[len-1].toFixed(2))
-      @create_row('expenses current year', @state.public_service_series[len-1].toFixed(2))
-      @create_row('state reserves', @state.reserves.toFixed(2))
+      @create_row('taxes current year', @state.income_tax_series.last().toFixed(2))
+      @create_row('basic income total', @state.basic_income_series.last().toFixed(2))
+      basic_incom_per_citizen = @state.basic_income_series.last() / num_citizens
+      @create_row('basic income per citizen', basic_incom_per_citizen.toFixed(2))
+      @create_row('domestic growth product', @stats.gdp_series.last().toFixed(2))
 
-  create_ms_table: ->
-    # money supply
-    $('#ms_table').append('<table>')
-    $('#ms_table').append( '<caption>' + translate('money supply') + '</caption>' )
-    row_h = @create_header(
-      'M0',
-      'M1',
-      'M2'
-    )
-    row = @create_row(
-      @stats.m0().toFixed(2),
-      @stats.m1().toFixed(2),
-      @stats.m2().toFixed(2),
-    )
-    $('#ms_table').append(row_h).append(row)
-    $('#ms_table').append('</table>' )
-
-  create_bank_header: ->
-    @create_header(
-      '',
-      translate("reserves"),
-      translate('interbank credits')
-      translate('credits'),
-      translate('debt to central bank'),
-      translate('interbank debt')
-      translate('bank deposits'),
-      translate("capital"),
-      translate("assets"),
-      translate("liabilities"),
-      translate('number of clients')
-    )
-
-  create_bank_row: (id, bank) ->
-    @create_row(
-      id,
-      bank.reserves.toFixed(2),
-      bank.interbank_loans().toFixed(2),
-      bank.customer_loans().toFixed(2),
-      bank.cb_debt.toFixed(2),
-      bank.interbank_debt().toFixed(2),
-      bank.customer_deposits().toFixed(2),
-      bank.capital.toFixed(2),
-      bank.assets_total().toFixed(2),
-      bank.liabilities_total().toFixed(2),
-      bank.customers.length
-    )
-
-  create_banks_table: (banks) ->
-    $('#banks_table').append( '<table>' )
-    $('#banks_table').append( '<caption>' + translate('banks') + '</caption>' )
-    $('#banks_table').append(@create_bank_header())
-    i = 0
-    for bank in @banks
-      row = $(@create_bank_row(i, bank))
-      row.addClass('bankrupt') if bank.gameover
-      $('#banks_table').append(row)
-      i += 1
-    $('#banks_table').append(  '</table>' )
-
+    @create_row('state reserves', @state.reserves.toFixed(2))
+  
 class MoneySupplyTable extends TableVisualizer
   create_table: ->
     # money supply
@@ -526,11 +529,14 @@ class BanksTable extends TableVisualizer
     @create_header(
       '',
       translate("reserves"),
+      '%',
       translate('interbank credits')
       translate('credits'),
+      translate('stocks'),
       translate('debt to central bank'),
       translate('interbank debt')
       translate('bank deposits'),
+      translate('savings'),
       translate("capital"),
       translate("assets"),
       translate("liabilities"),
@@ -541,11 +547,14 @@ class BanksTable extends TableVisualizer
     row = @create_row(
       id,
       bank.reserves.toFixed(2),
+      if bank.gameover then 0 else (bank.reserves / bank.debt_total()*100).toFixed(0) + '%',
       bank.interbank_loans().toFixed(2),
       bank.customer_loans().toFixed(2),
+      bank.stocks.toFixed(2),
       bank.cb_debt.toFixed(2),
       bank.interbank_debt().toFixed(2),
       bank.customer_deposits().toFixed(2),
+      bank.customer_savings().toFixed(2),
       bank.capital.toFixed(2),
       bank.assets_total().toFixed(2),
       bank.liabilities_total().toFixed(2),
@@ -553,12 +562,42 @@ class BanksTable extends TableVisualizer
     )
     row.addClass('bankrupt') if bank.gameover
 
+  create_total_row: ->
+    reserves = (bank.reserves for bank in @banks)
+    loans = (bank.customer_loans() for bank in @banks)
+    stocks = (bank.stocks for bank in @banks)
+    caps = (bank.capital for bank in @banks)
+    cb_debts = (bank.cb_debt for bank in @banks)
+    deposits = (bank.customer_deposits() for bank in @banks)
+    savings = (bank.customer_savings() for bank in @banks)
+    interbank_loans = (bank.interbank_loans() for bank in @banks)
+    interbank_debts = (bank.interbank_debt() for bank in @banks)
+    assets = (bank.assets_total() for bank in @banks)
+    liabilities = (bank.liabilities_total() for bank in @banks)
+
+    @create_row(
+      'Total:',
+      reserves.sum().toFixed(2),
+      interbank_loans.sum().toFixed(2),
+      loans.sum().toFixed(2),
+      stocks.sum().toFixed(2),
+      cb_debts.sum().toFixed(2),
+      interbank_debts.sum().toFixed(2),
+      deposits.sum().toFixed(2),
+      savings.sum().toFixed(2),
+      caps.sum().toFixed(2),
+      assets.sum().toFixed(2),
+      liabilities.sum().toFixed(2),
+      @microeconomy.all_customers().length
+    )
+
   create_table: ->
     @create_bank_header()
     i = 0
     for bank in @banks
       @create_bank_row(i, bank)
       i += 1
+    @create_total_row()
 
 class ChartVisualizer extends Visualizer
   constructor: (@microeconomy, @element_id, @title) ->
@@ -611,13 +650,13 @@ class MoneySupplyChart extends ChartVisualizer
   update_data: ->
     @data = [{
         name: translate('money supply M0')
-        data: @stats.m0_series
+        data: @stats.m0_series[-MONEY_SUPPLY_HIST..]
       }, {
         name: translate('money supply M1')
-        data: @stats.m1_series
+        data: @stats.m1_series[-MONEY_SUPPLY_HIST..]
       }, {
         name: translate('money supply M2')
-        data: @stats.m2_series
+        data: @stats.m2_series[-MONEY_SUPPLY_HIST..]
     }]
     
 class InflationChart extends ChartVisualizer
@@ -637,11 +676,31 @@ class InflationChart extends ChartVisualizer
         data: @stats.m2_inflation_series[-INFLATION_HIST..]
     }]
 
-class WealthDistributionChart extends ChartVisualizer
+class TaxesChart extends ChartVisualizer
+  set_options: ->
+    @chart_type = 'line'
+
   update_data: ->
     @data = [{
+        name: translate('income taxes')
+        data: @state.income_tax_series
+      }, {
+        name: translate('basic income')
+        data: @state.basic_income_series
+    }]
+
+class WealthDistributionChart extends ChartVisualizer
+  update_data: ->
+    sorted_customers = @stats.wealth_distribution()
+    
+    wealth = (c.wealth() for c in sorted_customers)
+    loans = (-c.loan for c in sorted_customers)
+    @data = [{
         name: translate('wealth distribution')
-        data: @stats.wealth_distribution()
+        data: wealth
+        }, {
+        name: translate('loan distribution')
+        data: loans
     }]
 
 class CentralBankChart extends ChartVisualizer
@@ -657,7 +716,7 @@ class CentralBankChart extends ChartVisualizer
           stack: translate('assets')
       }, {
           name: translate('stocks')
-          data: [0]
+          data: [@cb.stocks]
           stack: translate('assets')
       }, {
           name: 'M0'
@@ -674,6 +733,7 @@ class BanksChart extends ChartVisualizer
   update_data: ->
     reserves = (bank.reserves for bank in @banks)
     loans = (bank.customer_loans() for bank in @banks)
+    stocks = (bank.stocks for bank in @banks)
     caps = (bank.capital for bank in @banks)
     cb_debts = (bank.cb_debt for bank in @banks)
     deposits = (bank.customer_deposits() for bank in @banks)
@@ -692,6 +752,10 @@ class BanksChart extends ChartVisualizer
       }, {
           name: translate('customer loans')
           data: loans
+          stack: translate('assets')
+      }, {
+          name: translate('stocks')
+          data: stocks
           stack: translate('assets')
       }, {
           name: translate('debt to central bank')
@@ -723,6 +787,7 @@ class BanksTotalChart extends ChartVisualizer
   update_data: ->
     reserves = (bank.reserves for bank in @banks)
     loans = (bank.customer_loans() for bank in @banks)
+    stocks = (bank.stocks for bank in @banks)
     caps = (bank.capital for bank in @banks)
     cb_debts = (bank.cb_debt for bank in @banks)
     deposits = (bank.customer_deposits() for bank in @banks)
@@ -743,6 +808,10 @@ class BanksTotalChart extends ChartVisualizer
           name: translate('customer loans')
           data: [ loans.sum() ]
           color: COL3
+          stack: translate('assets')
+      }, {
+          name: translate('stocks')
+          data: [ stocks.sum() ]
           stack: translate('assets')
       }, {
           name: translate('debt to central bank')
@@ -777,8 +846,9 @@ class CustomerTotalChart extends ChartVisualizer
     customers = @microeconomy.all_customers()
     girals = (c.giral for c in customers)
     savings = (c.savings for c in customers)
+    stocks = (c.stocks for c in customers)
     loans = (c.loan for c in customers)
-    capital = (c.capital() for c in customers)
+    caps = (c.capital() for c in customers)
 
     @data = [{
           name: translate("giral deposits")
@@ -790,21 +860,26 @@ class CustomerTotalChart extends ChartVisualizer
           data: [ savings.sum() ]
           stack: translate('assets')
       }, {
+          name: translate('stocks')
+          data: [ stocks.sum() ]
+          stack: translate('assets')
+      }, {
           name: translate('loans')
           data: [ loans.sum() ]
           color: COL3
           stack: translate('liabilities')
       }, {
           name: translate('capital')
-          data: [ capital.sum() ]
+          data: [ caps.sum() ]
           stack: translate('liabilities')
     }]
 
 class BanksDebtChart extends ChartVisualizer
   update_data: ->
-    reserves = (bank.reserves for bank in @banks)
-    cb_debts = (bank.cb_debt for bank in @banks)
-    interbank_debts = (bank.interbank_debt() for bank in @banks)
+    banks_sorted = @banks.slice().sort( (a,b) -> a.reserves - b.reserves)
+    reserves = (bank.reserves for bank in banks_sorted)
+    cb_debts = (-bank.cb_debt for bank in banks_sorted)
+    interbank_debts = (-bank.interbank_debt() for bank in banks_sorted)
 
     @data = [{
           name: translate('central bank deposits')
@@ -813,11 +888,11 @@ class BanksDebtChart extends ChartVisualizer
       }, {
           name: translate('central bank debt')
           data: cb_debts
-          stack: '2'
+          stack: '1'
       }, {
           name: translate('interbank debt')
           data: interbank_debts
-          stack: '3'
+          stack: '1'
     }]
 
 #global objects

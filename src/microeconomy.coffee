@@ -1,8 +1,17 @@
-NUM_BANKS = 10
-MAX_CUSTOMERS = 10
+NUM_BANKS = 20
+MAX_CUSTOMERS = 40
+
 DFLT_INITIAL_DEPOSIT_PER_CUST = 10
-DFLT_INITIAL_LOAN_PER_CUST = 15
-TAX_RATE = 0.1
+DFLT_INITIAL_SAVINGS_PER_CUST = 0
+DFLT_INITIAL_STOCKS_PER_CUST = 0
+DFLT_INITIAL_LOAN_PER_CUST = 10
+
+DFLT_INITIAL_RESERVES_PER_BANK = 20
+DFLT_INITIAL_STOCKS_PER_BANK = 20
+DFLT_INITIAL_CBDEBT_PER_BANK = 20
+
+DFLT_INITIAL_CB_STOCKS = 400
+
 
 assert = (condition, message) ->
   if (!condition)
@@ -54,6 +63,9 @@ class Params
   minimal_reserves: 0.00  # reserve requirements for banks
   credit_interest: 0.00
   deposit_interest: 0.00
+  deposit_interest_savings: 0.00
+  savings_rate: 0.1
+  income_tax_rate: 0.1 # percentage of tax from income
 
 class Statistics
   constructor: (@microeconomy) ->
@@ -66,6 +78,8 @@ class Statistics
     @m1_inflation_series = []
     @m2_inflation_series = []
 
+    @gdp_series = []
+
     @cb_b_flow_series = []
     @cb_s_flow_series = []
     @b_cb_flow_series = []
@@ -77,9 +91,9 @@ class Statistics
     @s_c_flow_series = []
     @s_b_flow_series = []
 
-    @reset_money_flow()
+    @reset_year()
 
-  reset_money_flow: ->
+  reset_year: ->
     @cb_b_flow = 0
     @cb_s_flow = 0
     @b_cb_flow = 0
@@ -90,6 +104,7 @@ class Statistics
     @c_s_flow = 0
     @s_c_flow = 0
     @s_b_flow = 0
+    @gdp = 0
 
   m0: ->
     @cb.giro_total()
@@ -128,16 +143,20 @@ class Statistics
     @c_c_flow_series.push @c_c_flow
     @s_c_flow_series.push @s_c_flow
     @s_b_flow_series.push @s_b_flow
+    
+    @gdp_series.push @gdp
 
-    @reset_money_flow()
+    @reset_year()
 
   wealth_distribution: ->
-    girals = (c.giral for c in @microeconomy.all_customers())
-    result = girals.sort( (a,b) -> a-b)
+    #girals = (c.giral for c in @microeconomy.all_customers())
+    #result = girals.sort( (a,b) -> a-b)
+    result = @microeconomy.all_customers().sort( (a,b) -> a.wealth()-b.wealth())
     result
 
 class CentralBank
   constructor: (@state, @banks) ->
+    @stocks = DFLT_INITIAL_CB_STOCKS
 
   credits_total: ->
     sum = 0
@@ -151,13 +170,13 @@ class CentralBank
     giro_banks + @state.reserves
 
   assets_total: ->
-    @credits_total()
+    @credits_total() + @stocks
 
   liabilities_total: ->
     @giro_total() + @capital()
 
   capital: ->
-    @credits_total() - @giro_total()
+    @assets_total() - @giro_total()
 
 class InterbankMarket
   @instance: null
@@ -250,6 +269,7 @@ class Bank
   interbank_market: null
   customers: []
   reserves: 0
+  stocks: 0
   cb_debt: 0
   capital: 0
 
@@ -264,19 +284,20 @@ class Bank
     num_customers = randomizeInt(1, MAX_CUSTOMERS)
     bank = new Bank()
     bank.customers = (BankCustomer::get_random_customer(bank) for i in [1..num_customers])
-    bank.reserves = 100
+    bank.reserves = DFLT_INITIAL_RESERVES_PER_BANK
+    bank.stocks = DFLT_INITIAL_STOCKS_PER_BANK
     bank.cb_debt = bank.reserves
     bank.capital = bank.assets_total() - bank.debt_total()
     bank
 
   assets_total: ->
-    @reserves + @customer_loans() + @interbank_loans()
+    @reserves + @customer_loans() + @interbank_loans() + @stocks
 
   liabilities_total: ->
     @cb_debt + @interbank_debt() + @customer_deposits() + @customer_savings() + @capital
 
   debt_total: ->
-    @cb_debt + @interbank_debt() + @customer_deposits()
+    @cb_debt + @interbank_debt() + @customer_deposits() + @customer_savings()
 
   customer_deposits: ->
     sum = 0
@@ -306,24 +327,32 @@ class Bank
     @interbank_market.give_interbank_loan(this, to, amount)
   
 class BankCustomer
-  income: 0
-  expenses: 0
-  constructor: (@bank, @giral, @savings, @loan) ->
-
-  BankCustomer::get_random_customer = (bank) ->
-    giral = DFLT_INITIAL_DEPOSIT_PER_CUST
-    loan = DFLT_INITIAL_LOAN_PER_CUST
-    savings = 0
-    new BankCustomer(bank, giral, savings, loan)
+  constructor: (@bank, @giral, @savings, @stocks, @loan) ->
+    @income = 0
+    @expenses = 0
 
   profit: ->
     @income - @expenses
 
+  wealth: ->
+    @giral + @savings + @stocks
+
+  reset_earnings: ->
+    @income = 0
+    @expenses = 0
+
   assets_total: ->
-    @giral + @savings
+    @giral + @savings + @stocks
 
   capital: ->
     @assets_total() - @loan
+
+  BankCustomer::get_random_customer = (bank) ->
+    giral = DFLT_INITIAL_DEPOSIT_PER_CUST
+    stocks = DFLT_INITIAL_STOCKS_PER_CUST
+    loan = DFLT_INITIAL_LOAN_PER_CUST
+    savings = DFLT_INITIAL_SAVINGS_PER_CUST
+    new BankCustomer(bank, giral, savings, stocks, loan)
 
 class MicroEconomy
   constructor: (@state, @cb, @banks, @params) ->
@@ -338,7 +367,7 @@ class MicroEconomy
 
 class State
   constructor: ->
-    @public_service_series = []
+    @basic_income_series = []
     @income_tax_series = []
     @reserves = 0
 
@@ -352,10 +381,11 @@ class TrxMgr
     @params = @microeconomy.params
 
   one_year: ->
+    @reset_earnings()
     #payments, economic activity
     @create_transactions()
-    # @provide_public_service()
-
+    #@provide_public_service()
+    @provide_basic_income()
     #settle customer interests
     @pay_customer_deposit_interests()
     @get_customer_credit_interests()
@@ -372,12 +402,16 @@ class TrxMgr
 
     # bank loan management and Basel II requirements
     @manage_bank_debt()
-    #@collect_taxes()
+    @collect_taxes()
     @make_statistics()
-    @check_consistency()
+    @check_balance_consistency()
     @check_bankrupcy()
 
-  check_consistency: ->
+  reset_earnings: ->
+    for c in @microeconomy.all_customers()
+      c.reset_earnings()
+
+  check_balance_consistency: ->
     a = @cb.assets_total()
     l = @cb.liabilities_total()
     assert(Math.round(1000*a) - Math.round(1000*l) == 0, "central bank balance sheet inconsistent: #{a} != #{l} ")
@@ -396,17 +430,18 @@ class TrxMgr
         alert "bank capital cannot be negative #{bank.capital}"
 
   create_transactions: ->
-    # creating a random number of transactions (upper limit is a parameter max_trx)
-    # the amounts transferred are randomly chosen based on reserves of bank??
+    # creating a random number of transactions 
+    # (upper limit is a parameter max_trx)
+    # the amounts transferred are randomly chosen based on customer deposit
     # random transactions represent economic activity
-    max_trx = randomizeInt(1,@params.max_trx)
-    console.log "performing #{max_trx} transactions"
+    num_trx = randomizeInt(1,@params.max_trx)
+    console.log "performing #{num_trx} transactions"
     all_customers = @microeconomy.all_customers()
     num_customers = all_customers.length
     if num_customers < 2
       return
 
-    for trx in [1..max_trx]
+    for trx in [1..num_trx]
       cust1_index = randomizeInt(0, num_customers - 1)
       cust2_index = randomizeInt(0, num_customers - 1)
       while cust2_index == cust1_index
@@ -414,14 +449,15 @@ class TrxMgr
       cust1 = all_customers[cust1_index]
       cust2 = all_customers[cust2_index]
 
-      bank_src = cust1.bank
-      bank_tgt = cust2.bank
-      amount = Math.min(randomize(0,10), cust1.giral)
+      amount = randomize(0, cust1.giral)
       @transfer(cust1, cust2, amount)
+      #adding transaction to gdp
+      @stats.gdp += amount
 
+  #transferring money from one customer to another
   transfer: (from, to, amount) ->
     if from.bank != to.bank and from.bank.reserves < amount
-      @get_new_bank_loan(from, amount)
+      @get_new_bank_loan(from.bank, amount)
 
     if from.bank != to.bank
       from.bank.reserves -= amount
@@ -430,20 +466,24 @@ class TrxMgr
     from.expenses += amount
     to.income += amount
     from.giral -= amount
-    to.giral += amount
+    to.giral += (1-@params.savings_rate)*amount
+    to.savings += @params.savings_rate * amount
     @stats.c_c_flow += amount
 
   pay_customer_deposit_interests: ->
-    dr = @params.deposit_interest
+    di = @params.deposit_interest
+    dis = @params.deposit_interest_savings
+
     for bank in @banks when not bank.gameover
       for c in bank.customers
-        debt_bank = dr * c.giral
+        debt_bank = di * c.giral
+        debt_bank_savings = dis * c.savings
         # pay deposit interest to customer
-        # TRX: capital AN giral
         c.giral += debt_bank
-        c.income += debt_bank
-        bank.capital -= debt_bank
-        @stats.b_c_flow += debt_bank
+        c.savings += debt_bank_savings
+        c.income += debt_bank + debt_bank_savings
+        bank.capital -= debt_bank + debt_bank_savings
+        @stats.b_c_flow += debt_bank + debt_bank_savings
       
   get_customer_credit_interests: ->
     cr = @params.credit_interest
@@ -538,21 +578,41 @@ class TrxMgr
     income_tax_current_year = 0
     tax_payers = @microeconomy.all_customers()
     for c in tax_payers
-      tax = TAX_RATE * c.profit()
+      tax = @params.income_tax_rate * c.income
       if tax > c.giral
-        c.dead = true
         console.log "taxed to death"
-      else
-        c.giral -= tax
-        c.bank.reserves -= tax
-        income_tax_current_year += tax
+        diff = tax - c.giral
+        #customer takes loan to pay taxes
+        c.giral += diff
+        c.loan += diff
 
-      @stats.c_s_flow += tax
-      c.income = 0
-      c.expenses = 0
+      c.giral -= tax
+      c.bank.reserves -= tax
+      income_tax_current_year += tax
 
     @state.income_tax_series.push income_tax_current_year
     @state.reserves += income_tax_current_year
+    @stats.c_s_flow += income_tax_current_year
+
+  provide_basic_income: ->
+    tax_payers = @microeconomy.all_customers()
+    len = tax_payers.length
+    basic_income_total = @state.reserves
+
+    if len == 0
+      @state.public_service_series.push 0
+      return
+
+    basic_income = basic_income_total / len
+
+    for i in [0..len-1]
+      tax_payers[i].giral += basic_income
+      tax_payers[i].bank.reserves += basic_income
+      tax_payers[i].income += basic_income
+
+    @stats.s_c_flow += basic_income_total
+    @state.reserves -= basic_income_total
+    @state.basic_income_series.push basic_income_total
 
   provide_public_service: ->
     tax_payers = @microeconomy.all_customers()
@@ -572,7 +632,6 @@ class TrxMgr
     @stats.s_c_flow += public_service_cost
     @state.reserves -= public_service_cost
     @state.public_service_series.push public_service_cost
-
 
   manage_bank_debt: ->
     cr = @params.cap_req
@@ -671,15 +730,15 @@ class TrxMgr
   set_gameover: (bank, reason) ->
     assert(not bank.gameover, "bank is already gameover")
     bank.gameover = true
-    console.log "reason for bankrupcy: #{reason}"
+    console.log "reason for bankruptcy: #{reason}"
     cb_loss = bank.cb_debt - bank.reserves
     if cb_loss > 0
-      console.log "central bank just lost #{cb_loss} from a bankrupcy"
+      console.log "central bank just lost #{cb_loss} from a bankruptcy"
     else if cb_loss < 0
-      console.log "central bank just won #{-cb_loss} from a bankrupcy"
+      console.log "central bank just won #{-cb_loss} from a bankruptcy"
       
     @interbank_market.set_gameover(bank)
     bank.customers = []
-    bank.reserves = bank.cb_debt = bank.capital = 0
+    bank.reserves = bank.cb_debt = bank.stocks = bank.capital = 0
 
 

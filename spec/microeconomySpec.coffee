@@ -8,10 +8,6 @@ describe "Bank", ->
   it "dummy test", ->
     expect(true).toBe(true)
 
-  it "should return the right credit potential", ->
-    b = new Bank(1,2,1,1,1)
-    limit = b.compute_credit_potential(0.1, 0.1)
-    expect(limit).toBeCloseTo(7, 4)
 
 describe "TrxMgr", ->
 
@@ -26,6 +22,11 @@ describe "TrxMgr", ->
     test.cb = new CentralBank(test.banks)
     test.me = new MicroEconomy(test.cb, test.banks, test.params)
     test.trxMgr = new TrxMgr(test.me)
+
+  it "should return the right credit potential", ->
+    b = new Bank(1,2,1,1,1)
+    limit = test.trxMgr.compute_credit_potential(0.1, 0.1)
+    expect(limit).toBeCloseTo(7, 4)
 
   it "should transfer money if enough funds", ->
     ra = test.a.reserves
