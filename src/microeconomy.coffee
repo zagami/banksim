@@ -64,8 +64,8 @@ class Params
   credit_interest: 0.00
   deposit_interest: 0.00
   deposit_interest_savings: 0.00
-  savings_rate: 0.1
-  income_tax_rate: 0.1 # percentage of tax from income
+  savings_rate: 0.0
+  income_tax_rate: 0.0 # percentage of tax from income
 
 class Statistics
   constructor: (@microeconomy) ->

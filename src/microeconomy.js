@@ -102,9 +102,9 @@ Params = (function() {
 
   Params.prototype.deposit_interest_savings = 0.00;
 
-  Params.prototype.savings_rate = 0.1;
+  Params.prototype.savings_rate = 0.0;
 
-  Params.prototype.income_tax_rate = 0.1;
+  Params.prototype.income_tax_rate = 0.0;
 
   return Params;
 

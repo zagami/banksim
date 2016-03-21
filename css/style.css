@@ -58,3 +58,10 @@ th {
     padding-top: 5px;
     padding-bottom: 4px;
 }
+
+.button {
+  width: 160px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}

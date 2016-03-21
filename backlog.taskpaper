@@ -9,7 +9,9 @@ Backlog:
 - Repo Geschäfte mit SNB
 - Sparkonten
 - eruby gui builder
--
+- Konsumgueter (virtuelles Konsum-Konto?) vs Investitionsgueter (aktivierbar)
+- Company vs Persons (ownership relations)
+- employments, salaries
 - Customers Consolidated
 - Umlaufgeschwindigkeit?
 - Geldvolumen?
@@ -22,8 +24,12 @@ Backlog:
 - Aufwand/Ertrag @done(2016-03-20)
 - steuern banken
 - Vollgeld
+  - Uebergangs-Seignorage verwenden fuer...
+  - Entschuldung Staatsschulden
+  - Pro Kopf Dividende
+  - GUI Behaviour: Basel II disabled
 - delayed reserve settlement
--
+- description text in eigene html und dynamisch laden
 DevTools:
 	- quick file switch plugin? @done(2016-02-10)
 	- quick tag jump plugin @done(2016-03-20)
