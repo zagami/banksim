@@ -106,6 +106,8 @@ Params = (function() {
 
   Params.prototype.income_tax_rate = 0.0;
 
+  Params.prototype.positive_money = false;
+
   return Params;
 
 })();
@@ -118,6 +120,7 @@ Statistics = (function() {
     this.m0_series = [];
     this.m1_series = [];
     this.m2_series = [];
+    this.interbank_volume_series = [];
     this.m0_inflation_series = [];
     this.m1_inflation_series = [];
     this.m2_inflation_series = [];
@@ -150,7 +153,7 @@ Statistics = (function() {
   };
 
   Statistics.prototype.m0 = function() {
-    return this.cb.giro_total();
+    return this.cb.giro_banks();
   };
 
   Statistics.prototype.m1 = function() {
@@ -175,11 +178,22 @@ Statistics = (function() {
     return this.m1() + sum;
   };
 
+  Statistics.prototype.M = function() {
+    return this.cb.debt_total();
+  };
+
+  Statistics.prototype.interbank_volume = function() {
+    var ib;
+    ib = InterbankMarket.prototype.get_instance();
+    return ib.get_interbank_volume();
+  };
+
   Statistics.prototype.one_year = function() {
     var infl_m0, infl_m1, infl_m2, len;
     this.m0_series.push(this.m0());
     this.m1_series.push(this.m1());
     this.m2_series.push(this.m2());
+    this.interbank_volume_series.push(this.interbank_volume());
     len = this.m1_series.length;
     if (len > 1) {
       infl_m0 = (this.m0_series[len - 1] / this.m0_series[len - 2] - 1) * 100;
@@ -216,13 +230,16 @@ Statistics = (function() {
 })();
 
 CentralBank = (function() {
+  CentralBank.prototype.positive_money = false;
+
   function CentralBank(state, banks) {
     this.state = state;
     this.banks = banks;
     this.stocks = DFLT_INITIAL_CB_STOCKS;
+    this.kassa = 0;
   }
 
-  CentralBank.prototype.credits_total = function() {
+  CentralBank.prototype.credits_banks = function() {
     var bank, j, len1, ref, sum;
     sum = 0;
     ref = this.banks;
@@ -233,7 +250,7 @@ CentralBank = (function() {
     return sum;
   };
 
-  CentralBank.prototype.giro_total = function() {
+  CentralBank.prototype.giro_banks = function() {
     var bank, giro_banks, j, len1, ref;
     giro_banks = 0;
     ref = this.banks;
@@ -241,19 +258,35 @@ CentralBank = (function() {
       bank = ref[j];
       giro_banks += bank.reserves;
     }
-    return giro_banks + this.state.reserves;
+    return giro_banks;
+  };
+
+  CentralBank.prototype.giro_nonbanks = function() {
+    var bank, giro_nonbanks, j, len1, ref;
+    giro_nonbanks = 0;
+    ref = this.banks;
+    for (j = 0, len1 = ref.length; j < len1; j++) {
+      bank = ref[j];
+      giro_nonbanks += bank.customer_deposits();
+    }
+    return giro_nonbanks;
   };
 
   CentralBank.prototype.assets_total = function() {
-    return this.credits_total() + this.stocks;
+    return this.kassa + this.credits_banks() + this.stocks;
   };
 
-  CentralBank.prototype.liabilities_total = function() {
-    return this.giro_total() + this.capital();
+  CentralBank.prototype.debt_total = function() {
+    var debt;
+    debt = this.giro_banks() + this.state.reserves;
+    if (this.positive_money) {
+      debt += this.giro_nonbanks;
+    }
+    return debt;
   };
 
   CentralBank.prototype.capital = function() {
-    return this.assets_total() - this.giro_total();
+    return this.assets_total() - this.debt_total();
   };
 
   return CentralBank;
@@ -278,74 +311,91 @@ InterbankMarket = (function() {
     return this.instance = null;
   };
 
-  InterbankMarket.prototype.give_interbank_loan = function(from, to, amount) {
+  InterbankMarket.prototype.increase_interbank_debt = function(bank, creditor, amount) {
     var hash, val;
-    assert(from !== to, "banks not different");
+    assert(bank !== creditor, "banks not different");
     assert(amount > 0, "credit amount must be > 0");
-    assert(from.reserves >= amount, "not enough reserves for interbank credit");
-    assert(!from.gameover, "bankrupt bank cannot give credit");
-    assert(!to.gameover, "bankrupt bank cannot get credit");
     assert(this.interbank !== null, "interbank null");
-    from.reserves -= amount;
-    to.reserves += amount;
-    if (!this.interbank.containsKey(from)) {
+    if (!this.interbank.containsKey(bank)) {
       hash = new Hashtable();
-      hash.put(to, amount);
-      this.interbank.put(from, hash);
+      hash.put(creditor, amount);
+      return this.interbank.put(bank, hash);
     } else {
-      if (this.interbank.get(from).containsKey(to)) {
-        val = this.interbank.get(from).get(to);
-        this.interbank.get(from).put(to, val + amount);
+      if (this.interbank.get(bank).containsKey(creditor)) {
+        val = this.interbank.get(bank).get(creditor);
+        return this.interbank.get(bank).put(creditor, val + amount);
       } else {
-        this.interbank.get(from).put(to, amount);
-      }
-    }
-    if (!this.interbank.containsKey(to)) {
-      hash = new Hashtable();
-      hash.put(from, -amount);
-      return this.interbank.put(to, hash);
-    } else {
-      if (this.interbank.get(to).containsKey(from)) {
-        val = this.interbank.get(to).get(from);
-        return this.interbank.get(to).put(from, val - amount);
-      } else {
-        return this.interbank.get(to).put(from, -amount);
+        return this.interbank.get(bank).put(creditor, amount);
       }
     }
   };
 
-  InterbankMarket.prototype.get_interbank_loans = function(bank) {
+  InterbankMarket.prototype.reduce_interbank_debt = function(bank, creditor, amount) {
+    var val;
+    assert(this.interbank !== null, "interbank null");
+    assert(bank !== creditor, "banks not different");
+    assert(amount > 0, "credit amount must be > 0");
+    assert(this.get_interbank_debt(bank, creditor) >= amount, 'interbank debt too small');
+    val = this.interbank.get(bank).get(creditor);
+    return this.interbank.get(bank).put(creditor, val - amount);
+  };
+
+  InterbankMarket.prototype.get_all_interbank_loans = function(bank) {
+    var j, key, len1, ref, total;
+    total = 0;
+    ref = this.interbank.keys();
+    for (j = 0, len1 = ref.length; j < len1; j++) {
+      key = ref[j];
+      if (key !== bank) {
+        total += this.get_interbank_debt(key, bank);
+      }
+    }
+    return total;
+  };
+
+  InterbankMarket.prototype.get_interbank_debt = function(bank, creditor) {
+    var val;
+    assert(bank !== creditor, "banks not different");
+    if (this.interbank.containsKey(bank)) {
+      if (this.interbank.get(bank).containsKey(creditor)) {
+        val = this.interbank.get(bank).get(creditor);
+        return val;
+      }
+    }
+    return 0;
+  };
+
+  InterbankMarket.prototype.get_all_interbank_debts = function(bank) {
     var j, len1, ref, total, v;
     total = 0;
     if (this.interbank.containsKey(bank)) {
       ref = this.interbank.get(bank).values();
       for (j = 0, len1 = ref.length; j < len1; j++) {
         v = ref[j];
-        if (v > 0) {
-          total += v;
-        }
+        total += v;
       }
     }
     return total;
   };
 
-  InterbankMarket.prototype.get_interbank_debt = function(bank) {
-    var j, len1, ref, total, v;
-    total = 0;
-    if (this.interbank.containsKey(bank)) {
-      ref = this.interbank.get(bank).values();
-      for (j = 0, len1 = ref.length; j < len1; j++) {
-        v = ref[j];
-        if (v < 0) {
-          total += Math.abs(v);
-        }
+  InterbankMarket.prototype.get_interbank_volume = function() {
+    var b, j, k, key, len1, len2, ref, ref1, volume;
+    volume = 0;
+    ref = this.interbank.keys();
+    for (j = 0, len1 = ref.length; j < len1; j++) {
+      b = ref[j];
+      ref1 = this.interbank.get(b).keys();
+      for (k = 0, len2 = ref1.length; k < len2; k++) {
+        key = ref1[k];
+        volume += this.interbank.get(b).get(key);
       }
     }
-    return total;
+    return volume;
   };
 
   InterbankMarket.prototype.settle_interbank_interests = function(libor) {
     var b, j, key, len1, ref, results, val;
+    assert(this.interbank !== null, "interbank null");
     ref = this.interbank.keys();
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
@@ -357,8 +407,7 @@ InterbankMarket = (function() {
         for (k = 0, len2 = ref1.length; k < len2; k++) {
           key = ref1[k];
           val = this.interbank.get(b).get(key);
-          this.interbank.get(b).put(key, val * (1 + libor));
-          results1.push(b.capital += val * libor);
+          results1.push(this.interbank.get(b).put(key, val * (1 + libor)));
         }
         return results1;
       }).call(this));
@@ -366,34 +415,12 @@ InterbankMarket = (function() {
     return results;
   };
 
-  InterbankMarket.prototype.set_gameover = function(bank) {
-    var b, bank_loss, j, len1, ref;
-    if (this.interbank.containsKey(bank)) {
-      ref = this.interbank.get(bank).keys();
-      for (j = 0, len1 = ref.length; j < len1; j++) {
-        b = ref[j];
-        if (this.interbank.containsKey(b)) {
-          bank_loss = this.interbank.get(b).get(bank);
-          if (bank_loss > 0) {
-            console.log("bank just lost " + bank_loss + " from a bankcupcy");
-            b.capital -= bank_loss;
-          } else if (bank_loss < 0) {
-            console.log("bank just gained " + (Math.abs(bank_loss)) + " a from bankrupcy");
-            b.capital += Math.abs(bank_loss);
-          }
-          this.interbank.get(b).remove(bank);
-        }
-      }
-      return this.interbank.get(bank).clear();
-    }
-  };
-
   return InterbankMarket;
 
 })();
 
 Bank = (function() {
-  Bank.prototype.gameover = false;
+  Bank.prototype.positive_money = false;
 
   Bank.prototype.interbank_market = null;
 
@@ -405,11 +432,29 @@ Bank = (function() {
 
   Bank.prototype.cb_debt = 0;
 
-  Bank.prototype.capital = 0;
-
   function Bank() {
     this.interbank_market = InterbankMarket.prototype.get_instance();
+    this.income = 0;
+    this.expenses = 0;
+    this.hash = randomizeInt(1, 10000000);
   }
+
+  Bank.prototype.profit = function() {
+    return this.income - this.expenses;
+  };
+
+  Bank.prototype.reset_earnings = function() {
+    this.income = 0;
+    return this.expenses = 0;
+  };
+
+  Bank.prototype.toString = function() {
+    return "reserves:" + this.reserves + ",cb_debt:" + this.cb_debt + ", nofC:" + this.customers.length;
+  };
+
+  Bank.prototype.hashCode = function() {
+    return this.hash;
+  };
 
   Bank.prototype.get_random_bank = function() {
     var bank, i, num_customers;
@@ -426,7 +471,6 @@ Bank = (function() {
     bank.reserves = DFLT_INITIAL_RESERVES_PER_BANK;
     bank.stocks = DFLT_INITIAL_STOCKS_PER_BANK;
     bank.cb_debt = bank.reserves;
-    bank.capital = bank.assets_total() - bank.debt_total();
     return bank;
   };
 
@@ -434,12 +478,17 @@ Bank = (function() {
     return this.reserves + this.customer_loans() + this.interbank_loans() + this.stocks;
   };
 
-  Bank.prototype.liabilities_total = function() {
-    return this.cb_debt + this.interbank_debt() + this.customer_deposits() + this.customer_savings() + this.capital;
+  Bank.prototype.debt_total = function() {
+    var debt;
+    debt = this.cb_debt + this.interbank_debt() + this.customer_savings();
+    if (!this.positive_money) {
+      debt += this.customer_deposits();
+    }
+    return debt;
   };
 
-  Bank.prototype.debt_total = function() {
-    return this.cb_debt + this.interbank_debt() + this.customer_deposits() + this.customer_savings();
+  Bank.prototype.capital = function() {
+    return this.assets_total() - this.debt_total();
   };
 
   Bank.prototype.customer_deposits = function() {
@@ -448,7 +497,7 @@ Bank = (function() {
     ref = this.customers;
     for (j = 0, len1 = ref.length; j < len1; j++) {
       c = ref[j];
-      sum += c.giral;
+      sum += c.deposit;
     }
     return sum;
   };
@@ -476,15 +525,11 @@ Bank = (function() {
   };
 
   Bank.prototype.interbank_loans = function() {
-    return this.interbank_market.get_interbank_loans(this);
+    return this.interbank_market.get_all_interbank_loans(this);
   };
 
   Bank.prototype.interbank_debt = function() {
-    return this.interbank_market.get_interbank_debt(this);
-  };
-
-  Bank.prototype.give_interbank_loan = function(to, amount) {
-    return this.interbank_market.give_interbank_loan(this, to, amount);
+    return this.interbank_market.get_all_interbank_debts(this);
   };
 
   return Bank;
@@ -492,9 +537,9 @@ Bank = (function() {
 })();
 
 BankCustomer = (function() {
-  function BankCustomer(bank1, giral1, savings1, stocks1, loan1) {
+  function BankCustomer(bank1, deposit1, savings1, stocks1, loan1) {
     this.bank = bank1;
-    this.giral = giral1;
+    this.deposit = deposit1;
     this.savings = savings1;
     this.stocks = stocks1;
     this.loan = loan1;
@@ -507,7 +552,7 @@ BankCustomer = (function() {
   };
 
   BankCustomer.prototype.wealth = function() {
-    return this.giral + this.savings + this.stocks;
+    return this.deposit + this.savings + this.stocks;
   };
 
   BankCustomer.prototype.reset_earnings = function() {
@@ -516,7 +561,7 @@ BankCustomer = (function() {
   };
 
   BankCustomer.prototype.assets_total = function() {
-    return this.giral + this.savings + this.stocks;
+    return this.deposit + this.savings + this.stocks;
   };
 
   BankCustomer.prototype.capital = function() {
@@ -524,12 +569,12 @@ BankCustomer = (function() {
   };
 
   BankCustomer.prototype.get_random_customer = function(bank) {
-    var giral, loan, savings, stocks;
-    giral = DFLT_INITIAL_DEPOSIT_PER_CUST;
+    var deposit, loan, savings, stocks;
+    deposit = DFLT_INITIAL_DEPOSIT_PER_CUST;
     stocks = DFLT_INITIAL_STOCKS_PER_CUST;
     loan = DFLT_INITIAL_LOAN_PER_CUST;
     savings = DFLT_INITIAL_SAVINGS_PER_CUST;
-    return new BankCustomer(bank, giral, savings, stocks, loan);
+    return new BankCustomer(bank, deposit, savings, stocks, loan);
   };
 
   return BankCustomer;
@@ -551,12 +596,10 @@ MicroEconomy = (function() {
     ref = this.banks;
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
-      if (!bank.gameover) {
-        ref1 = bank.customers;
-        for (k = 0, len2 = ref1.length; k < len2; k++) {
-          c = ref1[k];
-          all_customers.push(c);
-        }
+      ref1 = bank.customers;
+      for (k = 0, len2 = ref1.length; k < len2; k++) {
+        c = ref1[k];
+        all_customers.push(c);
       }
     }
     return all_customers;
@@ -600,55 +643,21 @@ TrxMgr = (function() {
     this.pay_interbank_interests();
     this.manage_bank_debt();
     this.collect_taxes();
-    this.make_statistics();
-    this.check_balance_consistency();
-    return this.check_bankrupcy();
+    return this.make_statistics();
   };
 
   TrxMgr.prototype.reset_earnings = function() {
-    var c, j, len1, ref, results;
+    var b, c, j, k, len1, len2, ref, ref1, results;
     ref = this.microeconomy.all_customers();
-    results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       c = ref[j];
-      results.push(c.reset_earnings());
+      c.reset_earnings();
     }
-    return results;
-  };
-
-  TrxMgr.prototype.check_balance_consistency = function() {
-    var a, bank, j, l, len1, ref, results;
-    a = this.cb.assets_total();
-    l = this.cb.liabilities_total();
-    assert(Math.round(1000 * a) - Math.round(1000 * l) === 0, "central bank balance sheet inconsistent: " + a + " != " + l + " ");
-    ref = this.banks;
+    ref1 = this.banks;
     results = [];
-    for (j = 0, len1 = ref.length; j < len1; j++) {
-      bank = ref[j];
-      if (!(!bank.gameover)) {
-        continue;
-      }
-      a = bank.assets_total();
-      l = bank.liabilities_total();
-      results.push(assert(Math.round(1000 * a) - Math.round(1000 * l) === 0, "bank balance sheet inconsistent: " + a + " != " + l + " "));
-    }
-    return results;
-  };
-
-  TrxMgr.prototype.check_bankrupcy = function() {
-    var bank, j, len1, ref, results;
-    if (this.cb.capital() < -0.01) {
-      alert("central bank capital cannot be negative, " + (this.cb.capital()));
-    }
-    ref = this.banks;
-    results = [];
-    for (j = 0, len1 = ref.length; j < len1; j++) {
-      bank = ref[j];
-      if (bank.capital < -0.01 && !bank.gameover) {
-        results.push(alert("bank capital cannot be negative " + bank.capital));
-      } else {
-        results.push(void 0);
-      }
+    for (k = 0, len2 = ref1.length; k < len2; k++) {
+      b = ref1[k];
+      results.push(b.reset_earnings());
     }
     return results;
   };
@@ -671,55 +680,89 @@ TrxMgr = (function() {
       }
       cust1 = all_customers[cust1_index];
       cust2 = all_customers[cust2_index];
-      amount = randomize(0, cust1.giral);
+      amount = randomize(0, cust1.deposit);
       this.transfer(cust1, cust2, amount);
       results.push(this.stats.gdp += amount);
     }
     return results;
   };
 
+  TrxMgr.prototype.interbank_transfer = function(from, to, amount) {
+    var ib_loan, libor, pr, remainder;
+    remainder = amount;
+    ib_loan = this.interbank_market.get_interbank_debt(to, from);
+    if (ib_loan > amount) {
+      this.interbank_market.reduce_interbank_debt(to, from, amount);
+      remainder = 0;
+    } else if (ib_loan > 0) {
+      this.interbank_market.reduce_interbank_debt(to, from, ib_loan);
+      remainder = amount - ib_loan;
+    }
+    if (remainder > 0 && from.reserves > 0) {
+      if (remainder > from.reserves) {
+        to.reserves += from.reserves;
+        remainder = remainder - from.reserves;
+        from.reserves = 0;
+      } else {
+        from.reserves -= remainder;
+        to.reserves += remainder;
+        remainder = 0;
+      }
+    }
+    if (remainder > 0) {
+      libor = this.params.libor;
+      pr = this.params.prime_rate;
+      if (pr >= libor) {
+        return this.interbank_market.increase_interbank_debt(from, to, remainder);
+      } else {
+        from.reserves += remainder;
+        return from.cb_debt += remainder;
+      }
+    }
+  };
+
   TrxMgr.prototype.transfer = function(from, to, amount) {
-    if (from.bank !== to.bank && from.bank.reserves < amount) {
-      this.get_new_bank_loan(from.bank, amount);
+    assert(from.deposit >= amount, 'not enough deposits');
+    if (!this.params.positive_money) {
+      if (from.bank !== to.bank) {
+        this.interbank_transfer(from.bank, to.bank, amount);
+      }
     }
-    if (from.bank !== to.bank) {
-      from.bank.reserves -= amount;
-      to.bank.reserves += amount;
-    }
+    from.deposit -= amount;
     from.expenses += amount;
     to.income += amount;
-    from.giral -= amount;
-    to.giral += (1 - this.params.savings_rate) * amount;
+    to.deposit += (1 - this.params.savings_rate) * amount;
     to.savings += this.params.savings_rate * amount;
     return this.stats.c_c_flow += amount;
   };
 
   TrxMgr.prototype.pay_customer_deposit_interests = function() {
-    var bank, c, debt_bank, debt_bank_savings, di, dis, j, len1, ref, results;
+    var bank, c, debt_bank, debt_bank_deposit, debt_bank_savings, di, dis, j, len1, ref, results;
     di = this.params.deposit_interest;
     dis = this.params.deposit_interest_savings;
     ref = this.banks;
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
-      if (!bank.gameover) {
-        results.push((function() {
-          var k, len2, ref1, results1;
-          ref1 = bank.customers;
-          results1 = [];
-          for (k = 0, len2 = ref1.length; k < len2; k++) {
-            c = ref1[k];
-            debt_bank = di * c.giral;
-            debt_bank_savings = dis * c.savings;
-            c.giral += debt_bank;
-            c.savings += debt_bank_savings;
-            c.income += debt_bank + debt_bank_savings;
-            bank.capital -= debt_bank + debt_bank_savings;
-            results1.push(this.stats.b_c_flow += debt_bank + debt_bank_savings);
+      results.push((function() {
+        var k, len2, ref1, results1;
+        ref1 = bank.customers;
+        results1 = [];
+        for (k = 0, len2 = ref1.length; k < len2; k++) {
+          c = ref1[k];
+          debt_bank_deposit = di * c.deposit;
+          debt_bank_savings = dis * c.savings;
+          debt_bank = debt_bank_deposit + debt_bank_savings;
+          c.deposit += debt_bank_deposit;
+          c.savings += debt_bank_savings;
+          c.income += debt_bank;
+          if (this.params.positive_money) {
+            bank.reserves -= debt_bank;
           }
-          return results1;
-        }).call(this));
-      }
+          results1.push(this.stats.b_c_flow += debt_bank);
+        }
+        return results1;
+      }).call(this));
     }
     return results;
   };
@@ -731,31 +774,27 @@ TrxMgr = (function() {
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
-      if (!bank.gameover) {
-        results.push((function() {
-          var k, len2, ref1, results1;
-          ref1 = bank.customers;
-          results1 = [];
-          for (k = 0, len2 = ref1.length; k < len2; k++) {
-            c = ref1[k];
-            debt_cust = cr * c.loan;
-            if (c.giral < debt_cust) {
-              diff = debt_cust - c.giral;
-              c.loan += diff;
-              bank.capital += debt_cust;
-              c.giral = 0;
-              c.expenses += debt_cust;
-              results1.push(this.stats.c_b_flow += debt_cust);
-            } else {
-              c.giral -= debt_cust;
-              c.expenses += debt_cust;
-              bank.capital += debt_cust;
-              results1.push(this.stats.c_b_flow += debt_cust);
-            }
+      results.push((function() {
+        var k, len2, ref1, results1;
+        ref1 = bank.customers;
+        results1 = [];
+        for (k = 0, len2 = ref1.length; k < len2; k++) {
+          c = ref1[k];
+          debt_cust = cr * c.loan;
+          if (c.deposit < debt_cust) {
+            diff = debt_cust - c.deposit;
+            c.loan += diff;
+            c.deposit = 0;
+            c.expenses += debt_cust;
+            results1.push(this.stats.c_b_flow += debt_cust);
+          } else {
+            c.deposit -= debt_cust;
+            c.expenses += debt_cust;
+            results1.push(this.stats.c_b_flow += debt_cust);
           }
-          return results1;
-        }).call(this));
-      }
+        }
+        return results1;
+      }).call(this));
     }
     return results;
   };
@@ -770,12 +809,8 @@ TrxMgr = (function() {
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
-      if (!(!bank.gameover)) {
-        continue;
-      }
       interest = pr_giro * bank.reserves;
       bank.reserves += interest;
-      bank.capital += interest;
       results.push(this.stats.cb_b_flow += interest);
     }
     return results;
@@ -788,18 +823,13 @@ TrxMgr = (function() {
     results = [];
     for (j = 0, len1 = ref.length; j < len1; j++) {
       bank = ref[j];
-      if (!(!bank.gameover)) {
-        continue;
-      }
       debt = pr * bank.cb_debt;
       if (debt > bank.reserves) {
         diff = debt - bank.reserves;
-        bank.capital -= debt;
         bank.reserves = 0;
         bank.cb_debt += diff;
       } else {
         bank.reserves -= debt;
-        bank.capital -= debt;
       }
       results.push(this.stats.b_cb_flow += debt);
     }
@@ -823,13 +853,12 @@ TrxMgr = (function() {
     for (j = 0, len1 = tax_payers.length; j < len1; j++) {
       c = tax_payers[j];
       tax = this.params.income_tax_rate * c.income;
-      if (tax > c.giral) {
-        console.log("taxed to death");
-        diff = tax - c.giral;
-        c.giral += diff;
+      if (tax > c.deposit) {
+        diff = tax - c.deposit;
+        c.deposit += diff;
         c.loan += diff;
       }
-      c.giral -= tax;
+      c.deposit -= tax;
       c.bank.reserves -= tax;
       income_tax_current_year += tax;
     }
@@ -849,7 +878,7 @@ TrxMgr = (function() {
     }
     basic_income = basic_income_total / len;
     for (i = j = 0, ref = len - 1; 0 <= ref ? j <= ref : j >= ref; i = 0 <= ref ? ++j : --j) {
-      tax_payers[i].giral += basic_income;
+      tax_payers[i].deposit += basic_income;
       tax_payers[i].bank.reserves += basic_income;
       tax_payers[i].income += basic_income;
     }
@@ -858,144 +887,33 @@ TrxMgr = (function() {
     return this.state.basic_income_series.push(basic_income_total);
   };
 
-  TrxMgr.prototype.provide_public_service = function() {
-    var arr, i, j, len, public_service_cost, ref, tax_payers;
-    tax_payers = this.microeconomy.all_customers();
-    len = tax_payers.length;
-    public_service_cost = this.state.reserves;
-    arr = random_array(public_service_cost, len);
-    if (len === 0) {
-      this.state.public_service_series.push(0);
-      return;
-    }
-    for (i = j = 0, ref = len - 1; 0 <= ref ? j <= ref : j >= ref; i = 0 <= ref ? ++j : --j) {
-      tax_payers[i].giral += arr[i];
-      tax_payers[i].bank.reserves += arr[i];
-      tax_payers[i].income += arr[i];
-    }
-    this.stats.s_c_flow += public_service_cost;
-    this.state.reserves -= public_service_cost;
-    return this.state.public_service_series.push(public_service_cost);
-  };
-
   TrxMgr.prototype.manage_bank_debt = function() {
-    var amount, bank, cr, diff, j, len1, potential, pr, prg, ref, results;
+    var cr, pr, prg;
     cr = this.params.cap_req;
     pr = this.params.prime_rate;
-    prg = this.params.prime_rate_giro;
-    ref = this.banks;
-    results = [];
-    for (j = 0, len1 = ref.length; j < len1; j++) {
-      bank = ref[j];
-      if (!(!bank.gameover)) {
-        continue;
-      }
-      if (this.compute_minimal_reserves(bank) > bank.reserves) {
-        diff = Math.max(0, this.compute_minimal_reserves(bank) - bank.reserves);
-        potential = this.compute_max_new_debt(bank);
-        if (diff > potential) {
-          this.set_gameover(bank, "cannot fulfill minimal reserve requirement");
-          continue;
-        }
-        this.get_new_bank_loan(bank, diff);
-      }
-      if (bank.capital / bank.liabilities_total() < cr) {
-        potential = this.payback_debt_potential(bank);
-        amount = Math.min(potential, bank.cb_debt);
-        bank.cb_debt -= amount;
-        bank.reserves -= amount;
-      }
-      if (bank.capital / bank.liabilities_total() < cr) {
-        this.set_gameover(bank, "cannot fulfill capital requirements");
-        continue;
-      } else {
-        results.push(void 0);
-      }
-    }
-    return results;
-  };
-
-  TrxMgr.prototype.get_new_bank_loan = function(bank, amount) {
-    var b, demand, ib_loan, j, len1, libor, pot, pr, ref;
-    pr = this.params.prime_rate;
-    libor = this.params.libor;
-    demand = amount;
-    if (pr > libor) {
-      ref = this.banks;
-      for (j = 0, len1 = ref.length; j < len1; j++) {
-        b = ref[j];
-        if (b !== bank && demand > 0) {
-          pot = this.compute_max_new_ib_loan(b);
-          ib_loan = Math.min(demand, pot);
-          if (ib_loan > 0) {
-            b.give_interbank_loan(bank, ib_loan);
-            demand -= ib_loan;
-          }
-        }
-      }
-    }
-    if (demand > 0) {
-      bank.reserves += demand;
-      return bank.cb_debt += demand;
-    }
-  };
-
-  TrxMgr.prototype.compute_minimal_reserves = function(bank) {
-    var mr;
-    mr = this.params.minimal_reserves;
-    return mr * (bank.customer_deposits() + bank.cb_debt + bank.interbank_debt());
-  };
-
-  TrxMgr.prototype.compute_max_new_customer_loan = function(bank) {
-    var cr, limit_cap, limit_mr, mr;
-    cr = this.params.cap_req;
-    mr = this.params.minimal_reserves;
-    limit_cap = (bank.capital - cr * bank.liabilities_total()) / cr;
-    limit_cap = Math.max(0, limit_cap);
-    limit_mr = (bank.reserves - this.compute_minimal_reserves(bank)) / mr;
-    limit_mr = Math.max(0, limit_mr);
-    return Math.min(limit_cap, limit_mr);
-  };
-
-  TrxMgr.prototype.compute_max_new_ib_loan = function(bank) {
-    var limit_mr, mr;
-    mr = this.params.minimal_reserves;
-    limit_mr = bank.reserves - this.compute_minimal_reserves(bank);
-    return Math.max(0, limit_mr);
-  };
-
-  TrxMgr.prototype.compute_max_new_debt = function(bank) {
-    var cr, limit_cap;
-    cr = this.params.cap_req;
-    limit_cap = (bank.capital - cr * bank.liabilities_total()) / cr;
-    return Math.max(0, limit_cap);
-  };
-
-  TrxMgr.prototype.payback_debt_potential = function(bank) {
-    var limit_mr, mr;
-    mr = this.params.minimal_reserves;
-    limit_mr = (bank.reserves - this.compute_minimal_reserves(bank)) / (1 - mr);
-    return Math.max(0, limit_mr);
+    return prg = this.params.prime_rate_giro;
   };
 
   TrxMgr.prototype.make_statistics = function() {
     return this.stats.one_year();
   };
 
-  TrxMgr.prototype.set_gameover = function(bank, reason) {
-    var cb_loss;
-    assert(!bank.gameover, "bank is already gameover");
-    bank.gameover = true;
-    console.log("reason for bankruptcy: " + reason);
-    cb_loss = bank.cb_debt - bank.reserves;
-    if (cb_loss > 0) {
-      console.log("central bank just lost " + cb_loss + " from a bankruptcy");
-    } else if (cb_loss < 0) {
-      console.log("central bank just won " + (-cb_loss) + " from a bankruptcy");
+  TrxMgr.prototype.enable_positive_money = function() {
+    var bank, j, len1, ref, results;
+    this.cb.positive_money = true;
+    ref = this.banks;
+    results = [];
+    for (j = 0, len1 = ref.length; j < len1; j++) {
+      bank = ref[j];
+      bank.positive_money = true;
+      bank.cb_debt += bank.customer_deposits();
+      results.push(bank.cb_debt += bank.interbank_debt());
     }
-    this.interbank_market.set_gameover(bank);
-    bank.customers = [];
-    return bank.reserves = bank.cb_debt = bank.stocks = bank.capital = 0;
+    return results;
+  };
+
+  TrxMgr.prototype.disable_positive_money = function() {
+    return console.log("disable");
   };
 
   return TrxMgr;

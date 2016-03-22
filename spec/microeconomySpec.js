@@ -18,39 +18,18 @@ describe("TrxMgr", function() {
     test = {};
     params = new Params();
     test.a = Bank.prototype.get_random_bank();
-    test.a.reserves += 100;
-    test.a.giral += 100;
     test.b = Bank.prototype.get_random_bank();
     test.banks = [test.a, test.b];
-    test.cb = new CentralBank(test.banks);
-    test.me = new MicroEconomy(test.cb, test.banks, test.params);
+    test.state = new State();
+    test.cb = new CentralBank(test.state, test.banks);
+    test.me = new MicroEconomy(test.state, test.cb, test.banks, test.params);
     return test.trxMgr = new TrxMgr(test.me);
   });
-  it("should return the right credit potential", function() {
-    var b, limit;
-    b = new Bank(1, 2, 1, 1, 1);
-    limit = test.trxMgr.compute_credit_potential(0.1, 0.1);
-    return expect(limit).toBeCloseTo(7, 4);
-  });
   it("should transfer money if enough funds", function() {
-    var amount, ga, gb, ra;
-    ra = test.a.reserves;
-    ga = test.a.giral;
-    gb = test.b.giral;
-    amount = Math.min(ra / 2, ga);
-    test.trxMgr.transfer(test.a, test.b, amount);
-    assert(test.a.giral === ga - amount, "money transfered wrong");
-    return assert(test.b.giral === gb + amount, "money received wrong");
+    return expect(false).toBe(true);
   });
   return it("should transfer money if not enough funds", function() {
-    var amount, ga, gb, ra;
-    ga = test.a.giral;
-    ra = test.a.reserves;
-    gb = test.b.giral;
-    amount = Math.min(ra * 2, ga);
-    test.trxMgr.transfer(test.a, test.b, amount);
-    assert(test.a.giral === ga - amount, "money transfered wrong");
-    return assert(test.b.giral === gb + amount, "money received wrong");
+    return expect(false).toBe(true);
   });
 });
 
@@ -64,90 +43,85 @@ describe("InterbankMarket", function() {
     ib2 = InterbankMarket.prototype.get_instance();
     return expect(ib1).toEqual(ib2);
   });
-  it("should return the given credit", function() {
+  it("shoud return zero interbank debt", function() {
+    var a, ib;
+    ib = InterbankMarket.prototype.get_instance();
+    a = Bank.prototype.get_random_bank();
+    return expect(ib.get_all_interbank_debts(a)).toBe(0);
+  });
+  it("shoud return zero interbank loans", function() {
+    var a, ib;
+    ib = InterbankMarket.prototype.get_instance();
+    a = Bank.prototype.get_random_bank();
+    return expect(ib.get_all_interbank_loans(a)).toBe(0);
+  });
+  it("should increase interbank debt correctly", function() {
     var a, b, ib;
     a = Bank.prototype.get_random_bank();
     b = Bank.prototype.get_random_bank();
-    a.reserves += 500;
-    a.capital += 500;
     ib = InterbankMarket.prototype.get_instance();
-    expect(ib.get_interbank_credits(a)).toBe(0);
-    ib.give_interbank_credit(a, b, 100);
-    return expect(ib.get_interbank_credits(a)).toBe(100);
+    ib.increase_interbank_debt(a, b, 100);
+    expect(ib.get_interbank_debt(a, b)).toBe(100);
+    ib.increase_interbank_debt(a, b, 50);
+    expect(ib.get_interbank_debt(a, b)).toBe(150);
+    return expect(ib.get_all_interbank_loans(b)).toBe(150);
   });
-  it("shoud return zero interbank credits", function() {
-    var a;
-    a = Bank.prototype.get_random_bank();
-    return expect(a.get_interbank_credits()).toBe(0);
-  });
-  it("shoud return exact interbank credit", function() {
-    var a, b;
-    a = Bank.prototype.get_random_bank();
-    b = Bank.prototype.get_random_bank();
-    b.reserves += 500;
-    b.capital += 500;
-    b.give_interbank_credit(a, 50);
-    expect(b.get_interbank_credits()).toBe(50);
-    return expect(a.get_interbank_credits()).toBe(0);
-  });
-  it("shoud return sum of interbank credits", function() {
-    var a, b;
-    a = Bank.prototype.get_random_bank();
-    b = Bank.prototype.get_random_bank();
-    b.reserves += 500;
-    b.capital += 500;
-    b.give_interbank_credit(a, 44);
-    b.give_interbank_credit(a, 50);
-    expect(b.get_interbank_credits()).toBe(94);
-    return expect(a.get_interbank_credits()).toBe(0);
-  });
-  it("shoud return sum of interbank debts", function() {
-    var a, b;
-    a = Bank.prototype.get_random_bank();
-    b = Bank.prototype.get_random_bank();
-    b.reserves += 500;
-    b.capital += 500;
-    b.give_interbank_credit(a, 20);
-    b.give_interbank_credit(a, 50);
-    expect(b.get_interbank_credits()).toBe(70);
-    expect(a.get_interbank_debt()).toBe(70);
-    expect(a.get_interbank_credits()).toBe(0);
-    return expect(b.get_interbank_debt()).toBe(0);
-  });
-  it("shoud not affect assets or liabilities after interbank credit given", function() {
-    var a, assets_before, b, liabilities_before;
-    a = Bank.prototype.get_random_bank();
-    b = Bank.prototype.get_random_bank();
-    b.reserves += 500;
-    b.capital += 500;
-    assets_before = b.assets_total();
-    liabilities_before = b.liabilities_total();
-    b.give_interbank_credit(a, 20);
-    expect(b.assets_total()).toBeCloseTo(assets_before, 4);
-    return expect(b.liabilities_total()).toBeCloseTo(liabilities_before, 4);
-  });
-  it("shoud  increase assets and l. after interbank credit received", function() {
-    var a, assets_before, b, liabilities_before;
-    a = Bank.prototype.get_random_bank();
-    b = Bank.prototype.get_random_bank();
-    b.reserves += 500;
-    b.capital += 500;
-    assets_before = a.assets_total();
-    liabilities_before = a.liabilities_total();
-    b.give_interbank_credit(a, 20);
-    expect(a.assets_total()).toBeCloseTo(assets_before + 20, 4);
-    return expect(a.liabilities_total()).toBeCloseTo(liabilities_before + 20);
-  });
-  return it("should write off interbank debt after bankrupcy", function() {
+  it("should reduce interbank debt correctly", function() {
     var a, b, ib;
     a = Bank.prototype.get_random_bank();
     b = Bank.prototype.get_random_bank();
-    b.reserves += 500;
-    b.capital += 500;
-    b.give_interbank_credit(a, 50);
-    expect(b.get_interbank_credits()).toBe(50);
     ib = InterbankMarket.prototype.get_instance();
-    ib.set_gameover(a);
-    return expect(b.get_interbank_credits()).toBe(0);
+    ib.increase_interbank_debt(a, b, 100);
+    ib.reduce_interbank_debt(a, b, 80);
+    expect(ib.get_interbank_debt(a, b)).toBe(20);
+    return expect(ib.get_all_interbank_loans(b)).toBe(20);
+  });
+  it("shoud return sum of interbank debt", function() {
+    var a, b, c, ib;
+    a = Bank.prototype.get_random_bank();
+    b = Bank.prototype.get_random_bank();
+    c = Bank.prototype.get_random_bank();
+    ib = InterbankMarket.prototype.get_instance();
+    ib.increase_interbank_debt(a, b, 20);
+    ib.increase_interbank_debt(a, c, 30);
+    return expect(ib.get_all_interbank_debts(a)).toBe(50);
+  });
+  it("hashCode function should vary per bank", function() {
+    var a, b;
+    a = Bank.prototype.get_random_bank();
+    b = Bank.prototype.get_random_bank();
+    return expect(a.hashCode()).not.toBe(b.hashCode());
+  });
+  it("shoud return sum of interbank loans for specific bank", function() {
+    var a, b, c, ib;
+    a = Bank.prototype.get_random_bank();
+    b = Bank.prototype.get_random_bank();
+    c = Bank.prototype.get_random_bank();
+    ib = InterbankMarket.prototype.get_instance();
+    ib.increase_interbank_debt(a, c, 20);
+    ib.increase_interbank_debt(b, c, 30);
+    expect(ib.get_all_interbank_loans(c)).toBe(50);
+    expect(ib.get_all_interbank_loans(a)).toBe(0);
+    return expect(ib.get_all_interbank_loans(b)).toBe(0);
+  });
+  it("shoud return interbank volume", function() {
+    var a, b, c, ib;
+    a = Bank.prototype.get_random_bank();
+    b = Bank.prototype.get_random_bank();
+    c = Bank.prototype.get_random_bank();
+    ib = InterbankMarket.prototype.get_instance();
+    ib.increase_interbank_debt(a, b, 20);
+    ib.increase_interbank_debt(b, c, 30);
+    ib.increase_interbank_debt(c, a, 40);
+    return expect(ib.get_interbank_volume()).toBe(90);
+  });
+  return it("shoud add libor interest after settlement", function() {
+    var a, b, ib;
+    a = Bank.prototype.get_random_bank();
+    b = Bank.prototype.get_random_bank();
+    ib = InterbankMarket.prototype.get_instance();
+    ib.increase_interbank_debt(a, b, 100);
+    ib.settle_interbank_interests(0.05);
+    return expect(ib.get_interbank_debt(a, b)).toBe(105);
   });
 });

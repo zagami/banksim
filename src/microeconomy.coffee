@@ -66,6 +66,7 @@ class Params
   deposit_interest_savings: 0.00
   savings_rate: 0.0
   income_tax_rate: 0.0 # percentage of tax from income
+  positive_money: false # positive money system enabled
 
 class Statistics
   constructor: (@microeconomy) ->
@@ -74,6 +75,7 @@ class Statistics
     @m0_series = []
     @m1_series = []
     @m2_series = []
+    @interbank_volume_series = []
     @m0_inflation_series = []
     @m1_inflation_series = []
     @m2_inflation_series = []
@@ -107,7 +109,7 @@ class Statistics
     @gdp = 0
 
   m0: ->
-    @cb.giro_total()
+    @cb.giro_banks()
 
   m1: ->
     sum = 0
@@ -119,10 +121,18 @@ class Statistics
     sum += bank.customer_savings() for bank in @banks
     @m1() + sum
 
+  M: ->
+    @cb.debt_total()
+
+  interbank_volume: ->
+    ib = InterbankMarket::get_instance()
+    ib.get_interbank_volume()
+
   one_year: ->
     @m0_series.push @m0()
     @m1_series.push @m1()
     @m2_series.push @m2()
+    @interbank_volume_series.push @interbank_volume()
 
     len = @m1_series.length
     if len > 1
@@ -149,34 +159,41 @@ class Statistics
     @reset_year()
 
   wealth_distribution: ->
-    #girals = (c.giral for c in @microeconomy.all_customers())
-    #result = girals.sort( (a,b) -> a-b)
     result = @microeconomy.all_customers().sort( (a,b) -> a.wealth()-b.wealth())
     result
 
 class CentralBank
+  positive_money: false
+
   constructor: (@state, @banks) ->
     @stocks = DFLT_INITIAL_CB_STOCKS
+    @kassa = 0
 
-  credits_total: ->
+  credits_banks: ->
     sum = 0
     sum += bank.cb_debt for bank in @banks
     sum
-    #state cannot take loan directly from cb
 
-  giro_total: ->
+  giro_banks: ->
     giro_banks= 0
     giro_banks += bank.reserves for bank in @banks
-    giro_banks + @state.reserves
+    giro_banks
+
+  giro_nonbanks: ->
+    giro_nonbanks = 0
+    giro_nonbanks += bank.customer_deposits() for bank in @banks
+    giro_nonbanks
 
   assets_total: ->
-    @credits_total() + @stocks
+    @kassa + @credits_banks() + @stocks
 
-  liabilities_total: ->
-    @giro_total() + @capital()
+  debt_total: ->
+    debt = @giro_banks() + @state.reserves
+    debt += @giro_nonbanks if @positive_money
+    debt
 
   capital: ->
-    @assets_total() - @giro_total()
+    @assets_total() - @debt_total()
 
 class InterbankMarket
   @instance: null
@@ -192,93 +209,94 @@ class InterbankMarket
   InterbankMarket::reset = ->
     @instance = null
 
-  give_interbank_loan: (from, to, amount) ->
-    assert(from != to, "banks not different")
+  increase_interbank_debt: (bank, creditor, amount) ->
+    assert(bank != creditor, "banks not different")
     assert(amount > 0, "credit amount must be > 0")
-    assert(from.reserves >= amount, "not enough reserves for interbank credit")
-    assert(not from.gameover, "bankrupt bank cannot give credit")
-    assert(not to.gameover, "bankrupt bank cannot get credit")
     assert(@interbank != null, "interbank null")
 
-    from.reserves -= amount
-    to.reserves += amount
-
-    if not @interbank.containsKey(from)
+    if not @interbank.containsKey(bank)
       hash = new Hashtable()
-      hash.put(to, amount)
-      @interbank.put(from, hash)
+      hash.put(creditor, amount)
+      @interbank.put(bank, hash)
     else
-      if @interbank.get(from).containsKey(to)
-        val = @interbank.get(from).get(to)
-        @interbank.get(from).put(to, val + amount)
+      if @interbank.get(bank).containsKey(creditor)
+        val = @interbank.get(bank).get(creditor)
+        @interbank.get(bank).put(creditor, val + amount)
       else
-        @interbank.get(from).put(to, amount)
+        @interbank.get(bank).put(creditor, amount)
 
-    if not @interbank.containsKey(to)
-      hash = new Hashtable()
-      hash.put(from, -amount)
-      @interbank.put(to, hash)
-    else
-      if @interbank.get(to).containsKey(from)
-        val = @interbank.get(to).get(from)
-        @interbank.get(to).put(from, val - amount)
-      else
-        @interbank.get(to).put(from, -amount)
+  reduce_interbank_debt: (bank, creditor, amount) ->
+    assert(@interbank != null, "interbank null")
+    assert(bank != creditor, "banks not different")
+    assert(amount > 0, "credit amount must be > 0")
+    assert(@get_interbank_debt(bank, creditor) >= amount, 'interbank debt too small')
+    val = @interbank.get(bank).get(creditor)
+    @interbank.get(bank).put(creditor, val - amount)
 
-  get_interbank_loans: (bank) ->
+  get_all_interbank_loans: (bank) ->
+    total = 0
+    for key in @interbank.keys()
+      if key != bank
+        total += @get_interbank_debt(key, bank)
+    total
+
+  get_interbank_debt: (bank, creditor) ->
+    assert(bank != creditor, "banks not different")
+    if @interbank.containsKey(bank)
+      if @interbank.get(bank).containsKey(creditor)
+        val = @interbank.get(bank).get(creditor)
+        return val
+    return 0
+
+  get_all_interbank_debts: (bank) ->
     total = 0
     if @interbank.containsKey(bank)
       for v in @interbank.get(bank).values()
-        total += v if v > 0
+        total += v
     total
 
-  get_interbank_debt: (bank) ->
-    total = 0
-    if @interbank.containsKey(bank)
-      for v in @interbank.get(bank).values()
-        total += Math.abs(v) if v < 0
-    total
+  get_interbank_volume: ->
+    volume = 0
+    for b in @interbank.keys()
+      for key in @interbank.get(b).keys()
+        volume += @interbank.get(b).get(key)
+    volume
 
   settle_interbank_interests: (libor) ->
+    assert(@interbank != null, "interbank null")
     #iterate table, multiply credits / debts with libor
     for b in @interbank.keys()
       for key in @interbank.get(b).keys()
         val = @interbank.get(b).get(key)
         @interbank.get(b).put(key, val * (1 + libor))
-        b.capital += val * libor
-
-  set_gameover: (bank) ->
-    #interbank write offs can trigger chain reaction of bankcupcy
-    #TrxMgr must check if other banks affected
-    if @interbank.containsKey(bank)
-      for b in @interbank.get(bank).keys()
-        if @interbank.containsKey(b)
-          bank_loss = @interbank.get(b).get(bank)
-          if bank_loss > 0
-            console.log "bank just lost #{bank_loss} from a bankcupcy"
-            b.capital -= bank_loss
-          else if bank_loss < 0
-            console.log "bank just gained #{Math.abs(bank_loss)} a from bankrupcy"
-            b.capital += Math.abs(bank_loss)
-          @interbank.get(b).remove(bank)
-
-      @interbank.get(bank).clear()
 
 class Bank
-  gameover: false
+  positive_money: false
   interbank_market: null
   customers: []
   reserves: 0
   stocks: 0
   cb_debt: 0
-  capital: 0
 
   constructor: ->
     @interbank_market = InterbankMarket::get_instance()
+    @income = 0
+    @expenses = 0
+    @hash = randomizeInt(1, 10000000)
 
-  # attention: don't override, used by Hashtable class
-  #toString: ->
-  #  "r:#{@reserves},c: #{@credits}, dcb:#{@cb_debt}, g:#{@giral},c:#{@capital}"
+  profit: ->
+    @income - @expenses
+
+  reset_earnings: ->
+    @income = 0
+    @expenses = 0
+
+  toString: ->
+    "reserves:#{@reserves},cb_debt:#{@cb_debt}, nofC:#{@customers.length}"
+
+  # attention: used by InterbankMarket class
+  hashCode: ->
+    @hash
 
   Bank::get_random_bank = ->
     num_customers = randomizeInt(1, MAX_CUSTOMERS)
@@ -287,22 +305,23 @@ class Bank
     bank.reserves = DFLT_INITIAL_RESERVES_PER_BANK
     bank.stocks = DFLT_INITIAL_STOCKS_PER_BANK
     bank.cb_debt = bank.reserves
-    bank.capital = bank.assets_total() - bank.debt_total()
     bank
 
   assets_total: ->
     @reserves + @customer_loans() + @interbank_loans() + @stocks
 
-  liabilities_total: ->
-    @cb_debt + @interbank_debt() + @customer_deposits() + @customer_savings() + @capital
-
   debt_total: ->
-    @cb_debt + @interbank_debt() + @customer_deposits() + @customer_savings()
+    debt = @cb_debt + @interbank_debt() +  @customer_savings()
+    debt += @customer_deposits() if not @positive_money
+    debt
+
+  capital: ->
+    @assets_total() - @debt_total()
 
   customer_deposits: ->
     sum = 0
     for c in @customers
-      sum += c.giral
+      sum += c.deposit
     sum
 
   customer_savings: ->
@@ -318,16 +337,13 @@ class Bank
     sum
 
   interbank_loans: ->
-    @interbank_market.get_interbank_loans(this)
+    @interbank_market.get_all_interbank_loans(this)
 
   interbank_debt: ->
-    @interbank_market.get_interbank_debt(this)
+    @interbank_market.get_all_interbank_debts(this)
 
-  give_interbank_loan: (to, amount) ->
-    @interbank_market.give_interbank_loan(this, to, amount)
-  
 class BankCustomer
-  constructor: (@bank, @giral, @savings, @stocks, @loan) ->
+  constructor: (@bank, @deposit, @savings, @stocks, @loan) ->
     @income = 0
     @expenses = 0
 
@@ -335,24 +351,24 @@ class BankCustomer
     @income - @expenses
 
   wealth: ->
-    @giral + @savings + @stocks
+    @deposit + @savings + @stocks
 
   reset_earnings: ->
     @income = 0
     @expenses = 0
 
   assets_total: ->
-    @giral + @savings + @stocks
+    @deposit + @savings + @stocks
 
   capital: ->
     @assets_total() - @loan
 
   BankCustomer::get_random_customer = (bank) ->
-    giral = DFLT_INITIAL_DEPOSIT_PER_CUST
+    deposit = DFLT_INITIAL_DEPOSIT_PER_CUST
     stocks = DFLT_INITIAL_STOCKS_PER_CUST
     loan = DFLT_INITIAL_LOAN_PER_CUST
     savings = DFLT_INITIAL_SAVINGS_PER_CUST
-    new BankCustomer(bank, giral, savings, stocks, loan)
+    new BankCustomer(bank, deposit, savings, stocks, loan)
 
 class MicroEconomy
   constructor: (@state, @cb, @banks, @params) ->
@@ -360,7 +376,7 @@ class MicroEconomy
 
   all_customers: ->
     all_customers = []
-    for bank in @banks when not bank.gameover
+    for bank in @banks
       for c in bank.customers
         all_customers.push c
     all_customers
@@ -404,30 +420,12 @@ class TrxMgr
     @manage_bank_debt()
     @collect_taxes()
     @make_statistics()
-    @check_balance_consistency()
-    @check_bankrupcy()
 
   reset_earnings: ->
     for c in @microeconomy.all_customers()
       c.reset_earnings()
-
-  check_balance_consistency: ->
-    a = @cb.assets_total()
-    l = @cb.liabilities_total()
-    assert(Math.round(1000*a) - Math.round(1000*l) == 0, "central bank balance sheet inconsistent: #{a} != #{l} ")
-    for bank in @banks when not bank.gameover
-      a = bank.assets_total()
-      l = bank.liabilities_total()
-      assert(Math.round(1000*a) - Math.round(1000*l) == 0, "bank balance sheet inconsistent: #{a} != #{l} ")
-
-  check_bankrupcy: ->
-    #rounding errors considered
-    if @cb.capital() < -0.01
-      alert "central bank capital cannot be negative, #{@cb.capital()}"
-
-    for bank in @banks
-      if bank.capital < -0.01 and not bank.gameover
-        alert "bank capital cannot be negative #{bank.capital}"
+    for b in @banks
+      b.reset_earnings()
 
   create_transactions: ->
     # creating a random number of transactions 
@@ -449,24 +447,52 @@ class TrxMgr
       cust1 = all_customers[cust1_index]
       cust2 = all_customers[cust2_index]
 
-      amount = randomize(0, cust1.giral)
+      amount = randomize(0, cust1.deposit)
       @transfer(cust1, cust2, amount)
       #adding transaction to gdp
       @stats.gdp += amount
 
+  interbank_transfer: (from, to, amount) ->
+    remainder = amount
+    ib_loan = @interbank_market.get_interbank_debt(to, from)
+    if ib_loan > amount
+      @interbank_market.reduce_interbank_debt(to, from, amount)
+      remainder = 0
+    else if ib_loan > 0
+      @interbank_market.reduce_interbank_debt(to, from, ib_loan)
+      remainder = amount - ib_loan
+
+    if remainder > 0 and from.reserves > 0
+      if remainder > from.reserves
+        to.reserves += from.reserves
+        remainder = remainder - from.reserves
+        from.reserves = 0
+      else
+        from.reserves -= remainder
+        to.reserves += remainder
+        remainder = 0
+
+    if remainder > 0
+      libor = @params.libor
+      pr = @params.prime_rate
+      if pr >= libor
+        @interbank_market.increase_interbank_debt(from, to, remainder)
+      else
+        from.reserves += remainder
+        from.cb_debt += remainder
+
   #transferring money from one customer to another
   transfer: (from, to, amount) ->
-    if from.bank != to.bank and from.bank.reserves < amount
-      @get_new_bank_loan(from.bank, amount)
+    assert(from.deposit >= amount, 'not enough deposits')
 
-    if from.bank != to.bank
-      from.bank.reserves -= amount
-      to.bank.reserves += amount
+    if not @params.positive_money
+      if from.bank != to.bank
+        @interbank_transfer(from.bank, to.bank, amount)
 
+    from.deposit -= amount
     from.expenses += amount
     to.income += amount
-    from.giral -= amount
-    to.giral += (1-@params.savings_rate)*amount
+    to.deposit += (1-@params.savings_rate)*amount
     to.savings += @params.savings_rate * amount
     @stats.c_c_flow += amount
 
@@ -474,77 +500,65 @@ class TrxMgr
     di = @params.deposit_interest
     dis = @params.deposit_interest_savings
 
-    for bank in @banks when not bank.gameover
+    for bank in @banks
       for c in bank.customers
-        debt_bank = di * c.giral
+        debt_bank_deposit = di * c.deposit
         debt_bank_savings = dis * c.savings
+        debt_bank = debt_bank_deposit + debt_bank_savings
         # pay deposit interest to customer
-        c.giral += debt_bank
+        c.deposit += debt_bank_deposit
         c.savings += debt_bank_savings
-        c.income += debt_bank + debt_bank_savings
-        bank.capital -= debt_bank + debt_bank_savings
-        @stats.b_c_flow += debt_bank + debt_bank_savings
+
+        c.income += debt_bank
+        if @params.positive_money
+          bank.reserves -= debt_bank
+        @stats.b_c_flow += debt_bank
       
   get_customer_credit_interests: ->
     cr = @params.credit_interest
 
-    for bank in @banks when not bank.gameover
+    for bank in @banks
       for c in bank.customers
         # get credit interest from customer
-        # TRX: giral AN capital
         debt_cust = cr * c.loan
-        if c.giral < debt_cust
+        if c.deposit < debt_cust
           #new credits if customer can't pay interest
           # resulting in compund interest
-          # customer is actually bankrupt now
-          diff = debt_cust - c.giral
+          diff = debt_cust - c.deposit
           c.loan += diff
-          bank.capital += debt_cust
-          c.giral = 0
+          c.deposit = 0
           c.expenses += debt_cust
           @stats.c_b_flow += debt_cust
-          #
-          # alternative: writing off credits
-          # bank.capital -= c.loan
-          # c.loan = 0
-          # seize the remaining money of customer
-          # bank.capital += c.giral
-          # c.giral = 0
         else
-          c.giral -= debt_cust
+          c.deposit -= debt_cust
           c.expenses += debt_cust
-          bank.capital += debt_cust
           @stats.c_b_flow += debt_cust
 
   get_cb_deposit_interests: ->
+    #interests from cb to state
     pr_giro = @params.prime_rate_giro
     interest = pr_giro * @state.reserves
     @state.reserves += interest
     @stats.cb_s_flow += interest
 
-    for bank in @banks when not bank.gameover
+    for bank in @banks
       #interests from cb to bank
-      #TRX: reserves an capital
       interest = pr_giro * bank.reserves
       bank.reserves += interest
-      bank.capital += interest
       @stats.cb_b_flow += interest
 
   pay_cb_credit_interests: ->
     pr = @params.prime_rate
-    for bank in @banks when not bank.gameover
+    for bank in @banks
       #interests from bank to cb
-      #TRX: capital an reserves
       debt = pr*bank.cb_debt
       if debt > bank.reserves
         #cumulative debt, compound interest, negative capital
         diff = debt - bank.reserves
-        bank.capital -= debt
         bank.reserves = 0
         bank.cb_debt += diff
       else
         bank.reserves -= debt
-        bank.capital -= debt
 
       @stats.b_cb_flow += debt
       
@@ -555,38 +569,37 @@ class TrxMgr
     dr = @params.deposit_interest
     cr = @params.credit_interest
 
-    #for bank in @banks when not bank.gameover
+    #for bank in @banks
     #  for c in bank.customers
         # customers paying back credits
-        # TRX: giral AN credits
+        # TRX: deposits AN credits
         #if dr < cr
-        #  max_payback = Math.min(c.loan, c.giral)
+        #  max_payback = Math.min(c.loan, c.deposit)
         #  amount = randomize(0, max_payback)
         #  c.loan -= amount
-        #  c.giral -= amount
+        #  c.deposit -= amount
         
         # customers taking new loans
         # money creation
-        # TRX: credits AN giral
+        # TRX: credits AN deposits
         # upper limit for customer loan: 10 times deposit   
         # max_credit = @compute_max_new_customer_loan(bank)
-        # amount = randomize(0, Math.min(max_credit, 10* c.giral))
+        # amount = randomize(0, Math.min(max_credit, 10* c.deposit))
         # c.loan += amount
-        # c.giral += amount
+        # c.deposit += amount
         
   collect_taxes: ->
     income_tax_current_year = 0
     tax_payers = @microeconomy.all_customers()
     for c in tax_payers
       tax = @params.income_tax_rate * c.income
-      if tax > c.giral
-        console.log "taxed to death"
-        diff = tax - c.giral
+      if tax > c.deposit
+        diff = tax - c.deposit
         #customer takes loan to pay taxes
-        c.giral += diff
+        c.deposit += diff
         c.loan += diff
 
-      c.giral -= tax
+      c.deposit -= tax
       c.bank.reserves -= tax
       income_tax_current_year += tax
 
@@ -606,7 +619,7 @@ class TrxMgr
     basic_income = basic_income_total / len
 
     for i in [0..len-1]
-      tax_payers[i].giral += basic_income
+      tax_payers[i].deposit += basic_income
       tax_payers[i].bank.reserves += basic_income
       tax_payers[i].income += basic_income
 
@@ -614,131 +627,20 @@ class TrxMgr
     @state.reserves -= basic_income_total
     @state.basic_income_series.push basic_income_total
 
-  provide_public_service: ->
-    tax_payers = @microeconomy.all_customers()
-    len = tax_payers.length
-    public_service_cost = @state.reserves
-    arr = random_array(public_service_cost, len)
-
-    if len == 0
-      @state.public_service_series.push 0
-      return
-
-    for i in [0..len-1]
-      tax_payers[i].giral += arr[i]
-      tax_payers[i].bank.reserves += arr[i]
-      tax_payers[i].income += arr[i]
-
-    @stats.s_c_flow += public_service_cost
-    @state.reserves -= public_service_cost
-    @state.public_service_series.push public_service_cost
-
   manage_bank_debt: ->
     cr = @params.cap_req
     pr = @params.prime_rate
     prg = @params.prime_rate_giro
 
-    for bank in @banks when not bank.gameover
-      if @compute_minimal_reserves(bank) > bank.reserves
-        diff = Math.max(0, @compute_minimal_reserves(bank) - bank.reserves)
-        potential = @compute_max_new_debt(bank)
-        if diff > potential
-          @set_gameover(bank, "cannot fulfill minimal reserve requirement")
-          continue
-
-        # new cb loan to satisfy minimal reserves requirements
-        @get_new_bank_loan(bank, diff)
-
-      if bank.capital / bank.liabilities_total() < cr
-        potential = @payback_debt_potential(bank)
-
-        amount = Math.min(potential, bank.cb_debt)
-        bank.cb_debt -= amount
-        bank.reserves -= amount
-
-      if bank.capital / bank.liabilities_total() < cr
-          @set_gameover(bank, "cannot fulfill capital requirements")
-          continue
-
-  get_new_bank_loan: (bank, amount) ->
-    pr = @params.prime_rate
-    libor = @params.libor
-
-    # if interbank interest rate is lower than cb prime rate
-    #taking interbank credit
-    demand = amount
-    if pr > libor
-      for b in @banks
-        if b != bank and demand > 0
-          pot = @compute_max_new_ib_loan(b)
-          ib_loan = Math.min(demand, pot)
-          if ib_loan > 0
-            b.give_interbank_loan(bank, ib_loan)
-            demand -= ib_loan
-
-    if demand > 0
-      #still more money needed
-      bank.reserves += demand
-      bank.cb_debt += demand
-
-  #lower limit of reserves that bank must have
-  compute_minimal_reserves: (bank) ->
-    mr = @params.minimal_reserves
-    mr * (bank.customer_deposits() + bank.cb_debt + bank.interbank_debt())
-
-  #max limit for new customer loan
-  compute_max_new_customer_loan: (bank) ->
-    cr = @params.cap_req
-    mr = @params.minimal_reserves
-
-    # compute upper limit regarding capital requirement
-    limit_cap = (bank.capital - cr * bank.liabilities_total()) / cr
-    limit_cap = Math.max(0, limit_cap)
-    #computer upper limit regarding minimal reserves requirement
-    limit_mr = (bank.reserves -  @compute_minimal_reserves(bank)) / mr
-    limit_mr = Math.max(0, limit_mr)
-    #the smaller limit determines the maximal credit potential
-    Math.min(limit_cap, limit_mr)
-
-  #max amount of reserves that can be loaned to other banks
-  compute_max_new_ib_loan: (bank) ->
-    mr = @params.minimal_reserves
-
-    #computer upper limit regarding minimal reserves requirement
-    limit_mr = bank.reserves -  @compute_minimal_reserves(bank)
-    Math.max(0, limit_mr)
-
-  # max limit for new loan that bank can take
-  compute_max_new_debt: (bank) ->
-    cr = @params.cap_req
-
-    # compute upper limit regarding capital requirement
-    limit_cap = (bank.capital - cr * bank.liabilities_total()) / cr
-    Math.max(0, limit_cap)
-
-  #max limit of reserves that can be used to payback bank debt
-  payback_debt_potential: (bank) ->
-    mr = @params.minimal_reserves
-
-    #computer upper limit regarding minimal reserves requirement
-    limit_mr = (bank.reserves -  @compute_minimal_reserves(bank)) / (1 - mr)
-    Math.max(0, limit_mr)
-
   make_statistics: ->
     @stats.one_year()
 
-  set_gameover: (bank, reason) ->
-    assert(not bank.gameover, "bank is already gameover")
-    bank.gameover = true
-    console.log "reason for bankruptcy: #{reason}"
-    cb_loss = bank.cb_debt - bank.reserves
-    if cb_loss > 0
-      console.log "central bank just lost #{cb_loss} from a bankruptcy"
-    else if cb_loss < 0
-      console.log "central bank just won #{-cb_loss} from a bankruptcy"
-      
-    @interbank_market.set_gameover(bank)
-    bank.customers = []
-    bank.reserves = bank.cb_debt = bank.stocks = bank.capital = 0
+  enable_positive_money: ->
+    @cb.positive_money = true
+    for bank in @banks
+      bank.positive_money = true
+      bank.cb_debt += bank.customer_deposits()
+      bank.cb_debt += bank.interbank_debt()
 
-
+  disable_positive_money: ->
+    console.log "disable"

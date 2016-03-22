@@ -70,7 +70,7 @@ DICT = {
   reserves: ['reserves', "Reserven"],
   balance_sheet: ['balance sheet', "Bilanz"],
   stocks: ['stocks', "Wertschriften"],
-  deposits: ['deposits', "Giralgeld"],
+  deposits: ['deposits', "Guthaben"],
   savings: ['savings', 'Sparguthaben'],
   loans: ['loans', "Kredite"],
   cb_deposits: ['central bank deposits', 'Zentralbank Guthaben'],
@@ -97,7 +97,8 @@ DICT = {
   money_flow: ['flow of money', 'Geldfluss'],
   nof_customers: ['number of customers', 'Anzahl Bankkunden'],
   gdp: ['gross domestic product', 'Bruttoinlandsprodukt BIP'],
-  basic_income_per_citizen: ['basic income per citizen', 'Grundeinkommen pro Kopf']
+  basic_income_per_citizen: ['basic income per citizen', 'Grundeinkommen pro Kopf'],
+  positive_money: ['positive money', 'Vollgeld']
 };
 
 iv = function(val) {
@@ -294,7 +295,7 @@ Simulator = (function() {
         };
       })(this)
     }, this);
-    return this.income_tax_rate = ko.computed({
+    this.income_tax_rate = ko.computed({
       read: (function(_this) {
         return function() {
           return (_this.gui_params.income_tax_rate() * 100).toFixed(1);
@@ -309,6 +310,19 @@ Simulator = (function() {
         };
       })(this)
     }, this);
+    return this.positive_money = ko.computed({
+      read: (function(_this) {
+        return function() {
+          return _this.gui_params.positive_money();
+        };
+      })(this),
+      write: (function(_this) {
+        return function(value) {
+          _this.gui_params.positive_money(value);
+          return _this.params.positive_money = value;
+        };
+      })(this)
+    }, this);
   };
 
   Simulator.prototype.reset_params = function() {
@@ -316,11 +330,11 @@ Simulator = (function() {
   };
 
   Simulator.prototype.update_text = function(id) {
-    return $('#' + id).text(_tr(id));
+    return $('#lbl_' + id).text(_tr(id));
   };
 
   Simulator.prototype.update_val = function(id) {
-    return $('#' + id).val(_tr(id));
+    return $('#lbl_' + id).val(_tr(id));
   };
 
   Simulator.prototype.update_translations = function() {
@@ -340,6 +354,7 @@ Simulator = (function() {
     this.update_text('deposit_interest_savings');
     this.update_text('savings_rate');
     this.update_text('income_tax_rate');
+    this.update_text('positive_money');
     if (LANG === 'DE') {
       $('#instructions_english').hide();
       return $('#instructions_german').show();
@@ -396,6 +411,17 @@ Simulator = (function() {
     this.reset_params();
     this.reset();
     return this.visualizerMgr.visualize();
+  };
+
+  Simulator.prototype.positive_money_clicked = function() {
+    $('.deposit_interest').slideToggle();
+    if (this.positive_money()) {
+      this.trx_mgr.enable_positive_money();
+      this.deposit_interest(0);
+    } else {
+      this.trx_mgr.disable_positive_money();
+    }
+    return true;
   };
 
   return Simulator;
@@ -461,27 +487,29 @@ GUIBuilder = (function() {
   GUIBuilder.prototype.add_button = function(container_id, id, handler) {
     var button, row;
     row = $('<tr></tr>');
-    button = $('<td colspan=2></td>').append('<input class="button" id="' + id + '" type="button" data-bind="click: ' + handler + '"/>');
+    button = $('<td colspan=2></td>').append('<input class="' + id + '" id="lbl_' + id + '" type="button" data-bind="click: ' + handler + '"/>');
     return $(container_id).append(row, button);
   };
 
   GUIBuilder.prototype.add_checkbox = function(container_id, id, handler) {
     var checkbox, label, row;
     row = $('<tr></tr>');
-    label = $('<td></td>').addClass('label').attr('id', id);
+    label = $('<td></td>').addClass(id).addClass('label').attr('id', 'lbl_' + id);
     checkbox = $('<input type="checkbox" data-bind="checked: ' + id + ', click: ' + handler + '">');
     checkbox = $('<td></td>').append(checkbox);
     return $(container_id).append(label, checkbox);
   };
 
   GUIBuilder.prototype.add_range_param = function(container_id, id, start, end, step, unit) {
-    var label, range, row;
+    var cell1, cell2, label, pct, range, row;
+    label = $('<span></span>').addClass(id).addClass('label').attr('id', 'lbl_' + id);
+    cell1 = $('<td></td>').append(label);
+    range = $('<input data-bind="value:' + id + '" type="range" min="' + start + '" max="' + end + '" step="' + step + '"/>');
+    pct = $('<span data-bind="text: ' + id + '"></span>');
+    cell2 = $('<td></td>').append(range).append(pct).append('<span>' + (unit ? unit : '') + '</span>');
     row = $('<tr></tr>');
-    label = $('<td></td>').addClass('label').attr('id', id);
-    range = $('<td></td>').append('<input data-bind="value:' + id + '" type="range" min="' + start + '" max="' + end + '" step="' + step + '"/>');
-    range.append('<span data-bind="text: ' + id + '"></span>' + (unit ? unit : ''));
-    row.append(label).append(range);
-    $('#param_table').append(row);
+    row.addClass(id);
+    row.append(cell1).append(cell2);
     return $(container_id).append(row);
   };
 
@@ -509,7 +537,8 @@ GUIBuilder = (function() {
     this.add_range_param(container_id, 'deposit_interest', 0, 10, 0.1, '%');
     this.add_range_param(container_id, 'deposit_interest_savings', 0, 10, 0.1, '%');
     this.add_range_param(container_id, 'savings_rate', 0, 100, 1, '%');
-    return this.add_range_param(container_id, 'income_tax_rate', 0, 100, 1, '%');
+    this.add_range_param(container_id, 'income_tax_rate', 0, 100, 1, '%');
+    return this.add_checkbox(container_id, 'positive_money', 'positive_money_clicked');
   };
 
   GUIBuilder.prototype.visualize = function() {};
@@ -771,9 +800,9 @@ CentralBankTable = (function(superClass) {
 
   CentralBankTable.prototype.create_table = function() {
     this.create_header(_tr('assets'), '', _tr('liabilities'), '');
-    this.create_row(_tr('loans'), this.cb.credits_total().toFixed(2), _tr('reserves'), this.cb.giro_total().toFixed(2));
+    this.create_row(_tr('loans'), this.cb.credits_banks().toFixed(2), _tr('reserves'), this.cb.giro_banks().toFixed(2));
     this.create_row(_tr('stocks'), '0', _tr('capital'), this.cb.capital().toFixed(2));
-    return this.create_row('Total', this.cb.assets_total().toFixed(2), '', this.cb.liabilities_total().toFixed(2));
+    return this.create_row('Total', this.cb.assets_total().toFixed(2), '', this.cb.assets_total().toFixed(2));
   };
 
   return CentralBankTable;
@@ -788,15 +817,15 @@ CustomersTable = (function(superClass) {
   }
 
   CustomersTable.prototype.create_table = function() {
-    var c, caps, customers, expenses, girals, incomes, len, loans, savings, stocks;
+    var c, caps, customers, deposits, expenses, incomes, len, loans, savings, stocks;
     customers = this.microeconomy.all_customers();
     len = customers.length;
-    girals = (function() {
+    deposits = (function() {
       var j, len1, results;
       results = [];
       for (j = 0, len1 = customers.length; j < len1; j++) {
         c = customers[j];
-        results.push(c.giral);
+        results.push(c.deposit);
       }
       return results;
     })();
@@ -896,35 +925,8 @@ MoneySupplyTable = (function(superClass) {
   }
 
   MoneySupplyTable.prototype.create_table = function() {
-    this.create_header('M0', 'M1', 'M2');
-    return this.create_row(this.stats.m0().toFixed(2), this.stats.m1().toFixed(2), this.stats.m2().toFixed(2));
-  };
-
-  MoneySupplyTable.prototype.create_bank_header = function() {
-    return this.create_header('', _tr("reserves"), _tr('interbank credits'), _tr('credits'), _tr('debt to central bank'), _tr('interbank debt'), _tr('bank deposits'), _tr("capital"), _tr("assets"), _tr("liabilities"), _tr('nof_customers'));
-  };
-
-  MoneySupplyTable.prototype.create_bank_row = function(id, bank) {
-    return this.create_row(id, bank.reserves.toFixed(2), bank.interbank_loans().toFixed(2), bank.customer_loans().toFixed(2), bank.cb_debt.toFixed(2), bank.interbank_debt().toFixed(2), bank.customer_deposits().toFixed(2), bank.capital.toFixed(2), bank.assets_total().toFixed(2), bank.liabilities_total().toFixed(2), bank.customers.length);
-  };
-
-  MoneySupplyTable.prototype.create_banks_table = function(banks) {
-    var bank, i, j, len1, ref, row;
-    $('#banks_table').append('<table>');
-    $('#banks_table').append('<caption>' + _tr('banks') + '</caption>');
-    $('#banks_table').append(this.create_bank_header());
-    i = 0;
-    ref = this.banks;
-    for (j = 0, len1 = ref.length; j < len1; j++) {
-      bank = ref[j];
-      row = $(this.create_bank_row(i, bank));
-      if (bank.gameover) {
-        row.addClass('bankrupt');
-      }
-      $('#banks_table').append(row);
-      i += 1;
-    }
-    return $('#banks_table').append('</table>');
+    this.create_header('M0', 'M1', 'M2', _tr('interbank_volume'));
+    return this.create_row(this.stats.m0().toFixed(2), this.stats.m1().toFixed(2), this.stats.m2().toFixed(2), this.stats.interbank_volume().toFixed(2));
   };
 
   return MoneySupplyTable;
@@ -944,10 +946,7 @@ BanksTable = (function(superClass) {
 
   BanksTable.prototype.create_bank_row = function(id, bank) {
     var row;
-    row = this.create_row(id, bank.reserves.toFixed(2), bank.gameover ? 0 : (bank.reserves / bank.debt_total() * 100).toFixed(0) + '%', bank.interbank_loans().toFixed(2), bank.customer_loans().toFixed(2), bank.stocks.toFixed(2), bank.cb_debt.toFixed(2), bank.interbank_debt().toFixed(2), bank.customer_deposits().toFixed(2), bank.customer_savings().toFixed(2), bank.capital.toFixed(2), bank.assets_total().toFixed(2), bank.liabilities_total().toFixed(2), bank.customers.length);
-    if (bank.gameover) {
-      return row.addClass('bankrupt');
-    }
+    return row = this.create_row(id, bank.reserves.toFixed(2), (bank.reserves / bank.debt_total() * 100).toFixed(0) + '%', bank.interbank_loans().toFixed(2), bank.customer_loans().toFixed(2), bank.stocks.toFixed(2), bank.cb_debt.toFixed(2), bank.interbank_debt().toFixed(2), bank.customer_deposits().toFixed(2), bank.customer_savings().toFixed(2), bank.capital().toFixed(2), bank.assets_total().toFixed(2), bank.assets_total().toFixed(2), bank.customers.length);
   };
 
   BanksTable.prototype.create_total_row = function() {
@@ -988,7 +987,7 @@ BanksTable = (function(superClass) {
       results = [];
       for (j = 0, len1 = ref.length; j < len1; j++) {
         bank = ref[j];
-        results.push(bank.capital);
+        results.push(bank.capital());
       }
       return results;
     }).call(this);
@@ -1052,16 +1051,7 @@ BanksTable = (function(superClass) {
       }
       return results;
     }).call(this);
-    liabilities = (function() {
-      var j, len1, ref, results;
-      ref = this.banks;
-      results = [];
-      for (j = 0, len1 = ref.length; j < len1; j++) {
-        bank = ref[j];
-        results.push(bank.liabilities_total());
-      }
-      return results;
-    }).call(this);
+    liabilities = assets;
     return this.create_row('Total:', reserves.sum().toFixed(2), '', interbank_loans.sum().toFixed(2), loans.sum().toFixed(2), stocks.sum().toFixed(2), cb_debts.sum().toFixed(2), interbank_debts.sum().toFixed(2), deposits.sum().toFixed(2), savings.sum().toFixed(2), caps.sum().toFixed(2), assets.sum().toFixed(2), liabilities.sum().toFixed(2), this.microeconomy.all_customers().length);
   };
 
@@ -1170,6 +1160,9 @@ MoneySupplyChart = (function(superClass) {
       }, {
         name: _tr('money_supply') + ' M2',
         data: this.stats.m2_series.slice(-MONEY_SUPPLY_HIST)
+      }, {
+        name: _tr('interbank_volume'),
+        data: this.stats.interbank_volume_series.slice(-MONEY_SUPPLY_HIST)
       }
     ];
   };
@@ -1294,7 +1287,7 @@ CentralBankChart = (function(superClass) {
     return this.data = [
       {
         name: _tr('loans'),
-        data: [this.cb.credits_total()],
+        data: [this.cb.credits_banks()],
         color: COL1,
         stack: _tr('assets')
       }, {
@@ -1303,7 +1296,7 @@ CentralBankChart = (function(superClass) {
         stack: _tr('assets')
       }, {
         name: 'M0',
-        data: [this.cb.giro_total()],
+        data: [this.cb.giro_banks()],
         color: COL2,
         stack: _tr('liabilities')
       }, {
@@ -1363,7 +1356,7 @@ BanksChart = (function(superClass) {
       results = [];
       for (j = 0, len1 = ref.length; j < len1; j++) {
         bank = ref[j];
-        results.push(bank.capital);
+        results.push(bank.capital());
       }
       return results;
     }).call(this);
@@ -1511,7 +1504,7 @@ BanksTotalChart = (function(superClass) {
       results = [];
       for (j = 0, len1 = ref.length; j < len1; j++) {
         bank = ref[j];
-        results.push(bank.capital);
+        results.push(bank.capital());
       }
       return results;
     }).call(this);
@@ -1626,14 +1619,14 @@ CustomerTotalChart = (function(superClass) {
   };
 
   CustomerTotalChart.prototype.update_data = function() {
-    var c, caps, customers, girals, loans, savings, stocks;
+    var c, caps, customers, deposits, loans, savings, stocks;
     customers = this.microeconomy.all_customers();
-    girals = (function() {
+    deposits = (function() {
       var j, len1, results;
       results = [];
       for (j = 0, len1 = customers.length; j < len1; j++) {
         c = customers[j];
-        results.push(c.giral);
+        results.push(c.deposit);
       }
       return results;
     })();
@@ -1676,7 +1669,7 @@ CustomerTotalChart = (function(superClass) {
     return this.data = [
       {
         name: _tr("deposits"),
-        data: [girals.sum()],
+        data: [deposits.sum()],
         color: COL4,
         stack: _tr('assets')
       }, {

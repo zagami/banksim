@@ -48,7 +48,7 @@ DICT =
   reserves: ['reserves', "Reserven"]
   balance_sheet: ['balance sheet', "Bilanz"]
   stocks: ['stocks', "Wertschriften"]
-  deposits: ['deposits', "Giralgeld"]
+  deposits: ['deposits', "Guthaben"]
   savings: ['savings', 'Sparguthaben']
   loans: ['loans', "Kredite"]
   cb_deposits: ['central bank deposits', 'Zentralbank Guthaben']
@@ -77,11 +77,12 @@ DICT =
   nof_customers: ['number of customers', 'Anzahl Bankkunden']
   gdp: ['gross domestic product', 'Bruttoinlandsprodukt BIP']
   basic_income_per_citizen: ['basic income per citizen', 'Grundeinkommen pro Kopf']
+  positive_money: ['positive money', 'Vollgeld']
+
 iv = (val) ->
   ko.observable(val)
 
 class Simulator
-
   constructor: ->
     new GUIBuilder().initGUI()
     @update_translations()
@@ -135,7 +136,6 @@ class Simulator
     @autorun = iv(false)
     @autorun_id = 0
     @gui_params = ko.mapping.fromJS(@params)
-
     @prime_rate = ko.computed({
       read: =>
         (@gui_params.prime_rate() * 100).toFixed(1)
@@ -226,15 +226,23 @@ class Simulator
         @params.income_tax_rate = newval
     }, this)
 
+    @positive_money = ko.computed({
+      read: =>
+        @gui_params.positive_money()
+      write: (value) =>
+        @gui_params.positive_money(value)
+        @params.positive_money= value
+    }, this)
+
   # functions
   reset_params: ->
     @step(0)
 
   update_text: (id) ->
-    $('#'+id).text(_tr(id))
+    $('#lbl_'+id).text(_tr(id))
 
   update_val: (id) ->
-    $('#'+id).val(_tr(id))
+    $('#lbl_'+id).val(_tr(id))
 
   update_translations: ->
     @update_text('controls_header')
@@ -253,6 +261,8 @@ class Simulator
     @update_text('deposit_interest_savings')
     @update_text('savings_rate')
     @update_text('income_tax_rate')
+    @update_text('positive_money')
+
     if LANG == 'DE'
       $('#instructions_english').hide()
       $('#instructions_german').show()
@@ -302,6 +312,15 @@ class Simulator
     #@visualizerMgr.clear()
     @visualizerMgr.visualize()
 
+  positive_money_clicked: ->
+    $('.deposit_interest').slideToggle()
+    if @positive_money()
+      @trx_mgr.enable_positive_money()
+      @deposit_interest(0)
+    else
+      @trx_mgr.disable_positive_money()
+    return true #needed by knockout
+
 class VisualizerMgr
   vizArray: []
   visualize: ->
@@ -324,26 +343,27 @@ class Visualizer
   visualize: ->
 
 class GUIBuilder
-
   add_button: (container_id, id, handler) ->
     row = $('<tr></tr>')
-    button = $('<td colspan=2></td>').append('<input class="button" id="' + id + '" type="button" data-bind="click: ' + handler + '"/>')
+    button = $('<td colspan=2></td>').append('<input class="'+id+'" id="lbl_' + id + '" type="button" data-bind="click: ' + handler + '"/>')
     $(container_id).append(row, button)
 
   add_checkbox: (container_id, id, handler) ->
     row = $('<tr></tr>')
-    label = $('<td></td>').addClass('label').attr('id', id)
+    label = $('<td></td>').addClass(id).addClass('label').attr('id', 'lbl_' + id)
     checkbox = $('<input type="checkbox" data-bind="checked: ' + id + ', click: ' + handler + '">')
     checkbox = $('<td></td>').append(checkbox)
     $(container_id).append(label, checkbox)
 
   add_range_param: (container_id, id, start, end, step, unit) ->
+    label = $('<span></span>').addClass(id).addClass('label').attr('id', 'lbl_' + id)
+    cell1 = $('<td></td>').append(label)
+    range = $('<input data-bind="value:' + id + '" type="range" min="' + start + '" max="' + end + '" step="' + step + '"/>')
+    pct = $('<span data-bind="text: ' + id + '"></span>')
+    cell2 = $('<td></td>').append(range).append(pct).append('<span>'+ (if unit then unit else '') + '</span>')
     row = $('<tr></tr>')
-    label = $('<td></td>').addClass('label').attr('id', id)
-    range = $('<td></td>').append('<input data-bind="value:' + id + '" type="range" min="' + start + '" max="' + end + '" step="' + step + '"/>')
-    range.append('<span data-bind="text: ' + id + '"></span>'+ (if unit then unit else ''))
-    row.append(label).append(range)
-    $('#param_table').append(row)
+    row.addClass(id)
+    row.append(cell1).append(cell2)
     $(container_id).append(row)
 
   initGUI: ->
@@ -371,6 +391,7 @@ class GUIBuilder
     @add_range_param(container_id, 'deposit_interest_savings', 0, 10, 0.1, '%')
     @add_range_param(container_id, 'savings_rate', 0, 100, 1, '%')
     @add_range_param(container_id, 'income_tax_rate', 0, 100, 1, '%')
+    @add_checkbox(container_id, 'positive_money','positive_money_clicked')
 
   visualize: ->
 
@@ -543,9 +564,9 @@ class CentralBankTable extends TableVisualizer
     )
     @create_row(
       _tr('loans'),
-      @cb.credits_total().toFixed(2),
+      @cb.credits_banks().toFixed(2),
       _tr('reserves'),
-      @cb.giro_total().toFixed(2)
+      @cb.giro_banks().toFixed(2)
     )
 
     @create_row(
@@ -559,14 +580,14 @@ class CentralBankTable extends TableVisualizer
       'Total',
       @cb.assets_total().toFixed(2),
       '',
-      @cb.liabilities_total().toFixed(2)
+      @cb.assets_total().toFixed(2)
     )
 
 class CustomersTable extends TableVisualizer
   create_table: ->
     customers = @microeconomy.all_customers()
     len = customers.length
-    girals = (c.giral for c in customers)
+    deposits = (c.deposit for c in customers)
     savings = (c.savings for c in customers)
     stocks = (c.stocks for c in customers)
     loans = (c.loan for c in customers)
@@ -597,55 +618,15 @@ class MoneySupplyTable extends TableVisualizer
     @create_header(
       'M0',
       'M1',
-      'M2'
+      'M2',
+      _tr('interbank_volume')
     )
     @create_row(
       @stats.m0().toFixed(2),
       @stats.m1().toFixed(2),
       @stats.m2().toFixed(2),
+      @stats.interbank_volume().toFixed(2)
     )
-
-  create_bank_header: ->
-    @create_header(
-      '',
-      _tr("reserves"),
-      _tr('interbank credits')
-      _tr('credits'),
-      _tr('debt to central bank'),
-      _tr('interbank debt')
-      _tr('bank deposits'),
-      _tr("capital"),
-      _tr("assets"),
-      _tr("liabilities"),
-      _tr('nof_customers')
-    )
-
-  create_bank_row: (id, bank) ->
-    @create_row(
-      id,
-      bank.reserves.toFixed(2),
-      bank.interbank_loans().toFixed(2),
-      bank.customer_loans().toFixed(2),
-      bank.cb_debt.toFixed(2),
-      bank.interbank_debt().toFixed(2),
-      bank.customer_deposits().toFixed(2),
-      bank.capital.toFixed(2),
-      bank.assets_total().toFixed(2),
-      bank.liabilities_total().toFixed(2),
-      bank.customers.length
-    )
-
-  create_banks_table: (banks) ->
-    $('#banks_table').append( '<table>' )
-    $('#banks_table').append( '<caption>' + _tr('banks') + '</caption>' )
-    $('#banks_table').append(@create_bank_header())
-    i = 0
-    for bank in @banks
-      row = $(@create_bank_row(i, bank))
-      row.addClass('bankrupt') if bank.gameover
-      $('#banks_table').append(row)
-      i += 1
-    $('#banks_table').append(  '</table>' )
 
 class BanksTable extends TableVisualizer
   create_bank_header: ->
@@ -670,7 +651,7 @@ class BanksTable extends TableVisualizer
     row = @create_row(
       id,
       bank.reserves.toFixed(2),
-      if bank.gameover then 0 else (bank.reserves / bank.debt_total()*100).toFixed(0) + '%',
+      (bank.reserves / bank.debt_total()*100).toFixed(0) + '%',
       bank.interbank_loans().toFixed(2),
       bank.customer_loans().toFixed(2),
       bank.stocks.toFixed(2),
@@ -678,25 +659,24 @@ class BanksTable extends TableVisualizer
       bank.interbank_debt().toFixed(2),
       bank.customer_deposits().toFixed(2),
       bank.customer_savings().toFixed(2),
-      bank.capital.toFixed(2),
+      bank.capital().toFixed(2),
       bank.assets_total().toFixed(2),
-      bank.liabilities_total().toFixed(2),
+      bank.assets_total().toFixed(2),
       bank.customers.length
     )
-    row.addClass('bankrupt') if bank.gameover
 
   create_total_row: ->
     reserves = (bank.reserves for bank in @banks)
     loans = (bank.customer_loans() for bank in @banks)
     stocks = (bank.stocks for bank in @banks)
-    caps = (bank.capital for bank in @banks)
+    caps = (bank.capital() for bank in @banks)
     cb_debts = (bank.cb_debt for bank in @banks)
     deposits = (bank.customer_deposits() for bank in @banks)
     savings = (bank.customer_savings() for bank in @banks)
     interbank_loans = (bank.interbank_loans() for bank in @banks)
     interbank_debts = (bank.interbank_debt() for bank in @banks)
     assets = (bank.assets_total() for bank in @banks)
-    liabilities = (bank.liabilities_total() for bank in @banks)
+    liabilities = assets
 
     @create_row(
       'Total:',
@@ -781,6 +761,9 @@ class MoneySupplyChart extends ChartVisualizer
       }, {
         name: _tr('money_supply') + ' M2'
         data: @stats.m2_series[-MONEY_SUPPLY_HIST..]
+      }, {
+        name: _tr('interbank_volume')
+        data: @stats.interbank_volume_series[-MONEY_SUPPLY_HIST..]
     }]
     
 class InflationChart extends ChartVisualizer
@@ -834,7 +817,7 @@ class CentralBankChart extends ChartVisualizer
   update_data: ->
     @data = [{
           name: _tr('loans')
-          data: [@cb.credits_total()]
+          data: [@cb.credits_banks()]
           color: COL1
           stack: _tr('assets')
       }, {
@@ -843,7 +826,7 @@ class CentralBankChart extends ChartVisualizer
           stack: _tr('assets')
       }, {
           name: 'M0'
-          data: [@cb.giro_total()]
+          data: [@cb.giro_banks()]
           color: COL2
           stack: _tr('liabilities')
       }, {
@@ -857,7 +840,7 @@ class BanksChart extends ChartVisualizer
     reserves = (bank.reserves for bank in @banks)
     loans = (bank.customer_loans() for bank in @banks)
     stocks = (bank.stocks for bank in @banks)
-    caps = (bank.capital for bank in @banks)
+    caps = (bank.capital() for bank in @banks)
     cb_debts = (bank.cb_debt for bank in @banks)
     deposits = (bank.customer_deposits() for bank in @banks)
     savings = (bank.customer_savings() for bank in @banks)
@@ -910,7 +893,7 @@ class BanksTotalChart extends ChartVisualizer
     reserves = (bank.reserves for bank in @banks)
     loans = (bank.customer_loans() for bank in @banks)
     stocks = (bank.stocks for bank in @banks)
-    caps = (bank.capital for bank in @banks)
+    caps = (bank.capital() for bank in @banks)
     cb_debts = (bank.cb_debt for bank in @banks)
     deposits = (bank.customer_deposits() for bank in @banks)
     savings = (bank.customer_savings() for bank in @banks)
@@ -965,7 +948,7 @@ class CustomerTotalChart extends ChartVisualizer
 
   update_data: ->
     customers = @microeconomy.all_customers()
-    girals = (c.giral for c in customers)
+    deposits = (c.deposit for c in customers)
     savings = (c.savings for c in customers)
     stocks = (c.stocks for c in customers)
     loans = (c.loan for c in customers)
@@ -973,7 +956,7 @@ class CustomerTotalChart extends ChartVisualizer
 
     @data = [{
           name: _tr("deposits")
-          data: [ girals.sum() ]
+          data: [ deposits.sum() ]
           color: COL4
           stack: _tr('assets')
       }, {

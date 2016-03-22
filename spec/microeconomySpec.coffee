@@ -15,36 +15,18 @@ describe "TrxMgr", ->
     test = {}
     params = new Params()
     test.a = Bank::get_random_bank()
-    test.a.reserves += 100
-    test.a.giral += 100
     test.b = Bank::get_random_bank()
     test.banks = [test.a,test.b]
-    test.cb = new CentralBank(test.banks)
-    test.me = new MicroEconomy(test.cb, test.banks, test.params)
+    test.state = new State()
+    test.cb = new CentralBank(test.state, test.banks)
+    test.me = new MicroEconomy(test.state, test.cb, test.banks, test.params)
     test.trxMgr = new TrxMgr(test.me)
 
-  it "should return the right credit potential", ->
-    b = new Bank(1,2,1,1,1)
-    limit = test.trxMgr.compute_credit_potential(0.1, 0.1)
-    expect(limit).toBeCloseTo(7, 4)
-
   it "should transfer money if enough funds", ->
-    ra = test.a.reserves
-    ga = test.a.giral
-    gb = test.b.giral
-    amount = Math.min(ra / 2, ga)
-    test.trxMgr.transfer(test.a, test.b, amount)
-    assert(test.a.giral == ga - amount, "money transfered wrong")
-    assert(test.b.giral == gb + amount, "money received wrong")
+    expect(false).toBe(true)
 
   it "should transfer money if not enough funds", ->
-    ga = test.a.giral
-    ra = test.a.reserves
-    gb = test.b.giral
-    amount = Math.min(ra * 2, ga)
-    test.trxMgr.transfer(test.a, test.b, amount)
-    assert(test.a.giral == ga - amount, "money transfered wrong")
-    assert(test.b.giral == gb + amount, "money received wrong")
+    expect(false).toBe(true)
 
 describe "InterbankMarket", ->
 
@@ -56,80 +38,74 @@ describe "InterbankMarket", ->
     ib2 = InterbankMarket::get_instance()
     expect(ib1).toEqual(ib2)
 
-  it "should return the given credit", ->
+  it "shoud return zero interbank debt", ->
+    ib = InterbankMarket::get_instance()
+    a = Bank::get_random_bank()
+    expect(ib.get_all_interbank_debts(a)).toBe(0)
+
+  it "shoud return zero interbank loans", ->
+    ib = InterbankMarket::get_instance()
+    a = Bank::get_random_bank()
+    expect(ib.get_all_interbank_loans(a)).toBe(0)
+
+  it "should increase interbank debt correctly", ->
     a = Bank::get_random_bank()
     b = Bank::get_random_bank()
-    a.reserves += 500
-    a.capital += 500
     ib = InterbankMarket::get_instance()
-    expect(ib.get_interbank_credits(a)).toBe(0)
-    ib.give_interbank_credit(a,b,100)
-    expect(ib.get_interbank_credits(a)).toBe(100)
+    ib.increase_interbank_debt(a,b,100)
+    expect(ib.get_interbank_debt(a, b)).toBe(100)
+    ib.increase_interbank_debt(a,b,50)
+    expect(ib.get_interbank_debt(a,b)).toBe(150)
+    expect(ib.get_all_interbank_loans(b)).toBe(150)
     
-  it "shoud return zero interbank credits", ->
-    a = Bank::get_random_bank()
-    expect(a.get_interbank_credits()).toBe(0)
-
-  it "shoud return exact interbank credit", ->
+  it "should reduce interbank debt correctly", ->
     a = Bank::get_random_bank()
     b = Bank::get_random_bank()
-    b.reserves += 500
-    b.capital += 500
-    b.give_interbank_credit(a, 50)
-    expect(b.get_interbank_credits()).toBe(50)
-    expect(a.get_interbank_credits()).toBe(0)
-
-  it "shoud return sum of interbank credits", ->
-    a = Bank::get_random_bank()
-    b = Bank::get_random_bank()
-    b.reserves += 500
-    b.capital += 500
-    b.give_interbank_credit(a, 44)
-    b.give_interbank_credit(a, 50)
-    expect(b.get_interbank_credits()).toBe(94)
-    expect(a.get_interbank_credits()).toBe(0)
-
-  it "shoud return sum of interbank debts", ->
-    a = Bank::get_random_bank()
-    b = Bank::get_random_bank()
-    b.reserves += 500
-    b.capital += 500
-    b.give_interbank_credit(a, 20)
-    b.give_interbank_credit(a, 50)
-    expect(b.get_interbank_credits()).toBe(70)
-    expect(a.get_interbank_debt()).toBe(70)
-    expect(a.get_interbank_credits()).toBe(0)
-    expect(b.get_interbank_debt()).toBe(0)
-
-  it "shoud not affect assets or liabilities after interbank credit given", ->
-    a = Bank::get_random_bank()
-    b = Bank::get_random_bank()
-    b.reserves += 500
-    b.capital += 500
-    assets_before = b.assets_total()
-    liabilities_before = b.liabilities_total()
-    b.give_interbank_credit(a, 20)
-    expect(b.assets_total()).toBeCloseTo(assets_before, 4)
-    expect(b.liabilities_total()).toBeCloseTo(liabilities_before, 4)
-
-  it "shoud  increase assets and l. after interbank credit received", ->
-    a = Bank::get_random_bank()
-    b = Bank::get_random_bank()
-    b.reserves += 500
-    b.capital += 500
-    assets_before = a.assets_total()
-    liabilities_before = a.liabilities_total()
-    b.give_interbank_credit(a, 20)
-    expect(a.assets_total()).toBeCloseTo(assets_before + 20, 4)
-    expect(a.liabilities_total()).toBeCloseTo(liabilities_before + 20)
-
-  it "should write off interbank debt after bankrupcy", ->
-    a = Bank::get_random_bank()
-    b = Bank::get_random_bank()
-    b.reserves += 500
-    b.capital += 500
-    b.give_interbank_credit(a, 50)
-    expect(b.get_interbank_credits()).toBe(50)
     ib = InterbankMarket::get_instance()
-    ib.set_gameover(a)
-    expect(b.get_interbank_credits()).toBe(0)
+    ib.increase_interbank_debt(a,b,100)
+    ib.reduce_interbank_debt(a,b,80)
+    expect(ib.get_interbank_debt(a, b)).toBe(20)
+    expect(ib.get_all_interbank_loans(b)).toBe(20)
+
+  it "shoud return sum of interbank debt", ->
+    a = Bank::get_random_bank()
+    b = Bank::get_random_bank()
+    c = Bank::get_random_bank()
+    ib = InterbankMarket::get_instance()
+    ib.increase_interbank_debt(a,b,20)
+    ib.increase_interbank_debt(a,c,30)
+    expect(ib.get_all_interbank_debts(a)).toBe(50)
+
+  it "hashCode function should vary per bank", ->
+    a = Bank::get_random_bank()
+    b = Bank::get_random_bank()
+    expect(a.hashCode()).not.toBe(b.hashCode())
+
+  it "shoud return sum of interbank loans for specific bank", ->
+    a = Bank::get_random_bank()
+    b = Bank::get_random_bank()
+    c = Bank::get_random_bank()
+    ib = InterbankMarket::get_instance()
+    ib.increase_interbank_debt(a,c,20)
+    ib.increase_interbank_debt(b,c,30)
+    expect(ib.get_all_interbank_loans(c)).toBe(50)
+    expect(ib.get_all_interbank_loans(a)).toBe(0)
+    expect(ib.get_all_interbank_loans(b)).toBe(0)
+
+  it "shoud return interbank volume", ->
+    a = Bank::get_random_bank()
+    b = Bank::get_random_bank()
+    c = Bank::get_random_bank()
+    ib = InterbankMarket::get_instance()
+    ib.increase_interbank_debt(a,b,20)
+    ib.increase_interbank_debt(b,c,30)
+    ib.increase_interbank_debt(c,a,40)
+    expect(ib.get_interbank_volume()).toBe(90)
+
+  it "shoud add libor interest after settlement", ->
+    a = Bank::get_random_bank()
+    b = Bank::get_random_bank()
+    ib = InterbankMarket::get_instance()
+    ib.increase_interbank_debt(a,b,100)
+    ib.settle_interbank_interests(0.05)
+    expect(ib.get_interbank_debt(a, b)).toBe(105)
