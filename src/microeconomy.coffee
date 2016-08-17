@@ -1,5 +1,5 @@
-NUM_BANKS = 20
-MAX_CUSTOMERS = 40
+NUM_BANKS = 10
+MAX_CUSTOMERS = 400
 
 DFLT_INITIAL_DEPOSIT_PER_CUST = 10
 DFLT_INITIAL_SAVINGS_PER_CUST = 0
@@ -52,7 +52,10 @@ if (!Array::sum)
 if (!Array::last)
   Array::last = ->
     i = @length
-    @[i-1]
+    if i > 0
+      return @[i-1]
+    else
+      null
 
 class Params
   max_trx: 500 # max nr of trx per year
@@ -66,6 +69,9 @@ class Params
   deposit_interest_savings: 0.00
   savings_rate: 0.0
   income_tax_rate: 0.0 # percentage of tax from income
+  wealth_tax_rate: 0.0 # percentage of tax from wealth
+  gov_spending: 1.0 # percentage of expenditure from last years taxes (can be > 100%)
+  basic_income_rate: 1.0 # percentage of basic income in relation to government spending 
   positive_money: false # positive money system enabled
 
 class Statistics
@@ -75,10 +81,12 @@ class Statistics
     @m0_series = []
     @m1_series = []
     @m2_series = []
+    @m_series = [] #positive money
     @interbank_volume_series = []
     @m0_inflation_series = []
     @m1_inflation_series = []
     @m2_inflation_series = []
+    @m_inflation_series = []
 
     @gdp_series = []
 
@@ -108,8 +116,19 @@ class Statistics
     @s_b_flow = 0
     @gdp = 0
 
+  reset_ms_series: ->
+    @m0_series = []
+    @m1_series = []
+    @m2_series = []
+    @m_series = []
+    @m0_inflation_series = []
+    @m1_inflation_series = []
+    @m2_inflation_series = []
+    @m_inflation_series = []
+    @interbank_volume_series = []
+
   m0: ->
-    @cb.giro_banks()
+    @cb.giro_banks() + @cb.giro_state()
 
   m1: ->
     sum = 0
@@ -121,8 +140,11 @@ class Statistics
     sum += bank.customer_savings() for bank in @banks
     @m1() + sum
 
-  M: ->
-    @cb.debt_total()
+  m: ->
+    result = 0
+    if @microeconomy.params.positive_money
+      result = @cb.debt_total()
+    result
 
   interbank_volume: ->
     ib = InterbankMarket::get_instance()
@@ -132,6 +154,7 @@ class Statistics
     @m0_series.push @m0()
     @m1_series.push @m1()
     @m2_series.push @m2()
+    @m_series.push @m()
     @interbank_volume_series.push @interbank_volume()
 
     len = @m1_series.length
@@ -142,6 +165,11 @@ class Statistics
       @m1_inflation_series.push infl_m1
       infl_m2 = (@m2_series[len-1] / @m2_series[len-2] - 1)*100
       @m2_inflation_series.push infl_m2
+
+    len = @m_series.length
+    if len > 1
+      infl_m = (@m_series[len-1] / @m_series[len-2] - 1)*100
+      @m_inflation_series.push infl_m
 
     @cb_b_flow_series.push @cb_b_flow
     @cb_s_flow_series.push @cb_s_flow
@@ -167,7 +195,7 @@ class CentralBank
 
   constructor: (@state, @banks) ->
     @stocks = DFLT_INITIAL_CB_STOCKS
-    @kassa = 0
+    @cash= 0
 
   credits_banks: ->
     sum = 0
@@ -184,12 +212,15 @@ class CentralBank
     giro_nonbanks += bank.customer_deposits() for bank in @banks
     giro_nonbanks
 
+  giro_state: ->
+    @state.reserves
+
   assets_total: ->
-    @kassa + @credits_banks() + @stocks
+    assets = @cash + @credits_banks() + @stocks
 
   debt_total: ->
-    debt = @giro_banks() + @state.reserves
-    debt += @giro_nonbanks if @positive_money
+    debt = @giro_banks() + @giro_state()
+    debt += @giro_nonbanks() if @positive_money
     debt
 
   capital: ->
@@ -351,7 +382,7 @@ class BankCustomer
     @income - @expenses
 
   wealth: ->
-    @deposit + @savings + @stocks
+    @deposit + @savings
 
   reset_earnings: ->
     @income = 0
@@ -383,9 +414,12 @@ class MicroEconomy
 
 class State
   constructor: ->
+    @public_service_series = []
     @basic_income_series = []
     @income_tax_series = []
+    @wealth_tax_series = []
     @reserves = 0
+    @last_year_taxes = 0
 
 class TrxMgr
   constructor: (@microeconomy) ->
@@ -400,15 +434,15 @@ class TrxMgr
     @reset_earnings()
     #payments, economic activity
     @create_transactions()
-    #@provide_public_service()
-    @provide_basic_income()
+    @provide_public_service()
     #settle customer interests
     @pay_customer_deposit_interests()
     @get_customer_credit_interests()
 
     #customer credit management
     @manage_customer_credits()
-
+    @manage_investments()
+    
     # settle central bank interests
     @get_cb_deposit_interests()
     @pay_cb_credit_interests()
@@ -418,6 +452,7 @@ class TrxMgr
 
     # bank loan management and Basel II requirements
     @manage_bank_debt()
+    @pay_dividends()
     @collect_taxes()
     @make_statistics()
 
@@ -443,47 +478,47 @@ class TrxMgr
       cust1_index = randomizeInt(0, num_customers - 1)
       cust2_index = randomizeInt(0, num_customers - 1)
       while cust2_index == cust1_index
+        #only transfers to another customer make sense
         cust2_index = randomizeInt(0, num_customers - 1)
+
       cust1 = all_customers[cust1_index]
       cust2 = all_customers[cust2_index]
-
       amount = randomize(0, cust1.deposit)
-      @transfer(cust1, cust2, amount)
-      #adding transaction to gdp
-      @stats.gdp += amount
+      #only positive deposits make sense
+      if amount > 0
+        @transfer(cust1, cust2, amount)
+        #adding transaction to gdp
+        @stats.gdp += amount
 
   interbank_transfer: (from, to, amount) ->
+    assert(amount > 0, 'cannot transfer negative amount')
     remainder = amount
     ib_loan = @interbank_market.get_interbank_debt(to, from)
-    if ib_loan > amount
+    #if target bank owes money, erase its debt first
+    if ib_loan >= amount
       @interbank_market.reduce_interbank_debt(to, from, amount)
       remainder = 0
     else if ib_loan > 0
       @interbank_market.reduce_interbank_debt(to, from, ib_loan)
       remainder = amount - ib_loan
 
-    if remainder > 0 and from.reserves > 0
-      if remainder > from.reserves
-        to.reserves += from.reserves
-        remainder = remainder - from.reserves
-        from.reserves = 0
-      else
-        from.reserves -= remainder
-        to.reserves += remainder
-        remainder = 0
-
     if remainder > 0
-      libor = @params.libor
-      pr = @params.prime_rate
-      if pr >= libor
-        @interbank_market.increase_interbank_debt(from, to, remainder)
-      else
-        from.reserves += remainder
-        from.cb_debt += remainder
+      @interbank_market.increase_interbank_debt(from, to, remainder)
 
+    #if remainder > 0 and from.reserves > 0
+    #  if remainder > from.reserves
+    #    to.reserves += from.reserves
+    #    remainder = remainder - from.reserves
+    #    from.reserves = 0
+    #  else
+    #    from.reserves -= remainder
+    #    to.reserves += remainder
+    #    remainder = 0
+      
   #transferring money from one customer to another
   transfer: (from, to, amount) ->
     assert(from.deposit >= amount, 'not enough deposits')
+    assert(amount > 0, 'cannot transfer negative amount')
 
     if not @params.positive_money
       if from.bank != to.bank
@@ -495,6 +530,7 @@ class TrxMgr
     to.deposit += (1-@params.savings_rate)*amount
     to.savings += @params.savings_rate * amount
     @stats.c_c_flow += amount
+    assert(from.deposit >= 0, 'deposit must not be negative')
 
   pay_customer_deposit_interests: ->
     di = @params.deposit_interest
@@ -510,8 +546,10 @@ class TrxMgr
         c.savings += debt_bank_savings
 
         c.income += debt_bank
+
         if @params.positive_money
           bank.reserves -= debt_bank
+
         @stats.b_c_flow += debt_bank
       
   get_customer_credit_interests: ->
@@ -533,6 +571,7 @@ class TrxMgr
           c.deposit -= debt_cust
           c.expenses += debt_cust
           @stats.c_b_flow += debt_cust
+        assert(c.deposit >= 0, 'deposits must not be negative')
 
   get_cb_deposit_interests: ->
     #interests from cb to state
@@ -546,6 +585,11 @@ class TrxMgr
       interest = pr_giro * bank.reserves
       bank.reserves += interest
       @stats.cb_b_flow += interest
+
+      if @params.positive_money
+        for c in bank.customers
+          interest = pr_giro * c.deposit
+          c.deposit += interest
 
   pay_cb_credit_interests: ->
     pr = @params.prime_rate
@@ -565,34 +609,79 @@ class TrxMgr
   pay_interbank_interests: ->
     @interbank_market.settle_interbank_interests(@params.libor)
 
+  manage_bank_debt: ->
+    pr = @params.prime_rate
+    prg = @params.prime_rate_giro
+    libor = @params.libor
+
+    for bank in @banks
+      if bank.reserves > 0 and prg < libor and bank.interbank_debt() > 0
+        #paying back interbank debt
+        # unless prime rate giro makes it worth keeping the reserves
+        max_payback = bank.reserves
+        payback = Math.min(bank.interbank_debt(), max_payback)
+        payback = randomize(0, payback)
+        remainder = payback
+        for creditor in @banks
+          if remainder > 0 and creditor != bank
+            debt = @interbank_market.get_interbank_debt(bank, creditor)
+            debt = Math.min(debt, remainder)
+            @interbank_transfer(bank, creditor, debt) if debt > 0
+            remainder -= debt
+
+      if bank.reserves > 0 and prg < pr and bank.cb_debt > 0
+        #paying back cb debt
+        max_payback = bank.reserves
+        payback = Math.min(bank.cb_debt, max_payback)
+        payback = randomize(0, payback)
+        bank.cb_debt -= payback
+        bank.reserves -= payback
+
+      if prg > pr and bank.capital() > 0
+        #get new loan if prime rate giro is good
+        max_new_loan = bank.capital()
+        new_loan = randomize(0, max_new_loan)
+        bank.cb_debt += new_loan
+        bank.reserves += new_loan
+
   manage_customer_credits: ->
     dr = @params.deposit_interest
     cr = @params.credit_interest
+    sr = @params.deposit_interest_savings
 
-    #for bank in @banks
-    #  for c in bank.customers
-        # customers paying back credits
-        # TRX: deposits AN credits
-        #if dr < cr
-        #  max_payback = Math.min(c.loan, c.deposit)
-        #  amount = randomize(0, max_payback)
-        #  c.loan -= amount
-        #  c.deposit -= amount
-        
-        # customers taking new loans
-        # money creation
-        # TRX: credits AN deposits
-        # upper limit for customer loan: 10 times deposit   
-        # max_credit = @compute_max_new_customer_loan(bank)
-        # amount = randomize(0, Math.min(max_credit, 10* c.deposit))
-        # c.loan += amount
-        # c.deposit += amount
-        
+    for c in @microeconomy.all_customers()
+      if sr < cr and c.savings > 0 and c.loan > 0
+        # customers paying back credits with savings
+        max_payback = c.savings
+        payback = Math.min(c.loan, max_payback)
+        payback = randomize(0, payback)
+        c.loan -= payback
+        c.savings -= payback
+
+      if sr > cr or dr > cr and c.capital() > 0
+        # get new loan if deposit rates are good
+        max_new_loan = c.capital()
+        new_loan = randomize(0, max_new_loan)
+        c.loan += new_loan
+        c.deposit += new_loan
+
+  manage_investments: ->
+    #TODO: buy stocks from customers
+
+  pay_dividends: ->
+    #TODO: pay dividends to bank owners
+
   collect_taxes: ->
     income_tax_current_year = 0
+    wealth_tax_current_year = 0
     tax_payers = @microeconomy.all_customers()
     for c in tax_payers
-      tax = @params.income_tax_rate * c.income
+      income_tax = @params.income_tax_rate * c.income
+      wealth_tax = @params.wealth_tax_rate * c.wealth()
+      income_tax_current_year += income_tax
+      wealth_tax_current_year += wealth_tax
+
+      tax = income_tax + wealth_tax
       if tax > c.deposit
         diff = tax - c.deposit
         #customer takes loan to pay taxes
@@ -600,22 +689,41 @@ class TrxMgr
         c.loan += diff
 
       c.deposit -= tax
-      c.bank.reserves -= tax
-      income_tax_current_year += tax
+      @state_transfer(c.bank, tax)
+    taxes_total = income_tax_current_year + wealth_tax_current_year
+    @state.income_tax_series.push taxes_total
+    @state.wealth_tax_series.push taxes_total
+    @state.last_year_taxes = taxes_total
+    @stats.c_s_flow += income_tax_current_year + wealth_tax_current_year
 
-    @state.income_tax_series.push income_tax_current_year
-    @state.reserves += income_tax_current_year
-    @stats.c_s_flow += income_tax_current_year
+  state_transfer: (bank, amount) ->
+    if bank.reserves > amount
+      bank.reserves -= amount
+    else
+      diff = amount - bank.reserves
+      bank.cb_debt += diff
+      bank.reserves = 0
 
-  provide_basic_income: ->
-    tax_payers = @microeconomy.all_customers()
-    len = tax_payers.length
-    basic_income_total = @state.reserves
+    @state.reserves += amount
 
-    if len == 0
-      @state.public_service_series.push 0
+  provide_public_service: ->
+    if @state.income_tax_series.length == 0
+      #there is nothing to spend
       return
 
+    gov_spending = @state.last_year_taxes * @params.gov_spending
+    if gov_spending > 0
+      basic_income_total = gov_spending * @params.basic_income_rate
+      @provide_basic_income(basic_income_total)
+    else
+      @state.basic_income_series.push 0
+
+    @state.public_service_series.push gov_spending
+
+  provide_basic_income: (basic_income_total)->
+    tax_payers = @microeconomy.all_customers()
+    len = tax_payers.length
+    assert(len > 0, 'there are no tax payers')
     basic_income = basic_income_total / len
 
     for i in [0..len-1]
@@ -623,24 +731,28 @@ class TrxMgr
       tax_payers[i].bank.reserves += basic_income
       tax_payers[i].income += basic_income
 
-    @stats.s_c_flow += basic_income_total
     @state.reserves -= basic_income_total
-    @state.basic_income_series.push basic_income_total
 
-  manage_bank_debt: ->
-    cr = @params.cap_req
-    pr = @params.prime_rate
-    prg = @params.prime_rate_giro
+    @stats.s_c_flow += basic_income_total
+    @state.basic_income_series.push basic_income_total
 
   make_statistics: ->
     @stats.one_year()
 
   enable_positive_money: ->
     @cb.positive_money = true
+    @stats.reset_ms_series()
     for bank in @banks
       bank.positive_money = true
       bank.cb_debt += bank.customer_deposits()
       bank.cb_debt += bank.interbank_debt()
 
   disable_positive_money: ->
-    console.log "disable"
+    @cb.positive_money = false
+    @stats.reset_ms_series()
+    for bank in @banks
+      bank.positive_money = false
+      bank.reserves += bank.customer_deposits()
+      cb_debt_reduction = Math.min(bank.cb_debt, bank.reserves)
+      bank.reserves -= cb_debt_reduction
+      bank.cb_debt -= cb_debt_reduction

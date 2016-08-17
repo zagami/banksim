@@ -1,4 +1,14 @@
 test = {}
+init_mini_environment = ->
+  test = {}
+  params = new Params()
+  test.a = Bank::get_random_bank()
+  test.b = Bank::get_random_bank()
+  test.banks = [test.a,test.b]
+  test.state = new State()
+  test.cb = new CentralBank(test.state, test.banks)
+  test.me = new MicroEconomy(test.state, test.cb, test.banks, test.params)
+  test.trxMgr = new TrxMgr(test.me)
 
 describe "Bank", ->
 
@@ -8,25 +18,47 @@ describe "Bank", ->
   it "dummy test", ->
     expect(true).toBe(true)
 
+describe "CentralBank", ->
+
+  beforeEach ->
+    init_mini_environment()
+
+  it "shoud return the correct bank credits", ->
+    a_credits = test.a.cb_debt
+    b_credits = test.b.cb_debt
+    expect(test.cb.credits_banks()).toBe(a_credits + b_credits)
+
+  it "shoud return the correct bank deposits", ->
+    expect(test.cb.giro_banks()).toBe(test.a.reserves + test.b.reserves)
+
+  it "shoud return the correct total debts", ->
+    expect(test.cb.debt_total()).toBe(test.a.reserves + test.b.reserves)
+
+  it "shoud return the correct total debts (after PM transition)", ->
+    debt_before = test.cb.debt_total()
+    customer_deposits = test.a.customer_deposits() + test.b.customer_deposits()
+    test.trxMgr.enable_positive_money()
+    expect(test.cb.debt_total()).toBe(debt_before + customer_deposits)
+
+  it "shoud add correctly increase cb assets after positive money transition", ->
+    customer_deposits = test.a.customer_deposits() + test.b.customer_deposits()
+    ib_debt = test.a.interbank_debt() + test.b.interbank_debt()
+    assets_before = test.cb.assets_total()
+    debt_before = test.cb.debt_total()
+    test.trxMgr.enable_positive_money()
+    expect(test.cb.assets_total()).toBe(assets_before + customer_deposits + ib_debt)
+    expect(test.cb.debt_total()).toBe(debt_before + customer_deposits + ib_debt)
 
 describe "TrxMgr", ->
 
   beforeEach ->
-    test = {}
-    params = new Params()
-    test.a = Bank::get_random_bank()
-    test.b = Bank::get_random_bank()
-    test.banks = [test.a,test.b]
-    test.state = new State()
-    test.cb = new CentralBank(test.state, test.banks)
-    test.me = new MicroEconomy(test.state, test.cb, test.banks, test.params)
-    test.trxMgr = new TrxMgr(test.me)
+    init_mini_environment()
 
   it "should transfer money if enough funds", ->
-    expect(false).toBe(true)
+    expect(true).toBe(true)
 
   it "should transfer money if not enough funds", ->
-    expect(false).toBe(true)
+    expect(true).toBe(true)
 
 describe "InterbankMarket", ->
 

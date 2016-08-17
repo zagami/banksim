@@ -60,6 +60,7 @@
     <div id="wealth_chart"></div>
     <div id="banks_chart"></div>
     <div id="banks_chart2"></div>
+    <div id="banks_chart3"></div>
     <div id="interest_graph" class='graph'></div>
   </div>
 
@@ -112,68 +113,55 @@
 - Customers have only 1 bank account
 - The simulation runs year by year. For every year, the following steps will be performed:
   * for every transaction type a random number of transactions is performed
-  * a check is made which bank has gone bankrupt
-  * depending on the write offs, a chain reaction for other banks can follow
-  * if the central bank has a negative capital, the simulation stops
 
-### PAYMENTS CC1
+### PAYMENTS, ECONOMIC ACTIVITY BETWEEN NONBANKS
     - the amount of each payment is random 
-    - 2 random banks are chosen for each transaction
+    - 2 random banks are randomly chosen for each transaction
     - its upper limit is the amount of bank deposits
     - there is no withdrawal limit except bank deposit
-    - if a bank has not enough reserves to make the transaction it can take a loan from the central bank (prime rate) or from the target bank (libor rate)
-    - if the target bank has enough reserves to give an interbank credit it will be preferred over a central bank credit, if the libor is below the prime rate
+    - if a bank has not enough reserves to make the transaction it can take a loan from the central bank (prime rate) or from the target bank (libor rate), depending on which rate is lower. Interbank loans are preferred if rates are equal.
 
-### CUSTOMER DEPOSITS AND LOANS BC1, BC2, CB1, CB2
+### CUSTOMER DEPOSITS AND LOANS
 
   - the interest rates for deposits and loans are fixed for every bank, there is no market yet
-
-  - overdrafts: a negative deposit is not possible, this is the same as a loan
-
-  - customers are taking loans every year:
+  - overdrafts: a negative deposit is not possible, this  would be equivalent to a loan
+  - customers are assigned a equal loan at the start
     * the loans are not yet secured by collaterals
     * customers don't have to be elligible for a loan
-    * the amount is random with an upper limit based on the credit potential of the bank. This potential is computed according to the capital and reserve requirements of the bank. 
-    * customers take maximal loan they can get without further consideration
-    * TODO: upper limit determined by deposits of customer? > interest rates?
 
   - customers can pay back their loans every year:
-    * the payback amount is random
-    * the upper limit is of course the available bank deposits
+    * customers only pay back their loans with their savings if savings rate is below interest rate for loans.
+    * the payback amount is up to the customer, there are no restrictions
+  - customers are saving their money on a savings account, according to a savings rate.
 
 ### INTERBANK LOANS
   - the libor rate is fixed for every bank, there is no market yet
   - there is no upper limit for interbank loans 
-  - interbank loans are not payed back
-  - TODO: pay back interbank loans if libor > prime rate and enough reserves
+  - interbank loans are payed back randomly, if reserves allow it
+  - interbank loans are not swapped to central bank loans if libor rate is higher than prime rate
 
 ### CENTRAL BANK DEPOSITS AND LOANS
   - the prime rates are the main parameters of the simulation
-  - the loans are not secured by collaterals of the banks
-  - the central bank will provide as many loans as requested by banks, but the capital of the central bank must allow it
+  - interest rates can vary each year
+  - the loans are not yet secured by collaterals of the banks
+  - the banks decide when and how much to payback loans to central banks
+  - the central bank will provide as many loans as requested by banks
 
 ### BANKRUPCY OF CUSTOMER
-  - since the loans are not secured, the bank will seize the remaining deposits and write off the rest as a loss
-  - customers are not implemented as individuals yet, only as an aggregate
+  - since the loans are not secured, a customer can always extend their loans by the remaining interest debt (compound interest)
 
 ### BANKRUPCY OF BANK
-  - A bank can go bankrupt if...
-      * the capital requirements cannot be met 
-      * the minimal reserves requirements cannot be met
-  
-  - The debts of the bank to the central bank, other banks or  customers are lost if it goes bankrupt, the money supply  M0 and M1 shrinks accordingly
-  - A bank that is bankrupt is out of the game for good
+  - a bank cannot get bankrupt, there are no minimal reserves requirements yet, nor capital requirements 
 
-### BASEL II
-  - minimal reserves requirements are in relation to the customer deposits, central bank debt and interbank debt
-
-  - capital requirements are in relation to all liabilities (leverage ratio), not as in BASEL II only to a subset of risky assets
-
-
-## Transactions
-Transactions in () are not implemented yet
+### STATE
+  - the state has a bank account at the central bank
+  - the state can tax the nonbanks by income or wealth
+  - the state cannot tax banks yet
+  - the state can provide a basic income to its citizens
 
 Customers will be subdivided into Persons and Corporations soon.
+
+Transactions in () are not implemented yet
 
 Customer - Customer
   * payment
@@ -189,7 +177,7 @@ Bank -> Customer
   * new loan
    
 Customer -> Bank
-  * credit interest (-> can trigger new customer loan, paying interest with new debt)
+  * loan interest (-> can trigger new customer loan, paying interest with new debt)
   * payback loan
 
 Bank -> Bank
@@ -209,51 +197,6 @@ Bank -> Central Bank
 
 # Formulas
 
-MR = Minimal Reserve Requirement
-CR = Capital Requirement
-
-MR < B.Reserves / (B.CB_Debt + B.IB_Debt + B.Giral)
-CR < B.Capital / B.Liabilities
-
-upper limit for customer loans:
-
-X: new loan to customer
-B.Debt = (B.CB_Debt + B.IB_Debt + B.Giral)
-
-MR < B.Reserves / (B.CB_Debt + B.IB_Debt + (B.Giral + X))
-=> MR * (B.Debt + X) < B.Reserves
-=> MR * X < B.Reserves - MR * B.Debt
-=> X < (B.Reserves - MR * B.Debt) / MR
-
-CR < B.Assets + X - (B.Debt + X) / (B.Liabilities + X) 
-=> CR * B.Liabilities + CR * X < B.Assets - B.Debt
-=> CR * X < B.Capital - CR * Liabilities
-=> X < (B.Capital - CR * Liabilities) / CR
-
-the minimum of these 2 upper limits determine the max. possible new customer loan
-
-upper limit for new ib or cb loans:
-
-X: new ib or cb loan
-
-new ib / cb loans are always beneficial to reserve requirements (if B.Reserves < B.Debt)
-
-X < (B.Capital - CR * Liabilities) / CR
-(same formula as for customer loans)
-
-upper limit for payback of ib / cb loans:
-
-X: payback amount
-
-MR < (B.Reserves - X) / (B.Debt - X)
-=> MR * B.Debt - MR * X < B.Reserves - X
-=> X * (1 - MR) < B.Reserves - MR * B.Debt
-=> X < (B.Reserves - MR * B.Debt) / (1 - MR)
-
-paying back loans is always beneficial to capital requirements
-if prime rate deposit is good, what is minimal amount needed?
-     x = 1/cr * ((cr-1)*B.Assets - B.Debt)
-
 VOC:
 personal loans: private Darlehen 
 corporate bonds: Obligation?
@@ -269,6 +212,9 @@ A secured loan is a loan in which the borrower pledges some asset (e.g. a car or
 </div>
 <div id="instructions_german">
  Dies ist die deutsche Uebersetzung 
+- Keine Kontoführungsgebühren
+- Kein Wertschriftengeschaeft (Investmentbanking?)
+- Liquiditätsanforderungen
 </div>
 </body>
 </html>

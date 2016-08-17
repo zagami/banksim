@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<ScappleDocument Version="1.1" ID="2826D7E2-CA35-45F7-8B9B-F026EA166944">
+    <Notes>
+        <Note ID="0" FontSize="22.0" Position="631.246094,81.207031" Width="97.0" Shadow="Yes">
+            <Appearance>
+                <Alignment>Left</Alignment>
+                <Border Weight="4"></Border>
+                <Fill>1.0 1.0 1.0</Fill>
+            </Appearance>
+            <String>Statistics</String>
+            <ConnectedNoteIDs>1, 10</ConnectedNoteIDs>
+        </Note>
+        <Note ID="1" FontSize="22.0" Position="376.492188,229.191406" Width="152.0" Shadow="Yes">
+            <Appearance>
+                <Alignment>Left</Alignment>
+                <Border Weight="4"></Border>
+                <Fill>1.0 1.0 1.0</Fill>
+            </Appearance>
+            <String>Microeconomy</String>
+            <ConnectedNoteIDs>0, 2, 4-5, 9-11, 16</ConnectedNoteIDs>
+            <PointsToNoteIDs>2, 4-5, 9</PointsToNoteIDs>
+        </Note>
+        <Note ID="2" FontSize="22.0" Position="596.1875,269.699219" Width="130.0" Shadow="Yes">
+            <Appearance>
+                <Alignment>Left</Alignment>
+                <Border Weight="4"></Border>
+                <Fill>1.0 1.0 1.0</Fill>
+            </Appearance>
+            <String>CentralBank</String>
+            <ConnectedNoteIDs>1, 4-5</ConnectedNoteIDs>
+            <PointsToNoteIDs>4-5</PointsToNoteIDs>
+        </Note>
+        <Note ID="4" FontSize="22.0" Position="473.0,345.941406" Width="60.0" Shadow="Yes">
+            <Appearance>
+                <Alignment>Left</Alignment>
+                <Border Weight="4"></Border>
+                <Fill>1.0 1.0 1.0</Fill>
+            </Appearance>
+            <String>State</String>
+            <ConnectedNoteIDs>1-2</ConnectedNoteIDs>
+        </Note>
+        <Note ID="5" FontSize="22.0" Position="632.0,390.0" Width="59.0" Shadow="Yes">
+            <Appearance>
+                <Alignment>Left</Alignment>
+                <Border Weight="4"></Border>
+                <Fill>1.0 1.0 1.0</Fill>
+            </Appearance>
+            <String>Bank</String>
+            <ConnectedNoteIDs>1-2, 6-7</ConnectedNoteIDs>
+        </Note>
+        <Note ID="6" FontSize="22.0" Position="234.0,441.0" Width="167.0" Shadow="Yes">
+            <Appearance>
+                <Alignment>Left</Alignment>
+                <Border Weight="4"></Border>
+                <Fill>1.0 1.0 1.0</Fill>
+            </Appearance>
+            <String>InterbankMarket</String>
+            <ConnectedNoteIDs>5, 10</ConnectedNoteIDs>
+        </Note>
+        <Note ID="7" FontSize="22.0" Position="540.0,480.0" Width="154.0" Shadow="Yes">
+            <Appearance>
+                <Alignment>Left</Alignment>
+                <Border Weight="4"></Border>
+                <Fill>1.0 1.0 1.0</Fill>
+            </Appearance>
+            <String>BankCustomer</String>
+            <ConnectedNoteIDs>5</ConnectedNoteIDs>
+            <PointsToNoteIDs>5</PointsToNoteIDs>
+        </Note>
+        <Note ID="9" FontSize="22.0" Position="332.0,371.0" Width="84.0" Shadow="Yes">
+            <Appearance>
+                <Alignment>Left</Alignment>
+                <Border Weight="4"></Border>
+                <Fill>1.0 1.0 1.0</Fill>
+            </Appearance>
+            <String>Params</String>
+            <ConnectedNoteIDs>1, 10, 16</ConnectedNoteIDs>
+        </Note>
+        <Note ID="10" FontSize="22.0" Position="278.988281,130.121094" Width="77.0" Shadow="Yes">
+            <Appearance>
+                <Alignment>Left</Alignment>
+                <Border Weight="4"></Border>
+                <Fill>1.0 1.0 1.0</Fill>
+            </Appearance>
+            <String>TrxMgr</String>
+            <ConnectedNoteIDs>0-1, 6, 9, 16</ConnectedNoteIDs>
+            <PointsToNoteIDs>1</PointsToNoteIDs>
+        </Note>
+        <Note ID="11" FontSize="22.0" Position="49.230469,360.683594" Width="103.0" Shadow="Yes">
+            <Appearance>
+                <Alignment>Left</Alignment>
+                <Border Weight="4"></Border>
+                <Fill>1.0 1.0 1.0</Fill>
+            </Appearance>
+            <String>Visualizer</String>
+            <ConnectedNoteIDs>1, 15</ConnectedNoteIDs>
+            <PointsToNoteIDs>1</PointsToNoteIDs>
+        </Note>
+        <Note ID="14" FontSize="22.0" Position="361.378906,39.660156" Width="222.0" Shadow="Yes">
+            <Appearance>
+                <Alignment>Left</Alignment>
+                <TextColor>1.0 0.0 0.0</TextColor>
+                <Border Weight="4" Style="Square"></Border>
+                <Fill>1.0 1.0 1.0</Fill>
+            </Appearance>
+            <String>microeconomy.coffee</String>
+            <ConnectedNoteIDs>12</ConnectedNoteIDs>
+        </Note>
+        <Note ID="15" FontSize="22.0" Position="41.425781,282.546875" Width="141.0" Shadow="Yes">
+            <Appearance>
+                <Alignment>Left</Alignment>
+                <Border Weight="4"></Border>
+                <Fill>1.0 1.0 1.0</Fill>
+            </Appearance>
+            <String>VisualizerMgr</String>
+            <ConnectedNoteIDs>11, 16</ConnectedNoteIDs>
+        </Note>
+        <Note ID="16" FontSize="22.0" Position="47.574219,197.445312" Width="101.0" Shadow="Yes">
+            <Appearance>
+                <Alignment>Left</Alignment>
+                <Border Weight="4"></Border>
+                <Fill>1.0 1.0 1.0</Fill>
+            </Appearance>
+            <String>Simulator</String>
+            <ConnectedNoteIDs>1, 9-10, 15</ConnectedNoteIDs>
+        </Note>
+        <Note ID="19" FontSize="22.0" Position="31.039062,133.921875" Width="156.0" Shadow="Yes">
+            <Appearance>
+                <Alignment>Left</Alignment>
+                <TextColor>1.0 0.0 0.0</TextColor>
+                <Border Weight="4" Style="Square"></Border>
+                <Fill>1.0 1.0 1.0</Fill>
+            </Appearance>
+            <String>banksim.coffee</String>
+            <ConnectedNoteIDs>18</ConnectedNoteIDs>
+        </Note>
+    </Notes>
+    <BackgroundShapes>
+        <Shape ID="12" Sticky="No" Position="221.0,63.0" Width="520.0" Height="471.0">
+            <Appearance>
+                <Border Weight="1"></Border>
+            </Appearance>
+            <ConnectedNoteIDs>14</ConnectedNoteIDs>
+        </Shape>
+        <Shape ID="18" Sticky="No" Position="28.0,179.0" Width="167.0" Height="236.0">
+            <Appearance>
+                <Border Weight="1"></Border>
+            </Appearance>
+            <ConnectedNoteIDs>19</ConnectedNoteIDs>
+        </Shape>
+    </BackgroundShapes>
+    <AutoFit>0-2, 4-7, 9-11, 15-16, 18-19</AutoFit>
+    <NoteStyles>
+        <Style Name="Title Text" ID="069527EE-0D88-4F0C-8C88-3903239B20E5" AffectFontStyle="Yes" AffectAlignment="Yes" AffectTextColor="No" AffectNoteBody="No" AffectFade="No">
+            <FontSize>28.0</FontSize>
+            <IsBold>Yes</IsBold>
+        </Style>
+        <Style Name="Red Text" ID="8C5E5723-1331-4174-8AB3-C64AA6D63714" AffectFontStyle="No" AffectAlignment="No" AffectTextColor="Yes" AffectNoteBody="No" AffectFade="No">
+            <TextColor>1.0 0.0 0.0</TextColor>
+        </Style>
+        <Style Name="Brown Bubble" ID="7F6EB1D3-8EE7-421D-8B68-3967F836AD98" AffectFontStyle="No" AffectAlignment="No" AffectTextColor="No" AffectNoteBody="Yes" AffectFade="No">
+            <BorderThickness>1</BorderThickness>
+            <BorderColor>0.290055 0.1523 0.182215</BorderColor>
+            <FillColor>0.940019 0.892907 0.779716</FillColor>
+        </Style>
+        <Style Name="Yellow Bubble" ID="7E91F833-A716-4022-B1A6-8677FF98C301" AffectFontStyle="No" AffectAlignment="No" AffectTextColor="No" AffectNoteBody="Yes" AffectFade="No">
+            <BorderThickness>1</BorderThickness>
+            <BorderColor>0.756763 0.785592 0.373258</BorderColor>
+            <FillColor>0.906773 0.910625 0.634363</FillColor>
+        </Style>
+        <Style Name="Green Bubble" ID="A5E77C85-B2C5-4BEA-914E-EDB38BC1EB97" AffectFontStyle="No" AffectAlignment="No" AffectTextColor="No" AffectNoteBody="Yes" AffectFade="No">
+            <BorderThickness>1</BorderThickness>
+            <BorderColor>0.331867 0.609932 0.356197</BorderColor>
+            <FillColor>0.790123 0.882327 0.80198</FillColor>
+        </Style>
+        <Style Name="Blue Bubble" ID="2AD61E1A-A089-44C1-A384-A0D205BD236B" AffectFontStyle="No" AffectAlignment="No" AffectTextColor="No" AffectNoteBody="Yes" AffectFade="No">
+            <BorderThickness>1</BorderThickness>
+            <BorderColor>0.477193 0.557066 0.76433</BorderColor>
+            <FillColor>0.840969 0.866828 0.925903</FillColor>
+        </Style>
+        <Style Name="Pink Bubble" ID="096CC248-B64A-4821-8D77-B8B26CB07B23" AffectFontStyle="No" AffectAlignment="No" AffectTextColor="No" AffectNoteBody="Yes" AffectFade="No">
+            <BorderThickness>1</BorderThickness>
+            <BorderColor>0.747881 0.366532 0.542813</BorderColor>
+            <FillColor>0.918452 0.807302 0.863467</FillColor>
+        </Style>
+    </NoteStyles>
+    <UISettings>
+        <BackgroundColor>1.0 1.0 1.0</BackgroundColor>
+        <DefaultFont>Helvetica</DefaultFont>
+        <DefaultTextColor>0.0 0.0 0.0</DefaultTextColor>
+    </UISettings>
+    <PrintSettings PaperSize="595.0,842.0" LeftMargin="72.0" RightMargin="72.0" TopMargin="90.0" BottomMargin="90.0" PaperType="iso-a4" Orientation="Portrait" HorizontalPagination="Clip" VerticalPagination="Auto" ScaleFactor="1.0" HorizontallyCentered="Yes" VerticallyCentered="Yes" Collates="Yes" PagesAcross="1" PagesDown="1"></PrintSettings>
+</ScappleDocument>
