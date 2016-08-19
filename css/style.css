@@ -17,16 +17,22 @@ body {
 
 #viz {
 }
-#graphs {
+#charts {
   margin-left: 400px;
 }
 
-#graphs > div {
-  padding: 20px;
+#charts > div {
+  padding: 10px;
+  width: 300px;
   height: 300px;
   float: left;
-  margin: 5px;
+  margin-left: 5px;
+  margin-bottom: 5px;
   border: 3px solid black;
+}
+
+#main_chart {
+  width: 600px;
 }
 
 #tables {

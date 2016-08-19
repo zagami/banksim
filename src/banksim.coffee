@@ -1,5 +1,4 @@
 LANG = 'EN'
-CHART_WIDTH = 300
 INFLATION_HIST = 20 #data points of inflation graph
 MONEY_SUPPLY_HIST = 20 #data points of money supply graph
 AUTORUN_DELAY = 2000
@@ -8,94 +7,126 @@ COL2 = "blue"
 COL3 = "green"
 COL4 = "yellow"
 
-_tr = (id) ->
-  if LANG == 'EN'
-    for index, t of DICT
-      return DICT[index][0] if id == index
-  else if LANG == 'DE'
-    for index, t of DICT
-      if id == index
-        if DICT[index].length > 1
-          return DICT[index][1]
-        else
-          #use english translation
-          return DICT[index][0]
-  console.log "TODO: translate - #{id}"
+_tr = (key) ->
+  for k, t of DICT
+    if k == key
+      return DICT[k][0] if LANG == 'EN'
+      return DICT[k][1] if LANG == 'DE'
+  console.log "TODO: translate - #{key}"
+  return "TODO"
+  
 
-DICT =
-  controls_header: ["Controls", "Steuerung"]
-  param_header: ['Parameters', 'Parameter']
-  simulate_button: ['Simulate', 'Simulieren']
-  years_per_step: ['years per step', 'Jahre pro Schritt']
-  autorun: ['autorun']
-  reset_button: ['Reset']
-  #params
-  prime_rate: ['prime rate', 'Leitzins']
-  prime_rate_giro: ['prime rate deposits', 'Leitzins Reserven']
-  libor: ['LIBOR']
-  cap_req: ['capital requirement', 'Eigenkapitalvorschrift']
-  minimal_reserves: ['minimal reserves', 'Mindestreserve']
-  credit_interest: ['loan interest', 'Kreditzinsen']
-  deposit_interest: ['deposit interest', 'Guthabenszinsen Zahlungskonto']
-  deposit_interest_savings: ['deposit interest savings', 'Guthabenszinsen Sparkonto']
-  savings_rate: ['savings rate', 'Sparquote']
-  income_tax_rate: ['income tax rate', 'Einkommenssteuersatz']
-  wealth_tax_rate: ['wealth tax rate', 'Vermögenssteuersatz']
-  gov_spending: ['government spending', 'Staatsausgaben']
-  basic_income_rate: ['basic income', 'Grundeinkommen']
-  #balance sheets
-  assets: ['assets', 'Aktiven']
-  liabilities: ['liabilities', 'Passiven']
-  capital: ['capital', "Eigenkapital"]
-  interest: ['interest', "Zins"]
-  reserves: ['reserves', "Reserven"]
-  balance_sheet: ['balance sheet', "Bilanz"]
-  stocks: ['stocks', "Wertschriften"]
-  deposits: ['deposits', "Guthaben"]
-  savings: ['savings', 'Sparguthaben']
-  loans: ['loans', "Kredite"]
-  cb_deposits: ['central bank deposits', 'Zentralbank Guthaben']
-  cb_debt: ['central bank debt', "Zentralbank Schulden"]
-  interbank_loans: ['interbank loans', "Interbank Kredite"]
-  interbank_debt: ['interbank debt', "Interbank Schulden"]
-  #diagram titles
-  central_bank: ["central bank", "Zentralbank"]
-  state: ['state', 'Staat']
-  customers: ['customers', 'Bankkunden']
-  banks: ['banks', "Banken"]
-  statistics: ['statistics', "Statistiken"]
-  money_supply: ['money supply', "Geldmenge"]
-  wealth_distribution: ['wealth distribution', 'Vermögensverteilung']
-  debt_distribution: ['debt distribution', 'Schuldenverteilung']
-  banks_consolidated: ['banks consolidated', 'Banken aggregiert']
-  customers_consolidated: ['customers consolidated', 'Bankkunden aggregiert']
-  income_tax: ['income taxes', 'Einkommenssteuer']
-  income: ['income', 'Einkommen']
-  wealth_tax: ['wealth tax', 'Vermögenssteuer']
-  public_debt: ['public debt', 'Staatsverschuldung']
-  basic_income: ['basic income', 'Grundeinkommen']
-  average_income: ['average income', 'Durchschnittseinkommen']
-  expenses: ['expenses', 'Ausgaben']
-  inflation: ['inflation', 'Inflation']
-  taxes: ['taxes', 'Steuern']
-  money_flow: ['flow of money', 'Geldfluss']
-  nof_customers: ['number of customers', 'Anzahl Bankkunden']
-  gdp: ['gross domestic product', 'Bruttoinlandsprodukt BIP']
-  basic_income_per_citizen: ['basic income per citizen', 'Grundeinkommen pro Kopf']
-  positive_money: ['positive money', 'Vollgeld']
-  cash: ['cash', 'Kassa']
-  giro_banks: ['deposits banks', 'Bankreserven']
-  giro_nonbanks: ['deposits nonbanks', 'Nichtbanken Geldkonten']
-  giro_state: ['deposit of state', 'Staatsreserven']
-  interbank_volume: ['interbank volume', 'Interbankenvolumen']
-  num_customers: ['number of customers', 'Anzahl Kunden']
+DICT = []
+
+add_tr = (key, trans) ->
+  DICT[key] = trans
+
+#controls
+add_tr("lbl_1", ["Year", "Jahr"])
+add_tr("lbl_2", ["Controls", "Steuerung"])
+add_tr("lbl_3", ['Parameters', 'Parameter'])
+add_tr("lbl_4", ['Simulate', 'Simulieren'])
+add_tr("lbl_5", ['years per step', 'Jahre pro Schritt'])
+add_tr("lbl_6", ['autorun'])
+add_tr("lbl_7", ['Reset'])
+#params
+add_tr("lbl_8", ['prime rate', 'Leitzins'])
+add_tr("lbl_9", ['prime rate deposits', 'Leitzins Reserven'])
+add_tr("lbl_10", ['LIBOR'])
+add_tr("lbl_11", ['capital requirement', 'Eigenkapitalvorschrift'])
+add_tr("lbl_12", ['minimal reserves', 'Mindestreserve'])
+add_tr("lbl_13", ['loan interest', 'Kreditzinsen'])
+add_tr("lbl_14", ['deposit interest', 'Guthabenszinsen Zahlungskonto'])
+add_tr("lbl_15", ['deposit interest savings', 'Guthabenszinsen Sparkonto'])
+add_tr("lbl_16", ['savings rate', 'Sparquote'])
+add_tr("lbl_17", ['income tax rate', 'Einkommenssteuersatz'])
+add_tr("lbl_18", ['wealth tax rate', 'Vermögenssteuersatz'])
+add_tr("lbl_19", ['government spending', 'Staatsausgaben'])
+add_tr("lbl_20", ['basic income', 'Grundeinkommen'])
+add_tr("lbl_21", ['positive money', 'Vollgeld'])
+add_tr("lbl_22", ['On/Off', 'Ein/Aus'])
+add_tr("lbl_23", ['Central Bank', 'Zentralbank'])
+add_tr("lbl_24", ['Banks', 'Banken'])
+add_tr("lbl_25", ['State', 'State'])
+#main chart
+add_tr("cb_a1", ["cash", "Bargeld"])
+add_tr("cb_a2", ["loans to banks", "Kredite an Banken"])
+add_tr("cb_l1", ["giro banks", "Giroguthaben Banken"])
+add_tr("cb_l2", ["giro state", "Giroguthaben Staat"])
+add_tr("cb_l3", ["giro non-banks", "Giroguthaben Nichtbanken"])
+add_tr("cb_l4", ["capital", "Eigenkapital"])
+add_tr("b_a1", DICT["cb_a1"])
+add_tr("b_a2", DICT["cb_l1"])
+add_tr("b_a3", ["loans to banks", "Kredite an Banken"])
+add_tr("b_a4", ["loans to non-banks", "Kredite an Nichtbanken"])
+add_tr("b_l1", ["debt to central bank", "Verbindlichkeit an Zentralbank"])
+add_tr("b_l2", ["debt to banks", "Verbindlichkeit an Banken"])
+add_tr("b_l3", ["deposits", "Girokonten"])
+add_tr("b_l4", ["savings", "Sparkonten"])
+add_tr("b_l5", DICT["cb_l4"])
+add_tr("nb_a1", DICT["cb_a1"])
+add_tr("nb_a2", DICT["b_l3"])
+add_tr("nb_a3", DICT["b_l4"])
+add_tr("nb_l1", DICT["b_l2"])
+add_tr("nb_l2", DICT["cb_l4"])
+add_tr("s_a1", DICT["cb_a1"])
+add_tr("s_a2", DICT["cb_l2"])
+add_tr("s_l1", DICT["cb_l4"])
+
+
+#balance sheets
+add_tr("assets", ['assets', 'Aktiven'])
+add_tr("liabilities", ['liabilities', 'Passiven'])
+
+add_tr("central_bank", ["central bank", "Zentralbank"])
+add_tr("banks", ['banks', "Banken"])
+add_tr("nonbanks", ['non-banks', "Nichtbanken"])
+add_tr("state", ['state', 'Staat'])
+add_tr("money_supply", ['money supply', "Geldmenge"])
+add_tr("interest", ['interest', "Zins"])
+add_tr("inflation", ['inflation', 'Inflation'])
+add_tr("money_flow", ['flow of money', 'Geldfluss'])
+
+
+add_tr("tab_ms_1", ['interbank volume', 'Interbankenvolumen'])
+add_tr("tab_banks_1", ['number of customers', 'Anzahl Kunden'])
+
+add_tr("tab_stats_0", ['statistics', "Statistiken"])
+add_tr("tab_stats_1", ['total income', 'Einkommen'])
+add_tr("tab_stats_2", ['total expenses', 'Ausgaben'])
+add_tr("tab_stats_3", ['average income', 'Durchschnittseinkommen'])
+
+add_tr("tab_stats_4", ['income tax', 'Einkommenssteuer'])
+add_tr("tab_stats_5", ['wealth tax', 'Vermögenssteuer'])
+add_tr("tab_stats_6", ['gross domestic product', 'Bruttoinlandsprodukt BIP'])
+add_tr("tab_stats_7", ['basic income total', 'Total Grundeinkommen'])
+add_tr("tab_stats_8", ['basic income per citizen', 'Grundeinkommen pro Kopf'])
+add_tr("tab_stats_9", ['number of individuals', 'Anzahl Wirtschaftsteilnehmer'])
+
+add_tr("chart_main_1", ['Overview', 'Übersicht'])
+
+add_tr("chart_mshist_1", ['positive money M', 'Vollgeldmenge M'])
+add_tr("chart_mshist_2", DICT["tab_ms_1"])
+
+add_tr("chart_bd_1", ['bank debt', 'Bankverschuldung'])
+
+add_tr("chart_tax_0", ['taxes', 'Steuern'])
+add_tr("chart_tax_1", ['income tax', 'Einkommenssteuer'])
+add_tr("chart_tax_2", ['wealth tax', 'Vermögenssteuer'])
+add_tr("chart_tax_3", ['basic income', 'Grundeinkommen'])
+
+add_tr("chart_wd_0", ['inequality', 'Soziale Ungleichheit'])
+add_tr("chart_wd_1", ['wealth distribution', 'Vermögensverteilung'])
+add_tr("chart_wd_2", ['debt distribution', 'Schuldenverteilung'])
+
+add_tr("chart_nofc_1", ['reserves / customer ratio', 'Reserven zu Bankkunden Verhältnis'])
+add_tr("chart_nofc_2", ['number of customers', 'Anzahl Kunden'])
   
 iv = (val) ->
   ko.observable(val)
 
 class Simulator
   constructor: ->
-    new GUIBuilder().initGUI()
     @update_translations()
     @init()
 
@@ -110,22 +141,19 @@ class Simulator
 
 
     vizArray = [
-      new CentralBankTable(@microeconomy, '#cb_table', 'central_bank'),
-      new StateTable(@microeconomy, '#state_table', 'state'),
-      new CustomersTable(@microeconomy, '#customers_table', 'customers'),
-      new MoneySupplyTable(@microeconomy, '#ms_table', 'money_supply'),
-      new BanksTable(@microeconomy, '#banks_table', 'banks'),
-      new BanksChart(@microeconomy, '#banks_chart', 'banks'),
-      new BanksTotalChart(@microeconomy, '#banks_total_chart', 'banks_consolidated'),
-      new BanksDebtChart(@microeconomy, '#banks_chart2', 'cb_deposits'),
-      new BanksNumCustomersChart(@microeconomy, '#banks_chart3', 'reserves'),
-      new CustomerTotalChart(@microeconomy, '#customers_total_chart', 'customers_consolidated'),
-      new CentralBankChart(@microeconomy, '#cb_chart', 'central_bank'),
-      new MoneySupplyChart(@microeconomy, '#stats_chart1', 'money_supply'),
-      new InflationChart(@microeconomy, '#stats_chart2', 'inflation'),
-      new TaxesChart(@microeconomy, '#taxes_chart', 'taxes'),
-      new WealthDistributionChart(@microeconomy, '#wealth_chart', 'wealth_distribution'),
-      new InterestGraph(@microeconomy, '#interest_graph', 'money_flow'),
+      new CentralBankTable(@microeconomy, '#cb_table'),
+      new StatisticsTable(@microeconomy, '#state_table'),
+      new MainChart(@microeconomy, '#main_chart'),
+      new MoneySupplyTable(@microeconomy, '#ms_table'),
+      new BanksTable(@microeconomy, '#banks_table'),
+      new BanksChart(@microeconomy, '#banks_chart'),
+      new BanksDebtChart(@microeconomy, '#banks_chart2'),
+      new BanksNumCustomersChart(@microeconomy, '#banks_chart3'),
+      new MoneySupplyChart(@microeconomy, '#stats_chart1'),
+      new InflationChart(@microeconomy, '#stats_chart2'),
+      new TaxesChart(@microeconomy, '#taxes_chart'),
+      new WealthDistributionChart(@microeconomy, '#wealth_chart'),
+      new InterestGraph(@microeconomy, '#interest_graph'),
     ]
     for v in vizArray
       @visualizerMgr.addViz v
@@ -277,15 +305,13 @@ class Simulator
   reset_params: ->
     @step(0)
 
-  update_text: (id) ->
-    if $('#lbl_'+id).is("input")
-      $('#lbl_'+id).val(_tr(id))
-    else
-      $('#lbl_'+id).text(_tr(id))
+  update_label: (id) ->
+    if $('#' + id).length > 0
+      $('#' + id).text(_tr(id))
 
   update_translations: ->
     for id, trl of DICT
-      @update_text(id)
+      @update_label(id)
 
     if LANG == 'DE'
       $('#instructions_english').hide()
@@ -323,7 +349,7 @@ class Simulator
   autorun_clicked: ->
     #needed for keyboard event
     if not @autorun() and not @autorun_id
-      @autorun(true) 
+      @autorun(true)
     if @autorun() and @autorun_id
       @autorun(false)
     @toggle_autorun()
@@ -350,6 +376,7 @@ class VisualizerMgr
   visualize: ->
     for viz in @vizArray
       viz.visualize()
+      
   clear: ->
     for viz in @vizArray
       viz.clear()
@@ -366,65 +393,9 @@ class Visualizer
   clear: ->
   visualize: ->
 
-class GUIBuilder
-  add_button: (container_id, id, handler) ->
-    row = $('<tr></tr>')
-    button = $('<td colspan=2></td>').append('<input class="'+id+'" id="lbl_' + id + '" type="button" data-bind="click: ' + handler + '"/>')
-    $(container_id).append(row, button)
-
-  add_checkbox: (container_id, id, handler) ->
-    row = $('<tr></tr>')
-    label = $('<td></td>').addClass(id).addClass('label').attr('id', 'lbl_' + id)
-    checkbox = $('<input type="checkbox" data-bind="checked: ' + id + ', click: ' + handler + '">')
-    checkbox = $('<td></td>').append(checkbox)
-    $(container_id).append(label, checkbox)
-
-  add_range_param: (container_id, id, start, end, step, unit) ->
-    label = $('<span></span>').addClass(id).addClass('label').attr('id', 'lbl_' + id)
-    cell1 = $('<td></td>').append(label)
-    range = $('<input data-bind="value:' + id + '" type="range" min="' + start + '" max="' + end + '" step="' + step + '"/>')
-    pct = $('<span data-bind="text: ' + id + '"></span>')
-    cell2 = $('<td></td>').append(range).append(pct).append('<span>'+ (if unit then unit else '') + '</span>')
-    row = $('<tr></tr>')
-    row.addClass(id)
-    row.append(cell1).append(cell2)
-    $(container_id).append(row)
-
-  initGUI: ->
-    container_id = '#controls'
-    header = $('<h2></h2>').attr('id', 'controls_header')
-    table = $('<table></table>').attr('id', 'controls_table')
-    $('#controls').append(header, table)
-    container_id = '#controls_table'
-    @add_button(container_id, 'simulate_button', 'simulate_clicked')
-    @add_range_param(container_id, 'years_per_step', 1, 100, 5)
-    @add_checkbox(container_id, 'autorun', 'autorun_clicked')
-    @add_button(container_id, 'reset_button', 'reset_clicked')
-
-    header = $('<h2></h2>').attr('id', 'param_header')
-    table = $('<table></table>').attr('id', 'param_table')
-    $('#params').append(header).append(table)
-    container_id = '#param_table'
-    @add_range_param(container_id, 'prime_rate', 0, 15, 0.1, '%')
-    @add_range_param(container_id, 'prime_rate_giro', -10, 15, 0.1, '%')
-    @add_range_param(container_id, 'libor', 0, 15, 0.1, '%')
-    @add_range_param(container_id, 'cap_req', 0, 50, 1, '%')
-    @add_range_param(container_id, 'minimal_reserves', 0, 50, 1, '%')
-    @add_range_param(container_id, 'credit_interest', 0, 10, 0.1, '%')
-    @add_range_param(container_id, 'deposit_interest', -10, 10, 0.1, '%')
-    @add_range_param(container_id, 'deposit_interest_savings', -10, 10, 0.1, '%')
-    @add_range_param(container_id, 'savings_rate', 0, 100, 1, '%')
-    @add_range_param(container_id, 'income_tax_rate', 0, 100, 1, '%')
-    @add_range_param(container_id, 'wealth_tax_rate', 0, 100, 1, '%')
-    @add_range_param(container_id, 'gov_spending', 0, 100, 1, '%')
-    @add_range_param(container_id, 'basic_income_rate', 0, 100, 1, '%')
-    @add_checkbox(container_id, 'positive_money','positive_money_clicked')
-
-  visualize: ->
-
 class GraphVisualizer extends Visualizer
   network: null
-  constructor: (@microeconomy, @element_id, @title) ->
+  constructor: (@microeconomy, @element_id) ->
     super
     @drawGraph()
 
@@ -502,9 +473,10 @@ class GraphVisualizer extends Visualizer
 
 class InterestGraph extends GraphVisualizer
   initGraph: ->
+    @title = _tr('money_flow')
     cb_label = _tr("central_bank")
     b_label = _tr("banks")
-    c_label = _tr("customers")
+    c_label = _tr("nonbanks")
     s_label = _tr("state")
     cb = 1
     b = 2
@@ -533,7 +505,7 @@ class InterestGraph extends GraphVisualizer
     c = 4
     cb_label = _tr("central_bank")
     b_label = _tr("banks")
-    c_label = _tr("customers")
+    c_label = _tr("nonbanks")
     s_label = _tr("state")
     @updateNode(cb, cb_label)
     @updateNode(b, b_label)
@@ -549,8 +521,6 @@ class InterestGraph extends GraphVisualizer
     @updateEdge(s, c, @stats.s_c_flow_series.last())
 
 class TableVisualizer extends Visualizer
-  constructor: (@microeconomy, @element_id, @title) ->
-    super
 
   clear: ->
     super
@@ -572,8 +542,8 @@ class TableVisualizer extends Visualizer
 
   draw_table: ->
     $(@element_id).append( '<table>' )
-    $(@element_id).append( '<caption>' + _tr(@title) + '</caption>' )
     @create_table()
+    $(@element_id).append( '<caption>' + @title + '</caption>' )
     $(@element_id).append('</table>')
 
   visualize: ->
@@ -581,7 +551,9 @@ class TableVisualizer extends Visualizer
     @draw_table()
 
 class CentralBankTable extends TableVisualizer
+
   create_table: ->
+    @title = _tr('central_bank')
     # balance sheet of central bank
     @create_header(
       _tr('assets'),
@@ -590,16 +562,16 @@ class CentralBankTable extends TableVisualizer
       ''
     )
     @create_row(
-      _tr('loans'),
+      _tr('cb_a2'),
       @cb.credits_banks().toFixed(2),
-      _tr('reserves'),
+      _tr('cb_l1'),
       @cb.giro_banks().toFixed(2)
     )
 
     @create_row(
-      _tr('stocks'),
-      '0',
-      _tr('capital'),
+      "",
+      '',
+      _tr('cb_l4'),
       @cb.capital().toFixed(2)
     )
 
@@ -610,82 +582,74 @@ class CentralBankTable extends TableVisualizer
       @cb.assets_total().toFixed(2)
     )
 
-class CustomersTable extends TableVisualizer
+class StatisticsTable extends TableVisualizer
+
   create_table: ->
+    @title = _tr('tab_stats_0')
     customers = @microeconomy.all_customers()
     len = customers.length
     deposits = (c.deposit for c in customers)
     savings = (c.savings for c in customers)
-    stocks = (c.stocks for c in customers)
     loans = (c.loan for c in customers)
     caps = (c.capital() for c in customers)
     incomes = (c.income for c in customers)
     expenses = (c.expenses for c in customers)
-
-    @create_row(_tr('income'), incomes.sum().toFixed(2))
-    @create_row(_tr('expenses'), expenses.sum().toFixed(2))
-    @create_row(_tr('average_income'), (incomes.sum()/len).toFixed(2))
-
-class StateTable extends TableVisualizer
-  create_table: ->
     num_citizens = @microeconomy.all_customers().length
+
+    @create_row(_tr('tab_stats_9'), num_citizens)
+    @create_row(_tr('tab_stats_1'), incomes.sum().toFixed(2))
+    @create_row(_tr('tab_stats_2'), expenses.sum().toFixed(2))
+    @create_row(_tr('tab_stats_3'), (incomes.sum()/len).toFixed(2))
+
     len = @state.income_tax_series.length
     if len > 0
-      @create_row(_tr('taxes'), @state.income_tax_series.last().toFixed(2))
-      @create_row(_tr('income_tax'), @state.income_tax_series.last().toFixed(2))
-      @create_row(_tr('wealth_tax'), @state.wealth_tax_series.last().toFixed(2))
-      @create_row(_tr('gdp'), @stats.gdp_series.last().toFixed(2))
+      @create_row(_tr('tab_stats_4'), @state.income_tax_series.last().toFixed(2))
+      @create_row(_tr('tab_stats_5'), @state.wealth_tax_series.last().toFixed(2))
+      @create_row(_tr('tab_stats_6'), @stats.gdp_series.last().toFixed(2))
 
     if len > 1
-      @create_row(_tr('basic_income') + ' total', @state.basic_income_series.last().toFixed(2))
+      @create_row(_tr('tab_stats_7'), @state.basic_income_series.last().toFixed(2))
       basic_incom_per_citizen = @state.basic_income_series.last() / num_citizens
-      @create_row(_tr('basic_income_per_citizen'), basic_incom_per_citizen.toFixed(2))
+      @create_row(_tr('tab_stats_8'), basic_incom_per_citizen.toFixed(2))
 
-    @create_row(_tr('reserves'), @state.reserves.toFixed(2))
+    @create_row(_tr('s_a2'), @state.reserves.toFixed(2))
   
 class MoneySupplyTable extends TableVisualizer
   create_table: ->
+    @title = _tr('money_supply')
     # money supply
-    @create_header(
-      'M0',
-      'M1',
-      'M2',
-      _tr('interbank_volume')
-    )
-    @create_row(
-      @stats.m0().toFixed(2),
-      @stats.m1().toFixed(2),
-      @stats.m2().toFixed(2),
-      @stats.interbank_volume().toFixed(2)
-    )
+    @create_row('M0', @stats.m0().toFixed(2))
+    @create_row('M1', @stats.m1().toFixed(2))
+    @create_row('M2', @stats.m1().toFixed(2))
+    @create_row(_tr('tab_ms_1'), @stats.interbank_volume().toFixed(2))
 
 class BanksTable extends TableVisualizer
   create_bank_header: ->
     @create_header(
       '',
-      _tr("reserves"),
+      _tr("b_a1"),
+      _tr("b_a2"),
       '%',
-      _tr('interbank_loans')
-      _tr('loans'),
-      _tr('stocks'),
-      _tr('cb_debt'),
-      _tr('interbank_debt')
-      _tr('deposits'),
-      _tr('savings'),
-      _tr("capital"),
+      _tr('b_a3')
+      _tr('b_a4'),
+      _tr('b_l1'),
+      _tr('b_l2')
+      _tr('b_l3'),
+      _tr('b_l4'),
+      _tr("b_l5"),
       _tr("assets"),
       _tr("liabilities"),
-      _tr('nof_customers')
+      _tr('tab_banks_1')
     )
 
   create_bank_row: (id, bank) ->
     row = @create_row(
       id,
+      0,
       bank.reserves.toFixed(2),
       (bank.reserves / bank.debt_total()*100).toFixed(0) + '%',
       bank.interbank_loans().toFixed(2),
       bank.customer_loans().toFixed(2),
-      bank.stocks.toFixed(2),
       bank.cb_debt.toFixed(2),
       bank.interbank_debt().toFixed(2),
       bank.customer_deposits().toFixed(2),
@@ -699,7 +663,6 @@ class BanksTable extends TableVisualizer
   create_total_row: ->
     reserves = (bank.reserves for bank in @banks)
     loans = (bank.customer_loans() for bank in @banks)
-    stocks = (bank.stocks for bank in @banks)
     caps = (bank.capital() for bank in @banks)
     cb_debts = (bank.cb_debt for bank in @banks)
     deposits = (bank.customer_deposits() for bank in @banks)
@@ -711,11 +674,11 @@ class BanksTable extends TableVisualizer
 
     @create_row(
       'Total:',
+      0,
       reserves.sum().toFixed(2),
       '',
       interbank_loans.sum().toFixed(2),
       loans.sum().toFixed(2),
-      stocks.sum().toFixed(2),
       cb_debts.sum().toFixed(2),
       interbank_debts.sum().toFixed(2),
       deposits.sum().toFixed(2),
@@ -727,6 +690,7 @@ class BanksTable extends TableVisualizer
     )
 
   create_table: ->
+    @title = _tr('banks')
     @create_bank_header()
     i = 0
     for bank in @banks
@@ -735,7 +699,7 @@ class BanksTable extends TableVisualizer
     @create_total_row()
 
 class ChartVisualizer extends Visualizer
-  constructor: (@microeconomy, @element_id, @title) ->
+  constructor: (@microeconomy, @element_id) ->
     super
     @data = []
     @set_options()
@@ -743,22 +707,23 @@ class ChartVisualizer extends Visualizer
   set_options: ->
     @y_label = 'CHF'
     @chart_type = 'column'
-    @y_max = null
+    @categories = []
+    @legend_visible = true
 
   draw_chart: ->
     $(@element_id).highcharts({
       chart:
         type: @chart_type
-        width: CHART_WIDTH
       title:
-        text: _tr(@title)
+        text: @title
       xAxis:
-        categories: []
+        categories: @categories
       yAxis:
         allowDecimals: false
-        max: @y_max
         title:
           text: @y_label
+      legend:
+        enabled: @legend_visible
       tooltip:
           formatter: ->
               return this.series.name + ': ' + this.y + '<br/>' 
@@ -782,12 +747,13 @@ class MoneySupplyChart extends ChartVisualizer
     @chart_type = 'line'
 
   update_data: ->
+    @title = _tr('money_supply')
     if @microeconomy.params.positive_money
       @data = [{
-          name: _tr('positive_money')  + ' M'
+          name: _tr('chart_mshist_1')
           data: @stats.m_series[-MONEY_SUPPLY_HIST..]
       }, {
-          name: _tr('interbank_volume')
+          name: _tr('chart_mshist_2')
           data: @stats.interbank_volume_series[-MONEY_SUPPLY_HIST..]
       }]
     else
@@ -801,7 +767,7 @@ class MoneySupplyChart extends ChartVisualizer
           name: _tr('money_supply') + ' M2'
           data: @stats.m2_series[-MONEY_SUPPLY_HIST..]
         }, {
-          name: _tr('interbank_volume')
+          name: _tr('chart_mshist_2')
           data: @stats.interbank_volume_series[-MONEY_SUPPLY_HIST..]
       }]
     
@@ -811,6 +777,7 @@ class InflationChart extends ChartVisualizer
     @chart_type = 'line'
 
   update_data: ->
+    @title = _tr('inflation')
     if @microeconomy.params.positive_money
       @data = [{
           name: _tr('inflation') + ' M'
@@ -833,98 +800,38 @@ class TaxesChart extends ChartVisualizer
     @chart_type = 'line'
 
   update_data: ->
+    @title = _tr('chart_tax_0')
     @data = [{
-        name: _tr('income_tax')
+        name: _tr('chart_tax_1')
         data: @state.income_tax_series
       }, {
-        name: _tr('wealth_tax')
+        name: _tr('chart_tax_2')
         data: @state.wealth_tax_series
       }, {
-        name: _tr('basic_income')
+        name: _tr('chart_tax_3')
         data: @state.basic_income_series
     }]
 
 class WealthDistributionChart extends ChartVisualizer
+
   update_data: ->
+    @title = _tr('chart_wd_0')
     sorted_customers = @stats.wealth_distribution()
-    
     wealth = (c.wealth() for c in sorted_customers)
     loans = (-c.loan for c in sorted_customers)
     @data = [{
-        name: _tr('wealth_distribution')
+        name: _tr('chart_wd_1')
         data: wealth
         }, {
-        name: _tr('debt_distribution')
+        name: _tr('chart_wd_2')
         data: loans
     }]
 
-class CentralBankChart extends ChartVisualizer
-  set_options: ->
-    super
-
-  update_data: ->
-    if @microeconomy.params.positive_money
-      @data = [{
-        name: _tr('cash')
-        data: [@cb.cash]
-        stack: _tr('assets')
-      }, {
-        name: _tr('loans')
-        data: [@cb.credits_banks()]
-        color: COL1
-        stack: _tr('assets')
-      }, {
-        name: _tr('stocks')
-        data: [@cb.stocks]
-        stack: _tr('assets')
-      }, {
-        name: _tr('giro_banks')
-        data: [@cb.giro_banks()]
-        color: COL2
-        stack: _tr('liabilities')
-      }, {
-        name: _tr('giro_nonbanks')
-        data: [@cb.giro_nonbanks()]
-        stack: _tr('liabilities')
-      }, {
-        name: _tr('giro_state')
-        data: [@cb.giro_state()]
-        stack: _tr('liabilities')
-      }, {
-        name: _tr("capital")
-        data: [@cb.capital()]
-        stack: _tr('liabilities')
-      }]
-    else
-      @data = [{
-            name: _tr('loans')
-            data: [@cb.credits_banks()]
-            color: COL1
-            stack: _tr('assets')
-        }, {
-            name: _tr('stocks')
-            data: [@cb.stocks]
-            stack: _tr('assets')
-        }, {
-            name: _tr('giro_banks')
-            data: [@cb.giro_banks()]
-            color: COL2
-            stack: _tr('liabilities')
-        }, {
-            name: _tr('giro_state')
-            data: [@cb.giro_state()]
-            stack: _tr('liabilities')
-        }, {
-            name: _tr("capital")
-            data: [@cb.capital()]
-            stack: _tr('liabilities')
-        }]
-
 class BanksChart extends ChartVisualizer
   update_data: ->
+    @title = _tr('banks')
     reserves = (bank.reserves for bank in @banks)
     loans = (bank.customer_loans() for bank in @banks)
-    stocks = (bank.stocks for bank in @banks)
     caps = (bank.capital() for bank in @banks)
     cb_debts = (bank.cb_debt for bank in @banks)
     deposits = []
@@ -935,138 +842,154 @@ class BanksChart extends ChartVisualizer
     interbank_debts = (bank.interbank_debt() for bank in @banks)
 
     @data = [{
-          name: _tr("reserves")
+          name: _tr("b_a2")
           data: reserves
           stack: _tr('assets')
       }, {
-          name: _tr('interbank_loans')
+          name: _tr('b_a3')
           data: interbank_loans
           stack: _tr('assets')
       }, {
-          name: _tr('loans')
+          name: _tr('b_a4')
           data: loans
           stack: _tr('assets')
       }, {
-          name: _tr('stocks')
-          data: stocks
-          stack: _tr('assets')
-      }, {
-          name: _tr('cb_debt')
+          name: _tr('b_l1')
           data: cb_debts
           stack: _tr('liabilities')
       }, {
-          name: _tr('interbank_debt')
+          name: _tr('b_l2')
           data: interbank_debts
           stack: _tr('liabilities')
       },{
-          name: _tr('deposits')
+          name: _tr('b_l3')
           data: deposits
           stack: _tr('liabilities')
       },{
-          name: _tr('savings') 
+          name: _tr('b_l4')
           data: savings
           stack: _tr('liabilities')
       }, {
-          name: _tr("capital")
+          name: _tr("b_l5")
           data: caps
           stack: _tr('liabilities')
       }]
 
-class BanksTotalChart extends ChartVisualizer
+class MainChart extends ChartVisualizer
   set_options: ->
     super
+    @categories = [_tr("central_bank"), _tr("banks"), _tr('nonbanks'), _tr('state')]
+    @legend_visible = false
 
   update_data: ->
-    reserves = (bank.reserves for bank in @banks)
-    loans = (bank.customer_loans() for bank in @banks)
-    stocks = (bank.stocks for bank in @banks)
-    caps = (bank.capital() for bank in @banks)
-    cb_debts = (bank.cb_debt for bank in @banks)
-    deposits = (bank.customer_deposits() for bank in @banks)
-    savings = (bank.customer_savings() for bank in @banks)
-    interbank_loans = (bank.interbank_loans() for bank in @banks)
-    interbank_debts = (bank.interbank_debt() for bank in @banks)
+    @title = _tr('chart_main_1')
+    bank_caps = (bank.capital() for bank in @banks).sum()
+    interbank_loans = (bank.interbank_loans() for bank in @banks).sum()
+    interbank_debts = (bank.interbank_debt() for bank in @banks).sum()
 
-    @data = [{
-          name: _tr("reserves")
-          data: [ reserves.sum() ]
-          color: COL2
-          stack: _tr('assets')
-      }, {
-          name: _tr('interbank_loans')
-          data: [ interbank_loans.sum() ]
-          stack: _tr('assets')
-      }, {
-          name: _tr('loans')
-          data: [ loans.sum() ]
-          color: COL3
-          stack: _tr('assets')
-      }, {
-          name: _tr('stocks')
-          data: [ stocks.sum() ]
-          stack: _tr('assets')
-      }, {
-          name: _tr('cb_debt')
-          data: [ cb_debts.sum() ]
-          color: COL1
-          stack: _tr('liabilities')
-      }, {
-          name: _tr('interbank_debt')
-          data: [ interbank_debts.sum() ]
-          stack: _tr('liabilities')
-      }, {
-          name: _tr('deposits')
-          data: if @microeconomy.params.positive_money then [0] else [deposits.sum()]
-          color: COL4
-          stack: _tr('liabilities')
-      }, {
-          name: _tr('savings')
-          data: [savings.sum() ]
-          stack: _tr('liabilities')
-      }, {
-          name: _tr("capital")
-          data: [ caps.sum() ]
-          stack: _tr('liabilities')
-    }]
-
-class CustomerTotalChart extends ChartVisualizer
-  set_options: ->
-    super
-
-  update_data: ->
     customers = @microeconomy.all_customers()
-    deposits = (c.deposit for c in customers)
-    savings = (c.savings for c in customers)
-    stocks = (c.stocks for c in customers)
-    loans = (c.loan for c in customers)
-    caps = (c.capital() for c in customers)
+    nb_deposits = (c.deposit for c in customers).sum()
+    nb_savings = (c.savings for c in customers).sum()
+    nb_loans = (c.loan for c in customers).sum()
+    nb_caps = (c.capital() for c in customers).sum()
 
     @data = [{
-          name: _tr("deposits")
-          data: [ deposits.sum() ]
-          color: COL4
+          name: _tr("cb_a1")
+          data: [0, 0, 0, 0]  #TODO: Cash
           stack: _tr('assets')
       }, {
-          name: _tr('savings')
-          data: [ savings.sum() ]
+          name: _tr("cb_a2")
+          data: [@cb.credits_banks(), 0, 0, 0]
           stack: _tr('assets')
       }, {
-          name: _tr('stocks')
-          data: [ stocks.sum() ]
-          stack: _tr('assets')
-      }, {
-          name: _tr('loans')
-          data: [ loans.sum() ]
-          color: COL3
+          name: _tr("cb_l1")
+          data: [@cb.giro_banks(), 0, 0, 0]
           stack: _tr('liabilities')
       }, {
-          name: _tr('capital')
-          data: [ caps.sum() ]
+          name: _tr("cb_l2")
+          data: [@cb.giro_state(), 0, 0, 0]
+          stack: _tr('liabilities')
+      }, {
+          name: _tr("cb_l3")
+          data: [@cb.giro_nonbanks(), 0, 0, 0]
+          stack: _tr('liabilities')
+      }, {
+          name: _tr("cb_l4")
+          data: [@cb.capital(), 0, 0, 0]
+          stack: _tr('liabilities')
+      }, {
+          name: _tr("b_a1")
+          data: [0, 0, 0, 0] #TODO: Cash
+          stack: _tr('assets')
+      }, {
+          name: _tr("b_a2")
+          data: [0, @cb.giro_banks(), 0, 0]
+          stack: _tr('assets')
+      }, {
+          name: _tr("b_a3")
+          data: [0, interbank_loans, 0, 0]
+          stack: _tr('assets')
+      }, {
+          name: _tr("b_a4")
+          data: [0, nb_loans, 0, 0]
+          stack: _tr('assets')
+      }, {
+          name: _tr("b_l1")
+          data: [0, @cb.credits_banks(), 0, 0]
+          stack: _tr('liabilities')
+      }, {
+          name: _tr("b_l2")
+          data: [0, interbank_debts, 0, 0]
+          stack: _tr('liabilities')
+      }, {
+          name: _tr("b_l3")
+          data: [0, nb_deposits, 0, 0]
+          stack: _tr('liabilities')
+      }, {
+          name: _tr("b_l4")
+          data: [0, nb_savings, 0, 0]
+          stack: _tr('liabilities')
+      }, {
+          name: _tr("b_l5")
+          data: [0, bank_caps, 0, 0]
+          stack: _tr('liabilities')
+      }, {
+          name: _tr("nb_a1")
+          data: [0, 0, 0, 0]  #TODO: Cash
+          stack: _tr('assets')
+      }, {
+          name: _tr("nb_a2")
+          data: [0, 0, nb_deposits, 0]
+          stack: _tr('assets')
+      }, {
+          name: _tr("nb_a3")
+          data: [0, 0, nb_savings, 0]
+          stack: _tr('assets')
+      }, {
+          name: _tr("nb_l1")
+          data: [0, 0, nb_loans, 0]
+          stack: _tr('liabilities')
+      }, {
+          name: _tr("nb_l2")
+          data: [0, 0, nb_caps, 0]
+          stack: _tr('liabilities')
+      }, {
+          name: _tr("s_a1")
+          data: [0, 0, 0, 0]
+          stack: _tr('assets')
+      }, {
+          name: _tr("s_a2")
+          data: [0, 0, 0, @cb.giro_state()]
+          stack: _tr('assets')
+      }, {
+          name: _tr("s_l1")
+          data: [0, 0, 0, @state.capital()]
           stack: _tr('liabilities')
     }]
 
 class BanksDebtChart extends ChartVisualizer
   update_data: ->
+    @title = _tr('chart_bd_1')
     banks_sorted = @banks.slice().sort( (a,b) -> a.reserves + a.interbank_loans() - b.reserves - b.interbank_loans())
     reserves = (bank.reserves for bank in banks_sorted)
     cb_debts = (-bank.cb_debt for bank in banks_sorted)
@@ -1074,29 +997,29 @@ class BanksDebtChart extends ChartVisualizer
     interbank_debts = (-bank.interbank_debt() for bank in banks_sorted)
 
     @data = [{
-          name: _tr('cb_deposits')
+          name: _tr('b_a2')
           data: reserves
           stack: '1'
       }, {
-          name: _tr('interbank_loans')
+          name: _tr('b_a3')
           data: interbank_loans
           stack: '1'
       }, {
-          name: _tr('cb_debt')
+          name: _tr('b_l1')
           data: cb_debts
           stack: '1'
       }, {
-          name: _tr('interbank_debt')
+          name: _tr('b_l2')
           data: interbank_debts
           stack: '1'
     }]
 
 class BanksNumCustomersChart extends ChartVisualizer
-
   set_options: ->
     @chart_type = 'line'
 
   update_data: ->
+    @title = _tr('chart_nofc_1')
     banks_sorted = @banks.slice().sort( (a,b) -> a.customers.length - b.customers.length)
     total_customers = @microeconomy.all_customers().length
     num_customers = (bank.customers.length * 100 / total_customers for bank in banks_sorted)
@@ -1105,19 +1028,19 @@ class BanksNumCustomersChart extends ChartVisualizer
     interbank_debts = (bank.interbank_debt() / bank.assets_total() for bank in banks_sorted)
 
     @data = [{
-          name: _tr('reserves') + ' in %'
+          name: _tr('b_a2') + ' in %'
           data: reserve_pct
           stack: '1'
       }, {
-          name: _tr('num_customers') + ' in %' 
+          name: _tr('chart_nofc_2') + ' in %'
           data: num_customers
           stack: '1'
       }, {
-          name: _tr('interbank_debt') + ' in %'
+          name: _tr('b_l2') + ' in %'
           data: interbank_debts
           stack: '1'
       }, {
-          name: _tr('cb_debt') + ' in %'
+          name: _tr('b_l1') + ' in %'
           data: cb_debts
           stack: '1'
     }]

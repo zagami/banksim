@@ -3,15 +3,10 @@ MAX_CUSTOMERS = 400
 
 DFLT_INITIAL_DEPOSIT_PER_CUST = 10
 DFLT_INITIAL_SAVINGS_PER_CUST = 0
-DFLT_INITIAL_STOCKS_PER_CUST = 0
 DFLT_INITIAL_LOAN_PER_CUST = 10
 
 DFLT_INITIAL_RESERVES_PER_BANK = 20
-DFLT_INITIAL_STOCKS_PER_BANK = 20
 DFLT_INITIAL_CBDEBT_PER_BANK = 20
-
-DFLT_INITIAL_CB_STOCKS = 400
-
 
 assert = (condition, message) ->
   if (!condition)
@@ -194,7 +189,6 @@ class CentralBank
   positive_money: false
 
   constructor: (@state, @banks) ->
-    @stocks = DFLT_INITIAL_CB_STOCKS
     @cash= 0
 
   credits_banks: ->
@@ -209,18 +203,19 @@ class CentralBank
 
   giro_nonbanks: ->
     giro_nonbanks = 0
-    giro_nonbanks += bank.customer_deposits() for bank in @banks
+    if @positive_money
+      giro_nonbanks += bank.customer_deposits() for bank in @banks
     giro_nonbanks
 
   giro_state: ->
     @state.reserves
 
   assets_total: ->
-    assets = @cash + @credits_banks() + @stocks
+    assets = @cash + @credits_banks()
 
   debt_total: ->
     debt = @giro_banks() + @giro_state()
-    debt += @giro_nonbanks() if @positive_money
+    debt += @giro_nonbanks()
     debt
 
   capital: ->
@@ -306,7 +301,6 @@ class Bank
   interbank_market: null
   customers: []
   reserves: 0
-  stocks: 0
   cb_debt: 0
 
   constructor: ->
@@ -334,12 +328,11 @@ class Bank
     bank = new Bank()
     bank.customers = (BankCustomer::get_random_customer(bank) for i in [1..num_customers])
     bank.reserves = DFLT_INITIAL_RESERVES_PER_BANK
-    bank.stocks = DFLT_INITIAL_STOCKS_PER_BANK
     bank.cb_debt = bank.reserves
     bank
 
   assets_total: ->
-    @reserves + @customer_loans() + @interbank_loans() + @stocks
+    @reserves + @customer_loans() + @interbank_loans()
 
   debt_total: ->
     debt = @cb_debt + @interbank_debt() +  @customer_savings()
@@ -374,7 +367,7 @@ class Bank
     @interbank_market.get_all_interbank_debts(this)
 
 class BankCustomer
-  constructor: (@bank, @deposit, @savings, @stocks, @loan) ->
+  constructor: (@bank, @deposit, @savings, @loan) ->
     @income = 0
     @expenses = 0
 
@@ -389,17 +382,16 @@ class BankCustomer
     @expenses = 0
 
   assets_total: ->
-    @deposit + @savings + @stocks
+    @deposit + @savings
 
   capital: ->
     @assets_total() - @loan
 
   BankCustomer::get_random_customer = (bank) ->
     deposit = DFLT_INITIAL_DEPOSIT_PER_CUST
-    stocks = DFLT_INITIAL_STOCKS_PER_CUST
     loan = DFLT_INITIAL_LOAN_PER_CUST
     savings = DFLT_INITIAL_SAVINGS_PER_CUST
-    new BankCustomer(bank, deposit, savings, stocks, loan)
+    new BankCustomer(bank, deposit, savings, loan)
 
 class MicroEconomy
   constructor: (@state, @cb, @banks, @params) ->
@@ -414,12 +406,16 @@ class MicroEconomy
 
 class State
   constructor: ->
+    @reserves = 0
+
     @public_service_series = []
     @basic_income_series = []
     @income_tax_series = []
     @wealth_tax_series = []
-    @reserves = 0
     @last_year_taxes = 0
+
+  capital: ->
+    @reserves
 
 class TrxMgr
   constructor: (@microeconomy) ->
@@ -666,7 +662,7 @@ class TrxMgr
         c.deposit += new_loan
 
   manage_investments: ->
-    #TODO: buy stocks from customers
+    #TODO: buy stocks from non-banks
 
   pay_dividends: ->
     #TODO: pay dividends to bank owners

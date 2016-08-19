@@ -20,6 +20,7 @@
   <script src="lib/hashtable.js"></script>
 
   <!-- stylesheet -->
+
   <link rel="stylesheet" type="text/css" href="css/style.css">
  
   <meta charset="utf-8">
@@ -34,26 +35,138 @@
 
 <body>
 
-<h1>BankSim</h1>
-
-<div id="left">
-
-<div id="controls">
-
   <a href=":blank" data-bind="click: lang_de_clicked">DE</a>
   <a href=":blank" data-bind="click: lang_en_clicked">EN</a>
-  <input type="text" data-bind="value: step"/>
+  <h1>BankSim</h1>
+<div id="left">
+
+  <h2><span id="lbl_1"></span>: <span data-bind="text: step"></span></h2>
+<div id="controls">
+  <form>
+  <fieldset>
+    <legend><span id="lbl_2"></span></legend>
+    <button type="button" data-bind="click: simulate_clicked"><span id="lbl_4"></span></button>
+    <div class="form_group">
+      <label for="years_per_step"><span id="lbl_5"></span>:</label>
+      <input id="years_per_step" type="range" min=1 max=100 step=5 data-bind="value: years_per_step">
+      <span data-bind="text: years_per_step"></span>
+    </div>
+    <div class="form_group">
+      <label for="autorun"><span id="lbl_6"></span>:</label>
+      <input id="autorun" type="checkbox" data-bind="checked: autorun, clicked: autorun_clicked">
+    </div>
+    <button type="button" data-bind="click: reset_clicked"><span id="lbl_7"></span></button>
+  </fieldset>
+  </form>
 </div>
 
 <div id="params">
+
+  <form>
+    <fieldset>
+      <legend><span id="lbl_3"></span></legend>
+      <fieldset>
+        <legend><span id="lbl_23"></span></legend>
+        <div class="form_group">
+          <label for="prime_rate"><span id="lbl_8"></span>:</label>
+          <input id="prime_rate" type="range" min=0 max=15 step=1 data-bind="value: prime_rate">
+          <span data-bind="text: prime_rate"></span>%
+
+        </div>
+        <div class="form_group">
+          <label for="prime_rate_giro"><span id="lbl_9"></span>:</label>
+          <input id="prime_rate_giro" type="range" min=-10 max=15 step=1 data-bind="value: prime_rate_giro">
+          <span data-bind="text: prime_rate_giro"></span>%
+        </div>
+      </fieldset>
+
+      <!--<div class="form_group">-->
+        <!--<label for="minimal_reserves"><span id="lbl_12"></span>:</label>-->
+        <!--<input id="minimal_reserves" type="range" min=0 max=50 step=1 data-bind="value: minimal_reserves">-->
+        <!--<span data-bind="text: minimal_reserves"></span>%-->
+      <!--</div>-->
+
+      <!--<div class="form_group">-->
+        <!--<label for="cap_req"><span id="lbl_11"></span>:</label>-->
+        <!--<input id="cap_req" type="range" min=0 max=50 step=1 data-bind="value: cap_req">-->
+        <!--<span data-bind="text: cap_req"></span>%-->
+      <!--</div>-->
+
+      <fieldset>
+        <legend><span id="lbl_24"></span></legend>
+      <div class="form_group">
+        <label for="libor"><span id="lbl_10"></span>:</label>
+        <input id="libor" type="range" min=0 max=15 step=1 data-bind="value: libor">
+        <span data-bind="text: libor"></span>%
+      </div>
+
+      <div class="form_group">
+        <label for="credit_interest"><span id="lbl_13"></span>:</label>
+        <input id="credit_interest" type="range" min=0 max=10 step=1 data-bind="value: credit_interest">
+        <span data-bind="text: credit_interest"></span>%
+      </div>
+
+      <div class="form_group">
+        <label for="deposit_interest"><span id="lbl_14"></span>:</label>
+        <input id="deposit_interest" type="range" min=-10 max=10 step=1 data-bind="value: deposit_interest">
+        <span data-bind="text: deposit_interest"></span>%
+      </div>
+
+      <div class="form_group">
+        <label for="deposit_interest_savings"><span id="lbl_15"></span>:</label>
+        <input id="deposit_interest_savings" type="range" min=-10 max=10 step=1 data-bind="value: deposit_interest_savings">
+        <span data-bind="text: deposit_interest_savings"></span>%
+      </div>
+
+      <div class="form_group">
+        <label for="savings_rate"><span id="lbl_16"></span>:</label>
+        <input id="savings_rate" type="range" min=0 max=100 step=1 data-bind="value: savings_rate">
+        <span data-bind="text: savings_rate"></span>%
+      </div>
+      </fieldset>
+
+      <fieldset>
+        <legend><span id="lbl_25"></span></legend>
+      <div class="form_group">
+        <label for="income_tax_rate"><span id="lbl_17"></span>:</label>
+        <input id="income_tax_rate" type="range" min=0 max=100 step=1 data-bind="value: income_tax_rate">
+        <span data-bind="text: income_tax_rate"></span>%
+      </div>
+
+      <div class="form_group">
+        <label for="wealth_tax_rate"><span id="lbl_18"></span>:</label>
+        <input id="wealth_tax_rate" type="range" min=0 max=100 step=1 data-bind="value: wealth_tax_rate">
+        <span data-bind="text: wealth_tax_rate"></span>%
+      </div>
+
+      <div class="form_group">
+        <label for="gov_spending"><span id="lbl_19"></span>:</label>
+        <input id="gov_spending" type="range" min=0 max=100 step=1 data-bind="value: gov_spending">
+        <span data-bind="text: gov_spending"></span>%
+      </div>
+
+      <div class="form_group">
+        <label for="basic_income_rate"><span id="lbl_20"></span>:</label>
+        <input id="basic_income_rate" type="range" min=0 max=100 step=1 data-bind="value: basic_income_rate">
+        <span data-bind="text: basic_income_rate"></span>%
+      </div>
+    </fieldset>
+    <fieldset>
+      <legend><span id="lbl_21"></span></legend>
+    <div class="form_group">
+      <label for="positive_money"><span id="lbl_22"></span>:</label>
+      <input id="positive_money" type="checkbox" data-bind="checked: positive_money, clicked: positive_money_clicked">
+    </div>
+    </fieldset>
+    </fieldset>
+
+  </form>
 </div>
 </div>
 
 <div id="viz">
-  <div id="graphs">
-    <div id="cb_chart"></div> 
-    <div id="banks_total_chart"></div> 
-    <div id="customers_total_chart"></div> 
+  <div id="charts">
+    <div id="main_chart"></div> 
     <div id="stats_chart1"></div>
     <div id="stats_chart2"></div>
     <div id="taxes_chart"></div>
@@ -61,7 +174,7 @@
     <div id="banks_chart"></div>
     <div id="banks_chart2"></div>
     <div id="banks_chart3"></div>
-    <div id="interest_graph" class='graph'></div>
+    <div id="interest_graph"></div>
   </div>
 
   <div id="tables">
@@ -90,10 +203,6 @@
         simulator.autorun_clicked();
     });  
 </script>
-
-<div id="foo" style= "clear: both">
-</div>
-
 <div id="instructions_english">
 <pre>
 
