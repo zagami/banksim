@@ -73,7 +73,6 @@ add_tr("s_a1", DICT["cb_a1"])
 add_tr("s_a2", DICT["cb_l2"])
 add_tr("s_l1", DICT["cb_l4"])
 
-
 #balance sheets
 add_tr("assets", ['assets', 'Aktiven'])
 add_tr("liabilities", ['liabilities', 'Passiven'])
@@ -172,7 +171,7 @@ class Simulator
 
   init_params: ->
     @step = iv(0)
-    @years_per_step =  iv(1)
+    @years_per_step =  iv(5)
     @autorun = iv(false)
     @autorun_id = 0
     @gui_params = ko.mapping.fromJS(@params)
@@ -744,6 +743,7 @@ class ChartVisualizer extends Visualizer
 
 class MoneySupplyChart extends ChartVisualizer
   set_options: ->
+    super
     @chart_type = 'line'
 
   update_data: ->
@@ -773,8 +773,10 @@ class MoneySupplyChart extends ChartVisualizer
     
 class InflationChart extends ChartVisualizer
   set_options: ->
+    super
     @y_label = '%'
     @chart_type = 'line'
+    @legend_visible = true
 
   update_data: ->
     @title = _tr('inflation')
@@ -797,7 +799,9 @@ class InflationChart extends ChartVisualizer
 
 class TaxesChart extends ChartVisualizer
   set_options: ->
+    super
     @chart_type = 'line'
+    @legend_visible = true
 
   update_data: ->
     @title = _tr('chart_tax_0')
@@ -813,6 +817,9 @@ class TaxesChart extends ChartVisualizer
     }]
 
 class WealthDistributionChart extends ChartVisualizer
+  set_options: ->
+    super
+    @chart_type = 'area'
 
   update_data: ->
     @title = _tr('chart_wd_0')
@@ -828,6 +835,11 @@ class WealthDistributionChart extends ChartVisualizer
     }]
 
 class BanksChart extends ChartVisualizer
+  set_options: ->
+    super
+    @chart_type = 'column'
+    @legend_visible = false
+
   update_data: ->
     @title = _tr('banks')
     reserves = (bank.reserves for bank in @banks)
@@ -886,9 +898,9 @@ class MainChart extends ChartVisualizer
     bank_caps = (bank.capital() for bank in @banks).sum()
     interbank_loans = (bank.interbank_loans() for bank in @banks).sum()
     interbank_debts = (bank.interbank_debt() for bank in @banks).sum()
-
     customers = @microeconomy.all_customers()
     nb_deposits = (c.deposit for c in customers).sum()
+    b_deposits = if @cb.positive_money then 0 else nb_deposits
     nb_savings = (c.savings for c in customers).sum()
     nb_loans = (c.loan for c in customers).sum()
     nb_caps = (c.capital() for c in customers).sum()
@@ -943,7 +955,7 @@ class MainChart extends ChartVisualizer
           stack: _tr('liabilities')
       }, {
           name: _tr("b_l3")
-          data: [0, nb_deposits, 0, 0]
+          data: [0, b_deposits, 0, 0]
           stack: _tr('liabilities')
       }, {
           name: _tr("b_l4")
@@ -1017,6 +1029,7 @@ class BanksDebtChart extends ChartVisualizer
 class BanksNumCustomersChart extends ChartVisualizer
   set_options: ->
     @chart_type = 'line'
+    @legend_visible = true
 
   update_data: ->
     @title = _tr('chart_nofc_1')

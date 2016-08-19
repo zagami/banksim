@@ -1,5 +1,5 @@
 NUM_BANKS = 10
-MAX_CUSTOMERS = 400
+MAX_CUSTOMERS = 40
 
 DFLT_INITIAL_DEPOSIT_PER_CUST = 10
 DFLT_INITIAL_SAVINGS_PER_CUST = 0
@@ -744,6 +744,7 @@ class TrxMgr
       bank.cb_debt += bank.interbank_debt()
 
   disable_positive_money: ->
+    console.log "disable_positive_money"
     @cb.positive_money = false
     @stats.reset_ms_series()
     for bank in @banks

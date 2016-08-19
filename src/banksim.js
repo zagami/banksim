@@ -263,7 +263,7 @@ Simulator = (function() {
 
   Simulator.prototype.init_params = function() {
     this.step = iv(0);
-    this.years_per_step = iv(1);
+    this.years_per_step = iv(5);
     this.autorun = iv(false);
     this.autorun_id = 0;
     this.gui_params = ko.mapping.fromJS(this.params);
@@ -1192,6 +1192,7 @@ MoneySupplyChart = (function(superClass) {
   }
 
   MoneySupplyChart.prototype.set_options = function() {
+    MoneySupplyChart.__super__.set_options.apply(this, arguments);
     return this.chart_type = 'line';
   };
 
@@ -1238,8 +1239,10 @@ InflationChart = (function(superClass) {
   }
 
   InflationChart.prototype.set_options = function() {
+    InflationChart.__super__.set_options.apply(this, arguments);
     this.y_label = '%';
-    return this.chart_type = 'line';
+    this.chart_type = 'line';
+    return this.legend_visible = true;
   };
 
   InflationChart.prototype.update_data = function() {
@@ -1279,7 +1282,9 @@ TaxesChart = (function(superClass) {
   }
 
   TaxesChart.prototype.set_options = function() {
-    return this.chart_type = 'line';
+    TaxesChart.__super__.set_options.apply(this, arguments);
+    this.chart_type = 'line';
+    return this.legend_visible = true;
   };
 
   TaxesChart.prototype.update_data = function() {
@@ -1308,6 +1313,11 @@ WealthDistributionChart = (function(superClass) {
   function WealthDistributionChart() {
     return WealthDistributionChart.__super__.constructor.apply(this, arguments);
   }
+
+  WealthDistributionChart.prototype.set_options = function() {
+    WealthDistributionChart.__super__.set_options.apply(this, arguments);
+    return this.chart_type = 'area';
+  };
 
   WealthDistributionChart.prototype.update_data = function() {
     var c, loans, sorted_customers, wealth;
@@ -1352,6 +1362,12 @@ BanksChart = (function(superClass) {
   function BanksChart() {
     return BanksChart.__super__.constructor.apply(this, arguments);
   }
+
+  BanksChart.prototype.set_options = function() {
+    BanksChart.__super__.set_options.apply(this, arguments);
+    this.chart_type = 'column';
+    return this.legend_visible = false;
+  };
 
   BanksChart.prototype.update_data = function() {
     var bank, caps, cb_debts, deposits, interbank_debts, interbank_loans, loans, reserves, savings;
@@ -1494,7 +1510,7 @@ MainChart = (function(superClass) {
   };
 
   MainChart.prototype.update_data = function() {
-    var bank, bank_caps, c, customers, interbank_debts, interbank_loans, nb_caps, nb_deposits, nb_loans, nb_savings;
+    var b_deposits, bank, bank_caps, c, customers, interbank_debts, interbank_loans, nb_caps, nb_deposits, nb_loans, nb_savings;
     this.title = _tr('chart_main_1');
     bank_caps = ((function() {
       var j, len1, ref, results;
@@ -1536,6 +1552,7 @@ MainChart = (function(superClass) {
       }
       return results;
     })()).sum();
+    b_deposits = this.cb.positive_money ? 0 : nb_deposits;
     nb_savings = ((function() {
       var j, len1, results;
       results = [];
@@ -1614,7 +1631,7 @@ MainChart = (function(superClass) {
         stack: _tr('liabilities')
       }, {
         name: _tr("b_l3"),
-        data: [0, nb_deposits, 0, 0],
+        data: [0, b_deposits, 0, 0],
         stack: _tr('liabilities')
       }, {
         name: _tr("b_l4"),
@@ -1746,7 +1763,8 @@ BanksNumCustomersChart = (function(superClass) {
   }
 
   BanksNumCustomersChart.prototype.set_options = function() {
-    return this.chart_type = 'line';
+    this.chart_type = 'line';
+    return this.legend_visible = true;
   };
 
   BanksNumCustomersChart.prototype.update_data = function() {

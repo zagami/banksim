@@ -3,7 +3,7 @@ var Bank, BankCustomer, CentralBank, DFLT_INITIAL_CBDEBT_PER_BANK, DFLT_INITIAL_
 
 NUM_BANKS = 10;
 
-MAX_CUSTOMERS = 400;
+MAX_CUSTOMERS = 40;
 
 DFLT_INITIAL_DEPOSIT_PER_CUST = 10;
 
@@ -1051,6 +1051,7 @@ TrxMgr = (function() {
 
   TrxMgr.prototype.disable_positive_money = function() {
     var bank, cb_debt_reduction, j, len1, ref, results;
+    console.log("disable_positive_money");
     this.cb.positive_money = false;
     this.stats.reset_ms_series();
     ref = this.banks;
