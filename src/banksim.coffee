@@ -104,6 +104,7 @@ add_tr("tab_stats_9", ['number of individuals', 'Anzahl Wirtschaftsteilnehmer'])
 
 add_tr("chart_main_1", ['Overview', 'Übersicht'])
 
+add_tr("chart_ms_1", ['money supply overview', 'Geldmengen Übersicht'])
 add_tr("chart_mshist_1", ['positive money M', 'Vollgeldmenge M'])
 add_tr("chart_mshist_2", DICT["tab_ms_1"])
 
@@ -140,19 +141,20 @@ class Simulator
 
 
     vizArray = [
-      new CentralBankTable(@microeconomy, '#cb_table'),
-      new StatisticsTable(@microeconomy, '#state_table'),
       new MainChart(@microeconomy, '#main_chart'),
-      new MoneySupplyTable(@microeconomy, '#ms_table'),
-      new BanksTable(@microeconomy, '#banks_table'),
+      new MoneySupplyChart1(@microeconomy, '#ms_chart1'),
+      new MoneySupplyChart2(@microeconomy, '#ms_chart2'),
+      new InflationChart(@microeconomy, '#infl_chart'),
+      new TaxesChart(@microeconomy, '#taxes_chart'),
+      new WealthDistributionChart(@microeconomy, '#wealth_chart'),
       new BanksChart(@microeconomy, '#banks_chart'),
       new BanksDebtChart(@microeconomy, '#banks_chart2'),
       new BanksNumCustomersChart(@microeconomy, '#banks_chart3'),
-      new MoneySupplyChart(@microeconomy, '#stats_chart1'),
-      new InflationChart(@microeconomy, '#stats_chart2'),
-      new TaxesChart(@microeconomy, '#taxes_chart'),
-      new WealthDistributionChart(@microeconomy, '#wealth_chart'),
       new InterestGraph(@microeconomy, '#interest_graph'),
+      new CentralBankTable(@microeconomy, '#cb_table'),
+      new MoneySupplyTable(@microeconomy, '#ms_table'),
+      new StatisticsTable(@microeconomy, '#stats_table'),
+      new BanksTable(@microeconomy, '#banks_table'),
     ]
     for v in vizArray
       @visualizerMgr.addViz v
@@ -741,7 +743,46 @@ class ChartVisualizer extends Visualizer
     @update_data()
     @draw_chart()
 
-class MoneySupplyChart extends ChartVisualizer
+class MoneySupplyChart1 extends ChartVisualizer
+  set_options: ->
+    super
+    @legend_visible = false
+
+  update_data: ->
+    @title = _tr('chart_ms_1')
+    cb_giro_banks = @cb.giro_banks()
+    cb_giro_state = @cb.giro_state()
+    #interbank_loans = (bank.interbank_loans() for bank in @banks).sum()
+    #interbank_debts = (bank.interbank_debt() for bank in @banks).sum()
+    customers = @microeconomy.all_customers()
+    nb_deposits = (c.deposit for c in customers).sum()
+    nb_savings = (c.savings for c in customers).sum()
+
+    @categories = ['M0', 'M1', 'M2']
+    @data = [{
+          name: _tr('cb_l1')
+          data: [cb_giro_banks, 0, 0]
+      }, {
+          name: _tr('cb_l2')
+          data: [cb_giro_state, 0, 0]
+      }, {
+          name: _tr('cb_a1')
+          data: [0, 0, 0]
+      }, {
+          name: _tr('b_l3')
+          data: [0, nb_deposits, 0]
+      }, {
+          name: 'M0'
+          data: [0, @stats.m0(), 0]
+      }, {
+          name: _tr('b_l4')
+          data: [0, 0, nb_savings]
+      }, {
+          name: 'M1'
+          data: [0, 0, @stats.m1()]
+    }]
+
+class MoneySupplyChart2 extends ChartVisualizer
   set_options: ->
     super
     @chart_type = 'line'
