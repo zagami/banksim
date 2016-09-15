@@ -105,6 +105,7 @@ add_tr("tab_stats_9", ['number of individuals', 'Anzahl Wirtschaftsteilnehmer'])
 add_tr("chart_main_1", ['Overview', 'Übersicht'])
 
 add_tr("chart_ms_1", ['money supply overview', 'Geldmengen Übersicht'])
+add_tr("chart_mshist_0", ['money supply development', 'Geldmengen Entwicklung'])
 add_tr("chart_mshist_1", ['positive money M', 'Vollgeldmenge M'])
 add_tr("chart_mshist_2", DICT["tab_ms_1"])
 
@@ -788,7 +789,7 @@ class MoneySupplyChart2 extends ChartVisualizer
     @chart_type = 'line'
 
   update_data: ->
-    @title = _tr('money_supply')
+    @title = _tr('chart_mshist_0')
     if @microeconomy.params.positive_money
       @data = [{
           name: _tr('chart_mshist_1')

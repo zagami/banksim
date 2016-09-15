@@ -187,6 +187,8 @@ add_tr("chart_main_1", ['Overview', 'Übersicht']);
 
 add_tr("chart_ms_1", ['money supply overview', 'Geldmengen Übersicht']);
 
+add_tr("chart_mshist_0", ['money supply development', 'Geldmengen Entwicklung']);
+
 add_tr("chart_mshist_1", ['positive money M', 'Vollgeldmenge M']);
 
 add_tr("chart_mshist_2", DICT["tab_ms_1"]);
@@ -1266,7 +1268,7 @@ MoneySupplyChart2 = (function(superClass) {
   };
 
   MoneySupplyChart2.prototype.update_data = function() {
-    this.title = _tr('money_supply');
+    this.title = _tr('chart_mshist_0');
     if (this.microeconomy.params.positive_money) {
       return this.data = [
         {
