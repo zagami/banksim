@@ -315,17 +315,12 @@ class Simulator
     for id, trl of DICT
       @update_label(id)
 
-    if LANG == 'DE'
-      $('#instructions_english').hide()
-      $('#instructions_german').show()
-    else
-      $('#instructions_english').show()
-      $('#instructions_german').hide()
-
   lang_de_clicked: ->
     LANG = 'DE'
     @update_translations()
     @visualizerMgr.visualize()
+    $('#instructions_english').hide()
+    $('#instructions_german').show()
 
   lang_en_clicked: ->
     LANG = 'EN'
@@ -334,6 +329,9 @@ class Simulator
     $('#instructions_english').show()
     $('#instructions_german').hide()
     
+  instructions_clicked: ->
+    $('.instructions').slideToggle()
+
   simulate_clicked: ->
     yps = parseInt(@years_per_step())
     curr_s = parseInt(@step())

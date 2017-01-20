@@ -13,6 +13,7 @@
   <script src="lib/highcharts.js"></script>
   <script src="lib/exporting.js"></script>
 
+
   <!-- vis -->
   <script src="lib/vis.js"></script>
   <link rel="stylesheet" type="text/css" href="lib/vis.css">
@@ -37,11 +38,11 @@
 
   <a href=":blank" data-bind="click: lang_de_clicked">DE</a>
   <a href=":blank" data-bind="click: lang_en_clicked">EN</a>
+  <a href=":blank" data-bind="click: instructions_clicked">Instructions (F1)</a>
   <h1>BankSim</h1>
-<div id="left">
 
-  <h2><span id="lbl_1"></span>: <span data-bind="text: step"></span></h2>
 <div id="controls">
+  <h2><span id="lbl_1"></span>: <span data-bind="text: step"></span></h2>
   <form>
   <fieldset>
     <legend><span id="lbl_2"></span></legend>
@@ -162,7 +163,6 @@
 
   </form>
 </div>
-</div>
 
 <div id="viz">
   <div id="charts">
@@ -188,7 +188,6 @@
 </div>
 
 <script type="text/javascript" src="lib/shortcut.js"></script>
-
 <script>
 <!--http://stackoverflow.com/questions/5061353/how-to-create-a-keyboard-shortcut-for-an-input-button-->
     shortcut.add("n", function() {
@@ -203,10 +202,14 @@
         // Do something
         simulator.autorun_clicked();
     });  
+    shortcut.add("F1", function() {
+      $('.instructions').slideToggle();
+    });  
+    
 </script>
-<div id="instructions_english">
-<pre>
 
+<div class="instructions">
+<div id="instructions_english">
 # Money Simulator
 
 ## Shortcuts
@@ -225,11 +228,11 @@
   * for every transaction type a random number of transactions is performed
 
 ### PAYMENTS, ECONOMIC ACTIVITY BETWEEN NONBANKS
-    - the amount of each payment is random 
-    - 2 random banks are randomly chosen for each transaction
-    - its upper limit is the amount of bank deposits
-    - there is no withdrawal limit except bank deposit
-    - if a bank has not enough reserves to make the transaction it can take a loan from the central bank (prime rate) or from the target bank (libor rate), depending on which rate is lower. Interbank loans are preferred if rates are equal.
+  - the amount of each payment is random 
+  - 2 random banks are randomly chosen for each transaction
+  - its upper limit is the amount of bank deposits
+  - there is no withdrawal limit except bank deposit
+  - if a bank has not enough reserves to make the transaction it can take a loan from the central bank (prime rate) or from the target bank (libor rate), depending on which rate is lower. Interbank loans are preferred if rates are equal.
 
 ### CUSTOMER DEPOSITS AND LOANS
 
@@ -318,13 +321,29 @@ In finance, a loan is a debt provided by an entity (organization or individual) 
 The borrower is obligated to pay back or repay an equal amount of money to the lender at a later time.
 
 A secured loan is a loan in which the borrower pledges some asset (e.g. a car or property) as collateral.
-</pre>
+
 </div>
+
 <div id="instructions_german">
- Dies ist die deutsche Uebersetzung 
+# Dies ist die deutsche Anleitung
+
 - Keine Kontoführungsgebühren
 - Kein Wertschriftengeschaeft (Investmentbanking?)
 - Liquiditätsanforderungen
 </div>
+</div>
+
+<!-- markdown parser -->
+<script src="lib/marked.js"></script>
+<script>
+  // Generate Markdown
+  var d_markdown = document.getElementById('instructions_german').innerHTML;
+  var html = marked(d_markdown);
+  document.getElementById('instructions_german').innerHTML = html;
+  e_markdown = document.getElementById('instructions_english').innerHTML;
+  html = marked(e_markdown);
+  document.getElementById('instructions_english').innerHTML = html;
+</script>
+
 </body>
 </html>
