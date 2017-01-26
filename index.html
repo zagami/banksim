@@ -13,7 +13,6 @@
   <script src="lib/highcharts.js"></script>
   <script src="lib/exporting.js"></script>
 
-
   <!-- vis -->
   <script src="lib/vis.js"></script>
   <link rel="stylesheet" type="text/css" href="lib/vis.css">
@@ -42,11 +41,13 @@
   <h1>BankSim</h1>
 
 <div id="controls">
-  <h2><span id="lbl_1"></span>: <span data-bind="text: step"></span></h2>
+  <div id="year">
+    <span id="lbl_1"></span>: <span data-bind="text: step"></span>
+  </div>
   <form>
   <fieldset>
     <legend><span id="lbl_2"></span></legend>
-    <button type="button" data-bind="click: simulate_clicked"><span id="lbl_4"></span></button>
+    <button id="simulate" type="button" data-bind="click: simulate_clicked"><span id="lbl_4"></span></button>
     <div class="form_group">
       <label for="years_per_step"><span id="lbl_5"></span>:</label>
       <input id="years_per_step" type="range" min=1 max=100 step=5 data-bind="value: years_per_step">
@@ -62,7 +63,6 @@
 </div>
 
 <div id="params">
-
   <form>
     <fieldset>
       <legend><span id="lbl_3"></span></legend>
@@ -166,6 +166,7 @@
 
 <div id="viz">
   <div id="charts">
+    <div id="overview_graph"></div>
     <div id="main_chart"></div> 
     <div id="ms_chart1"></div>
     <div id="ms_chart2"></div>
@@ -220,107 +221,48 @@
 
 ## Assuptions of the simulation
 
-- There is 1 central bank
-- There is a fixed number of banks
-- All money is book money, there is no cash for simplicity
-- Customers have only 1 bank account
-- The simulation runs year by year. For every year, the following steps will be performed:
-  * for every transaction type a random number of transactions is performed
+- There is **1 central bank**
+- There is a fixed number of **10 banks**
+- All money is book money, there is **no cash** for simplicity
+- Customers have only 1 bank account (1 deposit and 1 savings account)
+- Every bank has a random number of customers, **max. 40 customers**
+- Every customer has an **initial deposit of 10**, this money is debt free and is issued by the central bank
 
-### PAYMENTS, ECONOMIC ACTIVITY BETWEEN NONBANKS
-  - the amount of each payment is random 
-  - 2 random banks are randomly chosen for each transaction
-  - its upper limit is the amount of bank deposits
-  - there is no withdrawal limit except bank deposit
-  - if a bank has not enough reserves to make the transaction it can take a loan from the central bank (prime rate) or from the target bank (libor rate), depending on which rate is lower. Interbank loans are preferred if rates are equal.
+## Nonbanks
+- nonbanks can make the following transactions:
+  - pay interest for bank loan
+  - transaction to other nonbank or bank? (economic activity)
+  - redemption of bank loan (partial or complete)
+  - invest money (private equity)
+  - savings deposit
+  - pay ROI (return on investment) on private equity
 
-### CUSTOMER DEPOSITS AND LOANS
+## Central Bank
+- the central bank will provide as many loans as requested by banks
+- loans are not secured by collaterals
+- if a bank has not enough reserves to make the transaction it can take a loan from the central bank (prime rate) or from the target bank (libor rate), depending on which rate is lower. Interbank loans are preferred if rates are equal.
 
-  - the interest rates for deposits and loans are fixed for every bank, there is no market yet
-  - overdrafts: a negative deposit is not possible, this  would be equivalent to a loan
-  - customers are assigned a equal loan at the start
-    * the loans are not yet secured by collaterals
-    * customers don't have to be elligible for a loan
+## Banks
+- the interest rates for deposits and loans are the same for every bank
+- overdrafts: a negative deposit is not possible, this would be equivalent to a loan
+- the banks will provide as many loans as requested by customers
+- loans are not secured by collaterals
+- the libor rate is the same for every bank
+- there is no upper limit for interbank loans 
 
-  - customers can pay back their loans every year:
-    * customers only pay back their loans with their savings if savings rate is below interest rate for loans.
-    * the payback amount is up to the customer, there are no restrictions
-  - customers are saving their money on a savings account, according to a savings rate.
-
-### INTERBANK LOANS
-  - the libor rate is fixed for every bank, there is no market yet
-  - there is no upper limit for interbank loans 
-  - interbank loans are payed back randomly, if reserves allow it
-  - interbank loans are not swapped to central bank loans if libor rate is higher than prime rate
-
-### CENTRAL BANK DEPOSITS AND LOANS
-  - the prime rates are the main parameters of the simulation
-  - interest rates can vary each year
-  - the loans are not yet secured by collaterals of the banks
-  - the banks decide when and how much to payback loans to central banks
-  - the central bank will provide as many loans as requested by banks
-
-### BANKRUPCY OF CUSTOMER
-  - since the loans are not secured, a customer can always extend their loans by the remaining interest debt (compound interest)
-
-### BANKRUPCY OF BANK
-  - a bank cannot get bankrupt, there are no minimal reserves requirements yet, nor capital requirements 
-
-### STATE
-  - the state has a bank account at the central bank
-  - the state can tax the nonbanks by income or wealth
-  - the state cannot tax banks yet
-  - the state can provide a basic income to its citizens
-
-Customers will be subdivided into Persons and Corporations soon.
-
-Transactions in () are not implemented yet
-
-Customer - Customer
-  * payment
-    - innerbank transfer 
-    - interbank transfer 
-      -> triggers interbank settlement
-  * (new private loan) 
-  * (pay interest for private loan) 
-  * (payback private loan)
-
-Bank -> Customer
-  * pay deposit interest
-  * new loan
-   
-Customer -> Bank
-  * loan interest (-> can trigger new customer loan, paying interest with new debt)
-  * payback loan
-
-Bank -> Bank
-  * interbank payment settlement (can trigger new ib or cb loan)
-  * new interbank loan
-  * pay interbank interest (can trigger new ib or cb loan)
-  * payback interbank loan
-
-Central Bank -> Bank
-  * pay interest for giro deposit
-  * new central bank credit
-
-Bank -> Central Bank
-  * pay interest for central bank credit
-  * payback central bank credit
-
-
-# Formulas
-
-VOC:
-personal loans: private Darlehen 
-corporate bonds: Obligation?
-overdraft: if account "overdrawn"
-to default: pleite gehen
-
-In finance, a loan is a debt provided by an entity (organization or individual) to another entity at an interest rate, and evidenced by a note which specifies, among other things, the principal amount, interest rate, and date of repayment. A loan entails the reallocation of the subject asset(s) for a period of time, between the lender and the borrower.
-
-The borrower is obligated to pay back or repay an equal amount of money to the lender at a later time.
-
-A secured loan is a loan in which the borrower pledges some asset (e.g. a car or property) as collateral.
+- since the loans are not secured, a customer can always extend their loans by the remaining interest debt (compound interest)
+- a bank cannot get bankrupt
+- a bank can make the following transactions:
+  - payment to nonbanks (salary, services etc)
+  - invest money (shares of other banks or nonbanks)
+  - pay ROI to nonbanks and other banks
+    
+## State
+- the state has a bank account at the central bank
+- the state can tax the nonbanks by income or wealth
+- the state cannot tax banks yet
+- the state can provide a basic income to its citizens
+- the state can invest money in banks and nonbanks
 
 </div>
 

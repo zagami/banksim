@@ -8,3 +8,8 @@ end
 task :coffee do
 	system("coffee -cbw .")
 end
+
+desc "generate coffeetags"
+task :coffeetags do
+	`coffeetags -f tags src/*.coffee`
+end
