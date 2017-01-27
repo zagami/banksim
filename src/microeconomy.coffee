@@ -1,4 +1,4 @@
-MAX_CUSTOMERS = 40
+MAX_CUSTOMERS = 10
 DFLT_INITIAL_DEPOSIT_PER_CUST = 10
 
 assert = (condition, message) ->
@@ -460,7 +460,6 @@ class TrxMgr
     # the amounts transferred are randomly chosen based on customer deposit
     # random transactions represent economic activity
     num_trx = randomizeInt(1,@params.max_trx)
-    console.log "performing #{num_trx} transactions"
     all_customers = @microeconomy.all_customers()
     num_customers = all_customers.length
     if num_customers < 2
@@ -476,7 +475,6 @@ class TrxMgr
       cust1 = all_customers[cust1_index]
       cust2 = all_customers[cust2_index]
       amount = randomize(0, cust1.deposit)
-      #only positive deposits make sense
       if amount > 0
         @transfer(cust1, cust2, amount)
         #adding transaction to gdp

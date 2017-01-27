@@ -52,13 +52,19 @@ fieldset {
   border: 3px solid black;
 }
 
-#main_chart, #overview_graph {
+#main_chart {
   min-width: 605px;
+}
+
+#overview_graph {
+  min-width: 605px;
+  min-height: 400px;
 }
 
 #tables {
   float: left;
 }
+
 #simulate {
   font-weight: bold;
   color: white;
@@ -96,4 +102,9 @@ legend {
 
 table, th, td {
   border: 1px solid black;
+}
+
+table caption {
+  font-weight: bold;
+  background-color: red;
 }

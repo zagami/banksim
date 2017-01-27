@@ -185,7 +185,7 @@ add_tr("tab_stats_7", ['basic income total', 'Total Grundeinkommen']);
 
 add_tr("tab_stats_8", ['basic income per citizen', 'Grundeinkommen pro Kopf']);
 
-add_tr("tab_stats_9", ['number of individuals', 'Anzahl Wirtschaftsteilnehmer']);
+add_tr("tab_stats_9", ['number of nonbanks', 'Anzahl Wirtschaftsteilnehmer']);
 
 add_tr("chart_main_1", ['Overview', 'Übersicht']);
 
@@ -632,12 +632,21 @@ GraphVisualizer = (function(superClass) {
   GraphVisualizer.prototype.network = null;
 
   function GraphVisualizer(microeconomy, element_id) {
+    var container, data;
     this.microeconomy = microeconomy;
     this.element_id = element_id;
     GraphVisualizer.__super__.constructor.apply(this, arguments);
     this.setOptions();
-    this.buildGraph();
-    this.drawGraph();
+    this.nodesArray = [];
+    this.edgesArray = [];
+    this.edges = new vis.DataSet(this.edgesArray);
+    this.nodes = new vis.DataSet(this.nodesArray);
+    data = {
+      nodes: this.nodes,
+      edges: this.edges
+    };
+    container = document.getElementById(this.element_id.replace('#', ''));
+    this.network = new vis.Network(container, data, this.options);
   }
 
   GraphVisualizer.prototype.setOptions = function() {
@@ -671,101 +680,15 @@ GraphVisualizer = (function(superClass) {
     };
   };
 
-  GraphVisualizer.prototype.buildGraph = function() {
-    this.nodesArray = [];
-    this.edgesArray = [];
-    this.initGraph();
-    assert(this.nodesArray.length > 0, 'Nodes not initialized');
-    assert(this.edgesArray.length > 0, 'Edges not initialized');
-    this.edges = new vis.DataSet(this.edgesArray);
-    return this.nodes = new vis.DataSet(this.nodesArray);
-  };
-
-  GraphVisualizer.prototype.drawGraph = function() {
-    var container, data;
-    data = {
-      nodes: this.nodes,
-      edges: this.edges
-    };
-    container = document.getElementById(this.element_id.replace('#', ''));
-    return this.network = new vis.Network(container, data, this.options);
-  };
-
   GraphVisualizer.prototype.clear = function() {
     GraphVisualizer.__super__.clear.apply(this, arguments);
-    this.nodesArray = [];
-    this.edgesArray = [];
     return $(this.element_id).empty();
-  };
-
-  GraphVisualizer.prototype.addNode = function(id, label, val) {
-    if (val == null) {
-      val = 1;
-    }
-    return this.nodesArray.push({
-      id: id,
-      value: val,
-      label: label
-    });
-  };
-
-  GraphVisualizer.prototype.addEdgeSimple = function(src, tgt) {
-    return this.edgesArray.push({
-      id: src + "_" + tgt,
-      from: src,
-      to: tgt,
-      font: {
-        align: 'bottom'
-      }
-    });
-  };
-
-  GraphVisualizer.prototype.addEdge = function(src, tgt, label) {
-    return this.edgesArray.push({
-      id: src + "_" + tgt,
-      from: src,
-      to: tgt,
-      label: label,
-      arrows: 'to',
-      font: {
-        align: 'bottom'
-      }
-    });
-  };
-
-  GraphVisualizer.prototype.addNode = function(id, label, val) {
-    if (val == null) {
-      val = 1;
-    }
-    assert(this.nodes != null, 'nodes not initialized');
-    return this.nodes.update({
-      id: id,
-      label: label,
-      value: val
-    });
-  };
-
-  GraphVisualizer.prototype.updateEdge = function(src, tgt, label) {
-    var v;
-    assert(this.edges != null, 'edges not initialized');
-    v = 0;
-    if (label != null) {
-      v = label.toFixed(0);
-    }
-    return this.edges.update({
-      id: src + "_" + tgt,
-      from: src,
-      to: tgt,
-      label: v
-    });
   };
 
   GraphVisualizer.prototype.initGraph = function() {};
 
-  GraphVisualizer.prototype.updateGraph = function() {};
-
   GraphVisualizer.prototype.visualize = function() {
-    return this.updateGraph();
+    return this.initGraph();
   };
 
   return GraphVisualizer;
@@ -779,54 +702,124 @@ InterestGraph = (function(superClass) {
     return InterestGraph.__super__.constructor.apply(this, arguments);
   }
 
+  InterestGraph.prototype.setOptions = function() {
+    return this.options = {
+      nodes: {
+        color: {
+          background: "lightblue"
+        },
+        font: {
+          size: 18
+        },
+        borderWidth: 2,
+        shadow: true,
+        mass: 2
+      },
+      layout: {
+        improvedLayout: false,
+        randomSeed: 2
+      },
+      edges: {
+        width: 2,
+        shadow: true,
+        arrows: 'to',
+        font: {
+          align: 'bottom'
+        }
+      },
+      interaction: {
+        zoomView: true,
+        dragNodes: false,
+        dragView: true
+      },
+      physics: {
+        enabled: true
+      }
+    };
+  };
+
   InterestGraph.prototype.initGraph = function() {
-    var b, b_label, c, c_label, cb, cb_label, s, s_label;
-    InterestGraph.__super__.initGraph.apply(this, arguments);
+    var b, b_label, c, c_label, cb, cb_label, ref, ref1, ref2, ref3, ref4, ref5, ref6, ref7, ref8, s, s_label;
     this.title = _tr('money_flow');
     cb_label = _tr("central_bank");
     b_label = _tr("banks");
-    c_label = _tr("nonbanks");
     s_label = _tr("state");
+    c_label = _tr("nonbanks");
     cb = 1;
     b = 2;
     s = 3;
     c = 4;
-    this.addNode(cb, cb_label);
-    this.addNode(b, b_label);
-    this.addNode(s, s_label);
-    this.addNode(c, c_label);
-    this.addEdge(cb, b, 0);
-    this.addEdge(b, cb, 0);
-    this.addEdge(b, c, 0);
-    this.addEdge(s, c, 0);
-    this.addEdge(s, b, 0);
-    this.addEdge(b, s, 0);
-    this.addEdge(c, s, 0);
-    this.addEdge(c, b, 0);
-    return this.addEdge(cb, s, 0);
-  };
-
-  InterestGraph.prototype.updateGraph = function() {
-    var b, b_label, c, c_label, cb, cb_label, s, s_label;
-    cb = 1;
-    b = 2;
-    s = 3;
-    c = 4;
-    cb_label = _tr("central_bank");
-    b_label = _tr("banks");
-    c_label = _tr("nonbanks");
-    s_label = _tr("state");
-    this.updateNode(cb, cb_label);
-    this.updateNode(b, b_label);
-    this.updateNode(s, s_label);
-    this.updateNode(c, c_label);
-    this.updateEdge(cb, b, this.stats.cb_b_flow_series.last());
-    this.updateEdge(b, cb, this.stats.b_cb_flow_series.last());
-    this.updateEdge(b, c, this.stats.b_c_flow_series.last());
-    this.updateEdge(c, b, this.stats.c_b_flow_series.last());
-    this.updateEdge(cb, s, this.stats.cb_s_flow_series.last());
-    this.updateEdge(c, s, this.stats.c_s_flow_series.last());
-    return this.updateEdge(s, c, this.stats.s_c_flow_series.last());
+    this.nodes.update({
+      id: cb,
+      label: cb_label
+    });
+    this.nodes.update({
+      id: b,
+      label: b_label
+    });
+    this.nodes.update({
+      id: s,
+      label: s_label
+    });
+    this.nodes.update({
+      id: c,
+      label: c_label
+    });
+    this.edges.update({
+      id: cb + "_" + b,
+      from: cb,
+      to: b,
+      label: (ref = this.stats.cb_b_flow_series.last()) != null ? ref.toFixed(0) : void 0
+    });
+    this.edges.update({
+      id: b + "_" + cb,
+      from: b,
+      to: cb,
+      label: (ref1 = this.stats.b_cb_flow_series.last()) != null ? ref1.toFixed(0) : void 0
+    });
+    this.edges.update({
+      id: b + "_" + c,
+      from: b,
+      to: c,
+      label: (ref2 = this.stats.b_c_flow_series.last()) != null ? ref2.toFixed(0) : void 0
+    });
+    this.edges.update({
+      id: s + "_" + c,
+      from: s,
+      to: c,
+      label: (ref3 = this.stats.s_c_flow_series.last()) != null ? ref3.toFixed(0) : void 0
+    });
+    this.edges.update({
+      id: s + "_" + b,
+      from: s,
+      to: b,
+      label: (ref4 = this.stats.s_b_flow_series.last()) != null ? ref4.toFixed(0) : void 0
+    });
+    this.edges.update({
+      id: b + "_" + s,
+      from: b,
+      to: s,
+      label: (ref5 = this.stats.b_s_flow_series.last()) != null ? ref5.toFixed(0) : void 0
+    });
+    this.edges.update({
+      id: c + "_" + s,
+      from: c,
+      to: s,
+      label: (ref6 = this.stats.c_s_flow_series.last()) != null ? ref6.toFixed(0) : void 0
+    });
+    this.edges.update({
+      id: c + "_" + b,
+      from: c,
+      to: b,
+      label: (ref7 = this.stats.c_b_flow_series.last()) != null ? ref7.toFixed(0) : void 0
+    });
+    this.edges.update({
+      id: cb + "_" + s,
+      from: cb,
+      to: s,
+      label: (ref8 = this.stats.cb_s_flow_series.last()) != null ? ref8.toFixed(0) : void 0
+    });
+    return this.network.stabilize();
   };
 
   return InterestGraph;
@@ -840,10 +833,8 @@ OverviewGraph = (function(superClass) {
     return OverviewGraph.__super__.constructor.apply(this, arguments);
   }
 
-  OverviewGraph.prototype.initGraph = function() {
-    var b_label, c, c_label, cb, cb_label, i, j, l, ref, results, s, s_label;
-    OverviewGraph.__super__.initGraph.apply(this, arguments);
-    this.options = {
+  OverviewGraph.prototype.setOptions = function() {
+    return this.options = {
       nodes: {
         scaling: {
           min: 1,
@@ -851,24 +842,28 @@ OverviewGraph = (function(superClass) {
           label: {
             enabled: true,
             min: 5,
-            max: 96
+            max: 16
           }
         },
-        shadow: true
+        shadow: false
+      },
+      edges: {
+        width: 1
       },
       layout: {
-        improvedLayout: true,
+        improvedLayout: false,
         hierarchical: {
           enabled: true,
-          levelSeparation: 500,
-          nodeSpacing: 20,
+          levelSeparation: 100,
+          blockShifting: true,
+          nodeSpacing: 7,
           edgeMinimization: false,
           sortMethod: 'directed',
-          parentCentralization: true
+          parentCentralization: false
         }
       },
       interaction: {
-        zoomView: true,
+        zoomView: false,
         dragNodes: true,
         dragView: true
       },
@@ -876,57 +871,60 @@ OverviewGraph = (function(superClass) {
         enabled: false
       }
     };
-    cb_label = _tr("central_bank");
-    c_label = _tr("nonbank");
-    b_label = _tr("bank");
-    s_label = _tr("state");
-    cb = "cbID";
-    s = "stateID";
-    console.log("initGraph");
-    this.addNode(cb, cb_label, 100);
-    this.addNode(s, s_label, 100);
-    this.addEdge(s, cb);
-    results = [];
-    for (i = l = 0, ref = NUM_BANKS; 0 <= ref ? l < ref : l > ref; i = 0 <= ref ? ++l : --l) {
-      this.addNode(i, b_label, 50);
-      this.addEdge(cb, i);
-      results.push((function() {
-        var m, ref1, results1;
-        results1 = [];
-        for (j = m = 0, ref1 = this.banks[i].customers.length; 0 <= ref1 ? m < ref1 : m > ref1; j = 0 <= ref1 ? ++m : --m) {
-          c = (i + 1) * 100 + j;
-          this.addNode(c, c_label, 10);
-          results1.push(this.addEdge(i, c));
-        }
-        return results1;
-      }).call(this));
-    }
-    return results;
   };
 
-  OverviewGraph.prototype.updateGraph = function() {
+  OverviewGraph.prototype.initGraph = function() {
     var b_label, c, c_label, cb, cb_label, i, j, l, ref, results, s, s_label;
+    if (this.nodes.length > 0) {
+      return;
+    }
     cb_label = _tr("central_bank");
     c_label = _tr("nonbank");
     b_label = _tr("bank");
     s_label = _tr("state");
     cb = "cbID";
     s = "stateID";
-    console.log("initGraph");
-    this.updateNode(cb, cb_label, 100);
-    this.updateNode(s, s_label, 100);
-    this.updateEdge(s, cb);
+    this.nodes.update({
+      id: cb,
+      label: cb_label,
+      value: 100
+    });
+    this.nodes.update({
+      id: s,
+      label: s_label,
+      value: 100
+    });
+    this.edges.update({
+      id: s + "_" + cb,
+      from: s,
+      to: cb
+    });
     results = [];
     for (i = l = 0, ref = NUM_BANKS; 0 <= ref ? l < ref : l > ref; i = 0 <= ref ? ++l : --l) {
-      this.updateNode(i, b_label, 50);
-      this.updateEdge(cb, i);
+      this.nodes.update({
+        id: i,
+        label: b_label,
+        value: 50
+      });
+      this.edges.update({
+        id: cb + "_" + i,
+        from: cb,
+        to: i
+      });
       results.push((function() {
         var m, ref1, results1;
         results1 = [];
         for (j = m = 0, ref1 = this.banks[i].customers.length; 0 <= ref1 ? m < ref1 : m > ref1; j = 0 <= ref1 ? ++m : --m) {
           c = (i + 1) * 100 + j;
-          this.updateNode(c, c_label, 10);
-          results1.push(this.updateEdge(i, c));
+          this.nodes.update({
+            id: c,
+            value: 10
+          });
+          results1.push(this.edges.update({
+            id: i + "_" + c,
+            from: i,
+            to: c
+          }));
         }
         return results1;
       }).call(this));
@@ -960,8 +958,7 @@ TableVisualizer = (function(superClass) {
     }
     tr += '</tr>';
     tr = $(tr);
-    $(this.element_id).append(tr);
-    return tr;
+    return this.table.append(tr);
   };
 
   TableVisualizer.prototype.create_header = function() {
@@ -973,14 +970,14 @@ TableVisualizer = (function(superClass) {
       tr += '<th>' + entry + '</th>';
     }
     tr += '</tr>';
-    return $(this.element_id).append(tr);
+    return this.table.append(tr);
   };
 
   TableVisualizer.prototype.draw_table = function() {
-    $(this.element_id).append('<table>');
+    this.table = $('<table></table>');
+    $(this.element_id).append(this.table);
     this.create_table();
-    $(this.element_id).append('<caption>' + this.title + '</caption>');
-    return $(this.element_id).append('</table>');
+    return this.table.append('<caption>' + this.title + '</caption>');
   };
 
   TableVisualizer.prototype.visualize = function() {
@@ -1131,8 +1128,7 @@ BanksTable = (function(superClass) {
   };
 
   BanksTable.prototype.create_bank_row = function(id, bank) {
-    var row;
-    return row = this.create_row(id, 0, bank.reserves.toFixed(2), (bank.reserves / bank.debt_total() * 100).toFixed(0) + '%', bank.interbank_loans().toFixed(2), bank.customer_loans().toFixed(2), bank.cb_debt.toFixed(2), bank.interbank_debt().toFixed(2), bank.customer_deposits().toFixed(2), bank.customer_savings().toFixed(2), bank.capital().toFixed(2), bank.assets_total().toFixed(2), bank.assets_total().toFixed(2), bank.customers.length);
+    return this.create_row(id, 0, bank.reserves.toFixed(2), (bank.reserves / bank.debt_total() * 100).toFixed(0) + '%', bank.interbank_loans().toFixed(2), bank.customer_loans().toFixed(2), bank.cb_debt.toFixed(2), bank.interbank_debt().toFixed(2), bank.customer_deposits().toFixed(2), bank.customer_savings().toFixed(2), bank.capital().toFixed(2), bank.assets_total().toFixed(2), bank.assets_total().toFixed(2), bank.customers.length);
   };
 
   BanksTable.prototype.create_total_row = function() {

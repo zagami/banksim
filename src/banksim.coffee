@@ -4,6 +4,7 @@ LANG = 'EN'
 INFLATION_HIST = 20 #data points of inflation graph
 MONEY_SUPPLY_HIST = 20 #data points of money supply graph
 AUTORUN_DELAY = 2000
+
 COL1 = "red"
 COL2 = "blue"
 COL3 = "green"
@@ -103,7 +104,7 @@ add_tr("tab_stats_5", ['wealth tax', 'Vermögenssteuer'])
 add_tr("tab_stats_6", ['gross domestic product', 'Bruttoinlandsprodukt BIP'])
 add_tr("tab_stats_7", ['basic income total', 'Total Grundeinkommen'])
 add_tr("tab_stats_8", ['basic income per citizen', 'Grundeinkommen pro Kopf'])
-add_tr("tab_stats_9", ['number of individuals', 'Anzahl Wirtschaftsteilnehmer'])
+add_tr("tab_stats_9", ['number of nonbanks', 'Anzahl Wirtschaftsteilnehmer'])
 
 add_tr("chart_main_1", ['Overview', 'Übersicht'])
 
@@ -403,8 +404,18 @@ class GraphVisualizer extends Visualizer
   constructor: (@microeconomy, @element_id) ->
     super
     @setOptions()
-    @buildGraph()
-    @drawGraph()
+    @nodesArray = []
+    @edgesArray = []
+    @edges = new vis.DataSet(@edgesArray)
+    @nodes = new vis.DataSet(@nodesArray)
+    data = {
+      nodes: @nodes,
+      edges: @edges
+    }
+    container = document.getElementById(@element_id.replace('#', ''))
+    @network = new vis.Network(container, data, @options)
+    # @network.stabilize()
+    # @network.startSimulation()
 
   setOptions: ->
     @options = {
@@ -429,181 +440,212 @@ class GraphVisualizer extends Visualizer
         enabled: true
     }
     
-  buildGraph: ->
-    @nodesArray = []
-    @edgesArray = []
-    @initGraph()
-    assert(@nodesArray.length > 0, 'Nodes not initialized')
-    assert(@edgesArray.length > 0, 'Edges not initialized')
-    @edges = new vis.DataSet(@edgesArray)
-    @nodes = new vis.DataSet(@nodesArray)
-
-  drawGraph: ->
-    data = {
-      nodes: @nodes,
-      edges: @edges
-    }
-    container = document.getElementById(@element_id.replace('#', ''))
-    @network = new vis.Network(container, data, @options)
-    # @network.stabilize()
-    # @network.startSimulation()
-
   clear: ->
     super
-    @nodesArray = []
-    @edgesArray = []
     $(@element_id).empty()
 
-  addNode: (id, label, val = 1) ->
-    @nodesArray.push {id: id, value: val, label: label}
-
-  addEdgeSimple: (src, tgt) ->
-    @edgesArray.push {id: src + "_" + tgt, from: src, to: tgt, font: {align: 'bottom'}}
-
-  addEdge: (src, tgt, label) ->
-    @edgesArray.push {id: src + "_" + tgt, from: src, to: tgt, label: label, arrows:'to', font: {align: 'bottom'}}
-
-  addNode: (id, label, val=1) ->
-    assert(@nodes?, 'nodes not initialized')
-    @nodes.update({ id: id, label: label, value: val })
-
-  updateEdge: (src, tgt, label) ->
-    assert(@edges?, 'edges not initialized')
-    v = 0
-    v = label.toFixed(0) if label?
-
-    @edges.update({
-      id: src + "_" + tgt,
-      from: src,
-      to: tgt,
-      label: v
-      })
 
   #override this method
   initGraph: ->
-  #override this method
-  #
-  updateGraph: ->
-
+    # build graph here with @edges.update, @nodes.update
+    
   visualize: ->
-    @updateGraph()
+    @initGraph()
 
 class InterestGraph extends GraphVisualizer
+  setOptions: ->
+    @options =
+      nodes:
+        color:
+          background: "lightblue"
+        font:
+          size: 18
+        borderWidth: 2
+        shadow:true
+        mass: 2
+      layout:
+        improvedLayout: false
+        randomSeed: 2
+      edges:
+        width: 2,
+        shadow:true,
+        arrows: 'to'
+        font:
+          align: 'bottom'
+      interaction:
+        zoomView: true
+        dragNodes: false
+        dragView: true
+      physics:
+        enabled: true
+   
   initGraph: ->
-    super
     @title = _tr('money_flow')
+
     cb_label = _tr("central_bank")
     b_label = _tr("banks")
-    c_label = _tr("nonbanks")
     s_label = _tr("state")
+    c_label = _tr("nonbanks")
     cb = 1
     b = 2
     s = 3
     c = 4
 
-    @addNode(cb, cb_label)
-    @addNode(b, b_label)
-    @addNode(s, s_label)
-    @addNode(c, c_label)
+    @nodes.update(
+      id: cb
+      label: cb_label
+    )
+    @nodes.update(
+      id: b
+      label: b_label
+    )
+    @nodes.update(
+      id: s
+      label: s_label
+    )
+    @nodes.update(
+      id: c
+      label: c_label
+    )
+    @edges.update(
+      id: cb + "_" + b
+      from: cb
+      to: b
+      label: @stats.cb_b_flow_series.last()?.toFixed(0)
+    )
+    @edges.update(
+      id: b + "_" + cb
+      from: b
+      to: cb
+      label: @stats.b_cb_flow_series.last()?.toFixed(0)
+    )
+    @edges.update(
+      id: b + "_" + c
+      from: b
+      to: c
+      label: @stats.b_c_flow_series.last()?.toFixed(0)
+    )
+    @edges.update(
+      id: s + "_" + c
+      from: s
+      to: c
+      label: @stats.s_c_flow_series.last()?.toFixed(0)
+    )
+    @edges.update(
+      id: s + "_" + b
+      from: s
+      to: b
+      label: @stats.s_b_flow_series.last()?.toFixed(0)
+    )
+    @edges.update(
+      id: b + "_" + s
+      from: b
+      to: s
+      label: @stats.b_s_flow_series.last()?.toFixed(0)
+    )
+    @edges.update(
+      id: c + "_" + s
+      from: c
+      to: s
+      label: @stats.c_s_flow_series.last()?.toFixed(0)
+    )
+    @edges.update(
+      id: c + "_" + b
+      from: c
+      to: b
+      label: @stats.c_b_flow_series.last()?.toFixed(0)
+    )
+    @edges.update(
+      id: cb + "_" + s
+      from: cb
+      to: s
+      label: @stats.cb_s_flow_series.last()?.toFixed(0)
+    )
 
-    @addEdge(cb, b, 0)
-    @addEdge(b, cb, 0)
-    @addEdge(b, c, 0)
-    @addEdge(s, c, 0)
-    @addEdge(s, b, 0)
-    @addEdge(b, s, 0)
-    @addEdge(c, s, 0)
-    @addEdge(c, b, 0)
-    @addEdge(cb, s, 0)
-
-  updateGraph: ->
-    cb = 1
-    b = 2
-    s = 3
-    c = 4
-    cb_label = _tr("central_bank")
-    b_label = _tr("banks")
-    c_label = _tr("nonbanks")
-    s_label = _tr("state")
-    @updateNode(cb, cb_label)
-    @updateNode(b, b_label)
-    @updateNode(s, s_label)
-    @updateNode(c, c_label)
-
-    @updateEdge(cb, b, @stats.cb_b_flow_series.last())
-    @updateEdge(b, cb, @stats.b_cb_flow_series.last())
-    @updateEdge(b, c, @stats.b_c_flow_series.last())
-    @updateEdge(c, b, @stats.c_b_flow_series.last())
-    @updateEdge(cb, s, @stats.cb_s_flow_series.last())
-    @updateEdge(c, s, @stats.c_s_flow_series.last())
-    @updateEdge(s, c, @stats.s_c_flow_series.last())
-
+    @network.stabilize()
+    # @network.startSimulation()
+    #
 class OverviewGraph extends GraphVisualizer
-  initGraph: ->
-    super
+  setOptions: ->
     @options = {
       nodes:
         scaling:
           min: 1
-          max: 100 
-          label: 
+          max: 100
+          label:
             enabled: true
             min: 5
-            max: 96
-        shadow:true
+            max: 16
+        shadow: false
+      edges:
+        width: 1
       layout:
-        improvedLayout: true
+        improvedLayout: false
         hierarchical:
           enabled: true
-          levelSeparation: 500
-          nodeSpacing: 20
+          # direction: 'LR'
+          levelSeparation: 100
+          blockShifting: true
+          nodeSpacing: 7
           edgeMinimization: false
           sortMethod: 'directed'
-          parentCentralization: true
+          parentCentralization: false
       interaction:
-        zoomView: true
+        zoomView: false
         dragNodes: true
         dragView: true
       physics:
         enabled: false
     }
-    
-    cb_label = _tr("central_bank")
-    c_label = _tr("nonbank")
-    b_label = _tr("bank")
-    s_label = _tr("state")
-    cb = "cbID"
-    s = "stateID"
-    console.log "initGraph"
-    @addNode(cb, cb_label, 100)
-    @addNode(s, s_label, 100)
-    @addEdge(s, cb)
-    for i in [0...NUM_BANKS]
-      @addNode(i, b_label, 50)
-      @addEdge(cb, i)
-      for j in [0...@banks[i].customers.length]
-        c = (i+1)*100+j
-        @addNode(c, c_label, 10)
-        @addEdge(i,c)
 
-  updateGraph: ->
+  initGraph: ->
+    if @nodes.length > 0
+      return
+
     cb_label = _tr("central_bank")
     c_label = _tr("nonbank")
     b_label = _tr("bank")
     s_label = _tr("state")
     cb = "cbID"
     s = "stateID"
-    console.log "initGraph"
-    @updateNode(cb, cb_label, 100)
-    @updateNode(s, s_label, 100)
-    @updateEdge(s, cb)
+    @nodes.update(
+      id: cb
+      label: cb_label
+      value: 100
+    )
+    @nodes.update(
+      id: s
+      label: s_label
+      value: 100
+    )
+    @edges.update(
+      id: s + "_" + cb
+      from: s
+      to: cb
+    )
+
     for i in [0...NUM_BANKS]
-      @updateNode(i, b_label, 50)
-      @updateEdge(cb, i)
+      @nodes.update(
+        id: i
+        label: b_label
+        value: 50
+      )
+      @edges.update(
+        id: cb + "_" + i
+        from: cb
+        to: i
+      )
       for j in [0...@banks[i].customers.length]
         c = (i+1)*100+j
-        @updateNode(c, c_label, 10)
-        @updateEdge(i,c)
+        @nodes.update(
+          id: c
+          value: 10
+        )
+        @edges.update(
+          id: i + "_" + c
+          from: i
+          to: c
+        )
 
 class TableVisualizer extends Visualizer
   clear: ->
@@ -615,20 +657,19 @@ class TableVisualizer extends Visualizer
     tr += '<td>' + entry + '</td>' for entry in entries
     tr +='</tr>'
     tr = $(tr)
-    $(@element_id).append(tr)
-    tr
+    @table.append(tr)
 
   create_header: (entries...) ->
     tr = '<tr>'
     tr += '<th>' + entry + '</th>' for entry in entries
     tr +='</tr>'
-    $(@element_id).append(tr)
+    @table.append(tr)
 
   draw_table: ->
-    $(@element_id).append( '<table>' )
+    @table = $('<table></table>')
+    $(@element_id).append(@table)
     @create_table()
-    $(@element_id).append( '<caption>' + @title + '</caption>' )
-    $(@element_id).append('</table>')
+    @table.append( '<caption>' + @title + '</caption>' )
 
   visualize: ->
     @clear()
@@ -725,7 +766,7 @@ class BanksTable extends TableVisualizer
     )
 
   create_bank_row: (id, bank) ->
-    row = @create_row(
+    @create_row(
       id,
       0,
       bank.reserves.toFixed(2),
@@ -894,6 +935,7 @@ class MoneySupplyChart2 extends ChartVisualizer
           data: @stats.interbank_volume_series[-MONEY_SUPPLY_HIST..]
       }]
     return
+
 class InflationChart extends ChartVisualizer
   set_options: ->
     super
@@ -920,6 +962,7 @@ class InflationChart extends ChartVisualizer
           data: @stats.m2_inflation_series[-INFLATION_HIST..]
       }]
     return
+
 class TaxesChart extends ChartVisualizer
   set_options: ->
     super
