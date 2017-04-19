@@ -222,16 +222,26 @@
 ## Assuptions of the simulation
 
 - There is **1 central bank**
-- There is a fixed number of **10 banks**
+- There is a fixed number of **banks**
+- Every bank has a random number of customers (**nonbanks**)
 - All money is book money, there is **no cash** for simplicity
-- Customers have only 1 bank account (1 deposit and 1 savings account)
-- Every bank has a random number of customers, **max. 40 customers**
-- Every customer has an **initial deposit of 10**, this money is debt free and is issued by the central bank
+- Nonbanks have only 1 bank account (1 deposit and 1 savings account)
+- Every customer has an *initial deposit*, this money is debt free and is issued by the central bank
+
+every year the following steps are made:
+
+choose all participants vs choose only random subset?
+pay interst every year? to everybody? which sequence? 
+ choose 2 random participants (state s, central bank cb, banks b, nonbanks nb)
+ do the following transactions in random sequence:
+ - pay interest for creditors if in debt
+ - transaction of random amount
 
 ## Nonbanks
 - nonbanks can make the following transactions:
-  - pay interest for bank loan
-  - transaction to other nonbank or bank? (economic activity)
+  - pay interest to creditors (bank, nonbanks)
+  - pay taxes
+  - transaction to other nonbank or bank (economic activity)
   - redemption of bank loan (partial or complete)
   - invest money (private equity)
   - savings deposit
@@ -260,8 +270,7 @@
 ## State
 - the state has a bank account at the central bank
 - the state can tax the nonbanks by income or wealth
-- the state cannot tax banks yet
-- the state can provide a basic income to its citizens
+- the state can provide a basic income to nonbanks
 - the state can invest money in banks and nonbanks
 
 </div>

@@ -445,7 +445,11 @@ class TrxMgr
     # bank loan management and Basel II requirements
     @manage_bank_debt()
     @pay_dividends()
+    
+    # state
     @collect_taxes()
+
+    # statistics
     @make_statistics()
 
   reset_earnings: ->
