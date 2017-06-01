@@ -2,14 +2,14 @@ task :default => [:run]
 
 desc "run Specrunner"
 task :test do
-	`open SpecRunner.html`
+  `open ./spec/SpecRunner.html`
 end
 
 task :coffee do
-	system("coffee -cbw .")
+	`coffee -cbw .`
 end
 
 desc "generate coffeetags"
-task :coffeetags do
-	`coffeetags -f tags src/*.coffee`
+task :tags do
+  `coffeetags -f ./src/tags src/*.coffee`
 end

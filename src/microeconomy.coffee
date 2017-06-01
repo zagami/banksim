@@ -7,9 +7,10 @@ assert = (condition, message) ->
     if (typeof Error != "undefined")
       e = new Error(message)
       console.log e.stack
-      alert message
       throw e
-    throw message
+    else
+      alert message
+      throw message
 
 randomize = (from, to) ->
   x = to - from

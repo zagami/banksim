@@ -183,6 +183,7 @@ class Simulator
     @autorun = iv(false)
     @autorun_id = 0
     @gui_params = ko.mapping.fromJS(@params)
+
     @prime_rate = ko.computed({
       read: =>
         (@gui_params.prime_rate() * 100).toFixed(1)
