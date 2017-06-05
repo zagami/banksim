@@ -1,120 +1,81 @@
 $ = require('jquery')
-Highcharts = require('highcharts')
 vis = require('vis') 
-me = require('./microeconomy.coffee')
-
-
-Bank = me.Bank
-BankCustomer = me.BankCustomer
-CentralBank = me.CentralBank
-Statistics = me.Statistics
-MicroEconomy = me.MicroEconomy
-State = me.State
-Params = me.Params
-TrxMgr = me.TrxMgr
-InterbankMarket = me.InterbankMarket
-
-NUM_BANKS = 10
-
-LANG = 'EN'
-
-_tr = (key) ->
-  for k, t of DICT
-    if k == key
-      return DICT[k][0] if LANG == 'EN'
-      return DICT[k][1] if LANG == 'DE'
-  console.log "TODO: translate - #{key}"
-  return "TODO"
-  
-
-DICT = []
-
-add_tr = (key, trans) ->
-  DICT[key] = trans
 
 #params
-add_tr("lbl_8", ['prime rate', 'Leitzins'])
-add_tr("lbl_9", ['prime rate deposits', 'Leitzins Reserven'])
-add_tr("lbl_10", ['LIBOR'])
-add_tr("lbl_13", ['loan interest', 'Kreditzinsen'])
-add_tr("lbl_14", ['deposit interest', 'Guthabenszinsen Zahlungskonto'])
-add_tr("lbl_15", ['deposit interest savings', 'Guthabenszinsen Sparkonto'])
-add_tr("lbl_23", ['Central Bank', 'Zentralbank'])
+("lbl_8", ['prime rate', 'Leitzins'])
+("lbl_9", ['prime rate deposits', 'Leitzins Reserven'])
+("lbl_10", ['LIBOR'])
+("lbl_13", ['loan interest', 'Kreditzinsen'])
+("lbl_14", ['deposit interest', 'Guthabenszinsen Zahlungskonto'])
+("lbl_15", ['deposit interest savings', 'Guthabenszinsen Sparkonto'])
+("lbl_23", ['Central Bank', 'Zentralbank'])
 #main chart
-add_tr("cb_a1", ["debt free money", "schuldfreies ZB Geld"])
-add_tr("cb_a2", ["loans to banks", "Kredite an Banken"])
-add_tr("cb_l1", ["giro banks", "Giroguthaben Banken"])
-add_tr("cb_l2", ["giro state", "Giroguthaben Staat"])
-add_tr("cb_l3", ["giro non-banks", "Giroguthaben Nichtbanken"])
-add_tr("cb_l4", ["capital", "Eigenkapital"])
-add_tr("b_a1", DICT["cb_a1"])
-add_tr("b_a2", DICT["cb_l1"])
-add_tr("b_a3", ["loans to banks", "Kredite an Banken"])
-add_tr("b_a4", ["loans to non-banks", "Kredite an Nichtbanken"])
-add_tr("b_l1", ["debt to central bank", "Verbindlichkeit an Zentralbank"])
-add_tr("b_l2", ["debt to banks", "Verbindlichkeit an Banken"])
-add_tr("b_l3", ["deposits", "Girokonten"])
-add_tr("b_l4", ["savings", "Sparkonten"])
-add_tr("b_l5", DICT["cb_l4"])
-add_tr("nb_a1", DICT["cb_a1"])
-add_tr("nb_a2", DICT["b_l3"])
-add_tr("nb_a3", DICT["b_l4"])
-add_tr("nb_l1", DICT["b_l2"])
-add_tr("nb_l2", DICT["cb_l4"])
-add_tr("s_a1", DICT["cb_a1"])
-add_tr("s_a2", DICT["cb_l2"])
-add_tr("s_l1", DICT["cb_l4"])
-
+("cb_a1", ["debt free money", "schuldfreies ZB Geld"])
+("cb_a2", ["loans to banks", "Kredite an Banken"])
+("cb_l1", ["giro banks", "Giroguthaben Banken"])
+("cb_l2", ["giro state", "Giroguthaben Staat"])
+("cb_l3", ["giro non-banks", "Giroguthaben Nichtbanken"])
+("cb_l4", ["capital", "Eigenkapital"])
+("b_a1", DICT["cb_a1"])
+("b_a2", DICT["cb_l1"])
+("b_a3", ["loans to banks", "Kredite an Banken"])
+("b_a4", ["loans to non-banks", "Kredite an Nichtbanken"])
+("b_l1", ["debt to central bank", "Verbindlichkeit an Zentralbank"])
+("b_l2", ["debt to banks", "Verbindlichkeit an Banken"])
+("b_l3", ["deposits", "Girokonten"])
+("b_l4", ["savings", "Sparkonten"])
+("b_l5", DICT["cb_l4"])
+("nb_a1", DICT["cb_a1"])
+("nb_a2", DICT["b_l3"])
+("nb_a3", DICT["b_l4"])
+("nb_l1", DICT["b_l2"])
+("nb_l2", DICT["cb_l4"])
+("s_a1", DICT["cb_a1"])
+("s_a2", DICT["cb_l2"])
+("s_l1", DICT["cb_l4"])
 #balance sheets
-add_tr("assets", ['assets', 'Aktiven'])
-add_tr("liabilities", ['liabilities', 'Passiven'])
+("assets", ['assets', 'Aktiven'])
+("liabilities", ['liabilities', 'Passiven'])
+("central_bank", ["central bank", "Zentralbank"])
+("banks", ['banks', "Banken"])
+("bank", ['bank', "Bank"])
+("nonbanks", ['non-banks', "Nichtbanken"])
+("state", ['state', 'Staat'])
+("money_supply", ['money supply', "Geldmenge"])
+("interest", ['interest', "Zins"])
+("inflation", ['inflation', 'Inflation'])
+("money_flow", ['flow of money', 'Geldfluss'])
 
-add_tr("central_bank", ["central bank", "Zentralbank"])
-add_tr("banks", ['banks', "Banken"])
-add_tr("bank", ['bank', "Bank"])
-add_tr("nonbanks", ['non-banks', "Nichtbanken"])
-add_tr("state", ['state', 'Staat'])
-add_tr("money_supply", ['money supply', "Geldmenge"])
-add_tr("interest", ['interest', "Zins"])
-add_tr("inflation", ['inflation', 'Inflation'])
-add_tr("money_flow", ['flow of money', 'Geldfluss'])
+("tab_ms_1", ['interbank volume', 'Interbankenvolumen'])
+("tab_banks_1", ['number of customers', 'Anzahl Kunden'])
+("tab_stats_0", ['statistics', "Statistiken"])
+("tab_stats_1", ['total income', 'Einkommen'])
+("tab_stats_2", ['total expenses', 'Ausgaben'])
+("tab_stats_3", ['average income', 'Durchschnittseinkommen'])
+("tab_stats_4", ['income tax', 'Einkommenssteuer'])
+("tab_stats_5", ['wealth tax', 'Vermögenssteuer'])
+("tab_stats_6", ['gross domestic product', 'Bruttoinlandsprodukt BIP'])
+("tab_stats_7", ['basic income total', 'Total Grundeinkommen'])
+("tab_stats_8", ['basic income per citizen', 'Grundeinkommen pro Kopf'])
+("tab_stats_9", ['number of nonbanks', 'Anzahl Wirtschaftsteilnehmer'])
 
+("chart_main_1", ['Overview', 'Übersicht'])
 
-add_tr("tab_ms_1", ['interbank volume', 'Interbankenvolumen'])
-add_tr("tab_banks_1", ['number of customers', 'Anzahl Kunden'])
+("chart_ms_1", ['money supply overview', 'Geldmengen Übersicht'])
+("chart_mshist_0", ['money supply development', 'Geldmengen Entwicklung'])
+("chart_mshist_1", ['positive money M', 'Vollgeldmenge M'])
+("chart_mshist_2", DICT["tab_ms_1"])
+("chart_bd_1", ['bank debt', 'Bankverschuldung'])
+("chart_tax_0", ['taxes', 'Steuern'])
+("chart_tax_1", ['income tax', 'Einkommenssteuer'])
+("chart_tax_2", ['wealth tax', 'Vermögenssteuer'])
+("chart_tax_3", ['basic income', 'Grundeinkommen'])
 
-add_tr("tab_stats_0", ['statistics', "Statistiken"])
-add_tr("tab_stats_1", ['total income', 'Einkommen'])
-add_tr("tab_stats_2", ['total expenses', 'Ausgaben'])
-add_tr("tab_stats_3", ['average income', 'Durchschnittseinkommen'])
-
-add_tr("tab_stats_4", ['income tax', 'Einkommenssteuer'])
-add_tr("tab_stats_5", ['wealth tax', 'Vermögenssteuer'])
-add_tr("tab_stats_6", ['gross domestic product', 'Bruttoinlandsprodukt BIP'])
-add_tr("tab_stats_7", ['basic income total', 'Total Grundeinkommen'])
-add_tr("tab_stats_8", ['basic income per citizen', 'Grundeinkommen pro Kopf'])
-add_tr("tab_stats_9", ['number of nonbanks', 'Anzahl Wirtschaftsteilnehmer'])
-
-add_tr("chart_main_1", ['Overview', 'Übersicht'])
-
-add_tr("chart_ms_1", ['money supply overview', 'Geldmengen Übersicht'])
-add_tr("chart_mshist_0", ['money supply development', 'Geldmengen Entwicklung'])
-add_tr("chart_mshist_1", ['positive money M', 'Vollgeldmenge M'])
-add_tr("chart_mshist_2", DICT["tab_ms_1"])
-
-add_tr("chart_bd_1", ['bank debt', 'Bankverschuldung'])
-
-add_tr("chart_tax_0", ['taxes', 'Steuern'])
-add_tr("chart_tax_1", ['income tax', 'Einkommenssteuer'])
-add_tr("chart_tax_2", ['wealth tax', 'Vermögenssteuer'])
-add_tr("chart_tax_3", ['basic income', 'Grundeinkommen'])
-
-add_tr("chart_wd_0", ['inequality', 'Soziale Ungleichheit'])
-add_tr("chart_wd_1", ['wealth distribution', 'Vermögensverteilung'])
-add_tr("chart_wd_2", ['debt distribution', 'Schuldenverteilung'])
-
-add_tr("chart_nofc_1", ['reserves / customer ratio', 'Reserven im Verhältnis zu Bankkunden'])
-add_tr("chart_nofc_2", ['number of customers', 'Anzahl Kunden'])
+("chart_wd_0", ['inequality', 'Soziale Ungleichheit'])
+("chart_wd_1", ['wealth distribution', 'Vermögensverteilung'])
+("chart_wd_2", ['debt distribution', 'Schuldenverteilung'])
+("chart_nofc_1", ['reserves / customer ratio', 'Reserven im Verhältnis zu Bankkunden'])
+("chart_nofc_2", ['number of customers', 'Anzahl Kunden'])
 
 
 class GraphVisualizer extends Visualizer
