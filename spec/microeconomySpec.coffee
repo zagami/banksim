@@ -1,3 +1,16 @@
+
+me = require('../src/microeconomy.js')
+
+Bank = me.Bank
+BankCustomer = me.BankCustomer
+CentralBank = me.CentralBank
+Statistics = me.Statistics
+MicroEconomy = me.MicroEconomy
+State = me.State
+Params = me.Params
+TrxMgr = me.TrxMgr
+InterbankMarket = me.InterbankMarket
+
 test = {}
 init_mini_environment = ->
   test = {}

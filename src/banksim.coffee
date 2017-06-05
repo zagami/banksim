@@ -1,14 +1,22 @@
+$ = require('jquery')
+Highcharts = require('highcharts')
+vis = require('vis') 
+me = require('./microeconomy.coffee')
+
+
+Bank = me.Bank
+BankCustomer = me.BankCustomer
+CentralBank = me.CentralBank
+Statistics = me.Statistics
+MicroEconomy = me.MicroEconomy
+State = me.State
+Params = me.Params
+TrxMgr = me.TrxMgr
+InterbankMarket = me.InterbankMarket
+
 NUM_BANKS = 10
 
 LANG = 'EN'
-INFLATION_HIST = 20 #data points of inflation graph
-MONEY_SUPPLY_HIST = 20 #data points of money supply graph
-AUTORUN_DELAY = 2000
-
-COL1 = "red"
-COL2 = "blue"
-COL3 = "green"
-COL4 = "yellow"
 
 _tr = (key) ->
   for k, t of DICT
@@ -24,33 +32,14 @@ DICT = []
 add_tr = (key, trans) ->
   DICT[key] = trans
 
-#controls
-add_tr("lbl_1", ["Year", "Jahr"])
-add_tr("lbl_2", ["Controls", "Steuerung"])
-add_tr("lbl_3", ['Parameters', 'Parameter'])
-add_tr("lbl_4", ['Simulate', 'Simulieren'])
-add_tr("lbl_5", ['years per step', 'Jahre pro Schritt'])
-add_tr("lbl_6", ['autorun'])
-add_tr("lbl_7", ['Reset'])
 #params
 add_tr("lbl_8", ['prime rate', 'Leitzins'])
 add_tr("lbl_9", ['prime rate deposits', 'Leitzins Reserven'])
 add_tr("lbl_10", ['LIBOR'])
-add_tr("lbl_11", ['capital requirement', 'Eigenkapitalvorschrift'])
-add_tr("lbl_12", ['minimal reserves', 'Mindestreserve'])
 add_tr("lbl_13", ['loan interest', 'Kreditzinsen'])
 add_tr("lbl_14", ['deposit interest', 'Guthabenszinsen Zahlungskonto'])
 add_tr("lbl_15", ['deposit interest savings', 'Guthabenszinsen Sparkonto'])
-add_tr("lbl_16", ['savings rate', 'Sparquote'])
-add_tr("lbl_17", ['income tax rate', 'Einkommenssteuersatz'])
-add_tr("lbl_18", ['wealth tax rate', 'Vermögenssteuersatz'])
-add_tr("lbl_19", ['government spending', 'Staatsausgaben'])
-add_tr("lbl_20", ['basic income', 'Grundeinkommen'])
-add_tr("lbl_21", ['positive money', 'Vollgeld'])
-add_tr("lbl_22", ['On/Off', 'Ein/Aus'])
 add_tr("lbl_23", ['Central Bank', 'Zentralbank'])
-add_tr("lbl_24", ['Banks', 'Banken'])
-add_tr("lbl_25", ['State', 'Staat'])
 #main chart
 add_tr("cb_a1", ["debt free money", "schuldfreies ZB Geld"])
 add_tr("cb_a2", ["loans to banks", "Kredite an Banken"])
@@ -127,277 +116,6 @@ add_tr("chart_wd_2", ['debt distribution', 'Schuldenverteilung'])
 add_tr("chart_nofc_1", ['reserves / customer ratio', 'Reserven im Verhältnis zu Bankkunden'])
 add_tr("chart_nofc_2", ['number of customers', 'Anzahl Kunden'])
 
-  
-iv = (val) ->
-  ko.observable(val)
-
-class Simulator
-  constructor: ->
-    @update_translations()
-    @init()
-
-  init: ->
-    banks = (Bank::get_random_bank() for i in [1..NUM_BANKS])
-    state = new State()
-    cb = new CentralBank(state, banks)
-    @params = new Params()
-    @microeconomy = new MicroEconomy(state, cb, banks, @params)
-    @trx_mgr = new TrxMgr(@microeconomy)
-    @visualizerMgr = new VisualizerMgr()
-
-    vizArray = [
-      new MainChart(@microeconomy, '#main_chart'),
-      new MoneySupplyChart1(@microeconomy, '#ms_chart1'),
-      new MoneySupplyChart2(@microeconomy, '#ms_chart2'),
-      new InflationChart(@microeconomy, '#infl_chart'),
-      new TaxesChart(@microeconomy, '#taxes_chart'),
-      new WealthDistributionChart(@microeconomy, '#wealth_chart'),
-      new BanksChart(@microeconomy, '#banks_chart'),
-      new BanksDebtChart(@microeconomy, '#banks_chart2'),
-      new BanksNumCustomersChart(@microeconomy, '#banks_chart3'),
-      new OverviewGraph(@microeconomy, '#overview_graph'),
-      new InterestGraph(@microeconomy, '#interest_graph'),
-      new CentralBankTable(@microeconomy, '#cb_table'),
-      new MoneySupplyTable(@microeconomy, '#ms_table'),
-      new StatisticsTable(@microeconomy, '#stats_table'),
-      new BanksTable(@microeconomy, '#banks_table'),
-    ]
-    for v in vizArray
-      @visualizerMgr.addViz v
-     
-    @init_params()
-
-  simulate: (years) ->
-    @simulate_one_year() for [1..years]
-
-  simulate_one_year: ->
-    @trx_mgr.one_year()
-    
-  reset: ->
-    InterbankMarket::reset()
-    @init()
-
-  init_params: ->
-    @step = iv(0)
-    @years_per_step =  iv(5)
-    @autorun = iv(false)
-    @autorun_id = 0
-    @gui_params = ko.mapping.fromJS(@params)
-    @prime_rate = ko.computed({
-      read: =>
-        (@gui_params.prime_rate() * 100).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.prime_rate(newval)
-        @params.prime_rate = newval
-    }, this)
-
-    @prime_rate_giro = ko.computed({
-      read: =>
-        ( @gui_params.prime_rate_giro() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.prime_rate_giro(newval)
-        @params.prime_rate_giro = newval
-    }, this)
-
-    @libor = ko.computed({
-      read: =>
-        ( @gui_params.libor() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.libor(newval)
-        @params.libor = newval
-    }, this)
-
-    @cap_req = ko.computed({
-      read: =>
-        ( @gui_params.cap_req() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.cap_req(newval)
-        @params.cap_req = newval
-    }, this)
-
-    @minimal_reserves = ko.computed({
-      read: =>
-        ( @gui_params.minimal_reserves() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.minimal_reserves(newval)
-        @params.minimal_reserves = newval
-    }, this)
-
-    @credit_interest = ko.computed({
-      read: =>
-        ( @gui_params.credit_interest() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.credit_interest(newval)
-        @params.credit_interest = newval
-    }, this)
-
-    @deposit_interest = ko.computed({
-      read: =>
-        ( @gui_params.deposit_interest() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.deposit_interest(newval)
-        @params.deposit_interest = newval
-    }, this)
-
-    @deposit_interest_savings = ko.computed({
-      read: =>
-        ( @gui_params.deposit_interest_savings() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.deposit_interest_savings(newval)
-        @params.deposit_interest_savings = newval
-    }, this)
-
-    @savings_rate = ko.computed({
-      read: =>
-        ( @gui_params.savings_rate() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.savings_rate(newval)
-        @params.savings_rate = newval
-    }, this)
-
-    @income_tax_rate = ko.computed({
-      read: =>
-        ( @gui_params.income_tax_rate() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.income_tax_rate(newval)
-        @params.income_tax_rate = newval
-    }, this)
-
-    @wealth_tax_rate = ko.computed({
-      read: =>
-        ( @gui_params.wealth_tax_rate() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.wealth_tax_rate(newval)
-        @params.wealth_tax_rate = newval
-    }, this)
-
-    @gov_spending = ko.computed({
-      read: =>
-        ( @gui_params.gov_spending() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.gov_spending(newval)
-        @params.gov_spending= newval
-    }, this)
-
-    @basic_income_rate = ko.computed({
-      read: =>
-        ( @gui_params.basic_income_rate() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.basic_income_rate(newval)
-        @params.basic_income_rate = newval
-    }, this)
-
-    @positive_money = ko.computed({
-      read: =>
-        @gui_params.positive_money()
-      write: (value) =>
-        @gui_params.positive_money(value)
-        @params.positive_money= value
-    }, this)
-
-  # functions
-  reset_params: ->
-    @step(0)
-
-  update_label: (id) ->
-    if $('#' + id).length > 0
-      $('#' + id).text(_tr(id))
-
-  update_translations: ->
-    for id, trl of DICT
-      @update_label(id)
-
-  lang_de_clicked: ->
-    LANG = 'DE'
-    @update_translations()
-    @visualizerMgr.visualize()
-    $('#instructions_english').hide()
-    $('#instructions_german').show()
-
-  lang_en_clicked: ->
-    LANG = 'EN'
-    @update_translations()
-    @visualizerMgr.visualize()
-    $('#instructions_english').show()
-    $('#instructions_german').hide()
-    
-  instructions_clicked: ->
-    $('.instructions').slideToggle()
-
-  simulate_clicked: ->
-    yps = parseInt(@years_per_step())
-    curr_s = parseInt(@step())
-    @step(yps + curr_s)
-    @simulate(yps)
-    @visualizerMgr.visualize()
-
-  toggle_autorun: ->
-    if not @autorun_id
-      @autorun_id = setInterval("simulator.simulate_clicked()", AUTORUN_DELAY)
-    else
-      clearInterval(@autorun_id)
-      @autorun_id = null
-  
-  autorun_clicked: ->
-    #needed for keyboard event
-    if not @autorun() and not @autorun_id
-      @autorun(true)
-    if @autorun() and @autorun_id
-      @autorun(false)
-    @toggle_autorun()
-    return true# needed by knockout
-
-  reset_clicked: ->
-    @reset_params()
-    @reset()
-    #visualize again after resetting
-    #@visualizerMgr.clear()
-    @visualizerMgr.visualize()
-
-  positive_money_clicked: ->
-    $('.deposit_interest').slideToggle()
-    if @positive_money()
-      @trx_mgr.enable_positive_money()
-      @deposit_interest(0)
-    else
-      @trx_mgr.disable_positive_money()
-    return true #needed by knockout
-
-class VisualizerMgr
-  vizArray: []
-  visualize: ->
-    for viz in @vizArray
-      viz.visualize()
-    return
-
-  clear: ->
-    for viz in @vizArray
-      viz.clear()
-  addViz: (viz) ->
-    @vizArray.push(viz)
-
-class Visualizer
-  constructor: (@microeconomy, @element_id) ->
-    @banks = @microeconomy.banks
-    @cb = @microeconomy.cb
-    @stats = @microeconomy.stats
-    @state = @microeconomy.state
-
-  clear: ->
-  visualize: ->
 
 class GraphVisualizer extends Visualizer
   network: null
@@ -834,7 +552,8 @@ class ChartVisualizer extends Visualizer
     @legend_visible = true
 
   draw_chart: ->
-    $(@element_id).highcharts({
+    Highcharts.chart(@element_id.replace("#", ""), {
+    
       chart:
         type: @chart_type
       title:
@@ -1229,16 +948,4 @@ class BanksNumCustomersChart extends ChartVisualizer
           stack: '1'
     }]
     return
-
-#global objects
-simulator = null
-
-$ ->
-  simulator = new Simulator()
-  # show 1st simulation step after page load
-  simulator.visualizerMgr.visualize()
-
-  #Knockout.JS specific code
-  viewModel = simulator
-  ko.applyBindings(viewModel)
 
