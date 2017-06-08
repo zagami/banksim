@@ -1,7 +1,7 @@
 
 const dflt_initial_deposit_per_nonbank = 10;
 
-class Nonbank {
+export class Nonbank {
   constructor(bank, deposit, savings, loan) {
     this.bank = bank;
     this.deposit = deposit;

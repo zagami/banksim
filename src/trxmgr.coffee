@@ -13,47 +13,49 @@ class TrxMgr
     #payments, economic activity
     @create_transactions()
     #settle customer interests
-    @pay_customer_deposit_interests()
-    @get_customer_credit_interests()
+    # @pay_customer_deposit_interests()
+    # @get_customer_credit_interests()
 
     # settle central bank interests
-    @get_cb_deposit_interests()
-    @pay_cb_credit_interests()
+    # @get_cb_deposit_interests()
+    # @pay_cb_credit_interests()
 
   create_transactions: ->
     # creating a random number of transactions 
     # (upper limit is a parameter max_trx)
     # the amounts transferred are randomly chosen based on customer deposit
     # random transactions represent economic activity
-    num_trx = randomizeInt(1,@params.max_trx)
-    all_customers = @microeconomy.all_customers()
-    num_customers = all_customers.length
-    if num_customers < 2
+    num_trx = randomizeInt(1,10)
+    nonbanks = @microeconomy.nonbanks
+    num_nonbanks= nonbanks.length
+
+    if num_nonbanks < 2
       return
 
     for trx in [1..num_trx]
-      cust1_index = randomizeInt(0, num_customers - 1)
-      cust2_index = randomizeInt(0, num_customers - 1)
-      while cust2_index == cust1_index
+      nb1_index = randomizeInt(0, num_nonbanks - 1)
+      nb2_index = randomizeInt(0, num_nonbanks - 1)
+      while nb2_index == nb1_index
         #only transfers to another customer make sense
-        cust2_index = randomizeInt(0, num_customers - 1)
+        nb2_index = randomizeInt(0, num_nonbanks - 1)
 
-      cust1 = all_customers[cust1_index]
-      cust2 = all_customers[cust2_index]
-      amount = randomize(0, cust1.deposit)
+      nb1 = nonbanks[nb1_index]
+      nb2 = nonbanks[nb2_index]
+      amount = randomize(0, nb1.deposit)
       if amount > 0
-        @transfer(cust1, cust2, amount)
+        @transfer(nb1, nb2, amount)
     return
 
   #transferring money from one customer to another
   transfer: (from, to, amount) ->
     assert(from.deposit >= amount, 'not enough deposits')
     assert(amount > 0, 'cannot transfer negative amount')
-
+    console.log('transferring' + amount)
     # if from.bank != to.bank
        # TODO
 
     from.deposit -= amount
+    to.deposit += amount
     assert(from.deposit >= 0, 'deposit must not be negative')
 
   pay_customer_deposit_interests: ->

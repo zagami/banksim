@@ -1,5 +1,6 @@
 var CentralBank = require('./centralbank.coffee');
-import Bank from './bank.js';
+
+import {Bank} from './bank.js';
 
 const dflt_params = {
   prime_rate: 0.000,  // prime rate paid by banks for central bank credits
@@ -13,16 +14,18 @@ class MicroEconomy {
   constructor(numbanks) {
     this.banks = [];
     for(let i = 0; i < numbanks; i++){
-      banks.push(Bank.get_random_bank()); 
+      console.log(Bank.get_random_bank);
+
+      this.banks.push(Bank.get_random_bank()); 
     }
     let cb = new CentralBank(this.banks);
     this.params = dflt_params;
   }
 
-  all_customers() {
+  get nonbanks() {
     let all = [];
     this.banks.forEach((bank) => {
-      bank.forEach((c) => all.push(c)); 
+      bank.customers.forEach((c) => all.push(c)); 
     });
     return all;
   }
