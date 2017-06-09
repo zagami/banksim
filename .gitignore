@@ -1,6 +1,7 @@
 *.taskpaper
 wealthdistro.rb
 node_modules/
+
 # Compiled source #
 #
 ###################

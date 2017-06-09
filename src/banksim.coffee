@@ -1,404 +1,82 @@
-NUM_BANKS = 10
+$ = require('jquery')
+vis = require('vis') 
 
-LANG = 'EN'
-INFLATION_HIST = 20 #data points of inflation graph
-MONEY_SUPPLY_HIST = 20 #data points of money supply graph
-AUTORUN_DELAY = 2000
-
-COL1 = "red"
-COL2 = "blue"
-COL3 = "green"
-COL4 = "yellow"
-
-_tr = (key) ->
-  for k, t of DICT
-    if k == key
-      return DICT[k][0] if LANG == 'EN'
-      return DICT[k][1] if LANG == 'DE'
-  console.log "TODO: translate - #{key}"
-  return "TODO"
-  
-
-DICT = []
-
-add_tr = (key, trans) ->
-  DICT[key] = trans
-
-#controls
-add_tr("lbl_1", ["Year", "Jahr"])
-add_tr("lbl_2", ["Controls", "Steuerung"])
-add_tr("lbl_3", ['Parameters', 'Parameter'])
-add_tr("lbl_4", ['Simulate', 'Simulieren'])
-add_tr("lbl_5", ['years per step', 'Jahre pro Schritt'])
-add_tr("lbl_6", ['autorun'])
-add_tr("lbl_7", ['Reset'])
 #params
-add_tr("lbl_8", ['prime rate', 'Leitzins'])
-add_tr("lbl_9", ['prime rate deposits', 'Leitzins Reserven'])
-add_tr("lbl_10", ['LIBOR'])
-add_tr("lbl_11", ['capital requirement', 'Eigenkapitalvorschrift'])
-add_tr("lbl_12", ['minimal reserves', 'Mindestreserve'])
-add_tr("lbl_13", ['loan interest', 'Kreditzinsen'])
-add_tr("lbl_14", ['deposit interest', 'Guthabenszinsen Zahlungskonto'])
-add_tr("lbl_15", ['deposit interest savings', 'Guthabenszinsen Sparkonto'])
-add_tr("lbl_16", ['savings rate', 'Sparquote'])
-add_tr("lbl_17", ['income tax rate', 'Einkommenssteuersatz'])
-add_tr("lbl_18", ['wealth tax rate', 'Vermögenssteuersatz'])
-add_tr("lbl_19", ['government spending', 'Staatsausgaben'])
-add_tr("lbl_20", ['basic income', 'Grundeinkommen'])
-add_tr("lbl_21", ['positive money', 'Vollgeld'])
-add_tr("lbl_22", ['On/Off', 'Ein/Aus'])
-add_tr("lbl_23", ['Central Bank', 'Zentralbank'])
-add_tr("lbl_24", ['Banks', 'Banken'])
-add_tr("lbl_25", ['State', 'Staat'])
+("lbl_8", ['prime rate', 'Leitzins'])
+("lbl_9", ['prime rate deposits', 'Leitzins Reserven'])
+("lbl_10", ['LIBOR'])
+("lbl_13", ['loan interest', 'Kreditzinsen'])
+("lbl_14", ['deposit interest', 'Guthabenszinsen Zahlungskonto'])
+("lbl_15", ['deposit interest savings', 'Guthabenszinsen Sparkonto'])
+("lbl_23", ['Central Bank', 'Zentralbank'])
 #main chart
-add_tr("cb_a1", ["debt free money", "schuldfreies ZB Geld"])
-add_tr("cb_a2", ["loans to banks", "Kredite an Banken"])
-add_tr("cb_l1", ["giro banks", "Giroguthaben Banken"])
-add_tr("cb_l2", ["giro state", "Giroguthaben Staat"])
-add_tr("cb_l3", ["giro non-banks", "Giroguthaben Nichtbanken"])
-add_tr("cb_l4", ["capital", "Eigenkapital"])
-add_tr("b_a1", DICT["cb_a1"])
-add_tr("b_a2", DICT["cb_l1"])
-add_tr("b_a3", ["loans to banks", "Kredite an Banken"])
-add_tr("b_a4", ["loans to non-banks", "Kredite an Nichtbanken"])
-add_tr("b_l1", ["debt to central bank", "Verbindlichkeit an Zentralbank"])
-add_tr("b_l2", ["debt to banks", "Verbindlichkeit an Banken"])
-add_tr("b_l3", ["deposits", "Girokonten"])
-add_tr("b_l4", ["savings", "Sparkonten"])
-add_tr("b_l5", DICT["cb_l4"])
-add_tr("nb_a1", DICT["cb_a1"])
-add_tr("nb_a2", DICT["b_l3"])
-add_tr("nb_a3", DICT["b_l4"])
-add_tr("nb_l1", DICT["b_l2"])
-add_tr("nb_l2", DICT["cb_l4"])
-add_tr("s_a1", DICT["cb_a1"])
-add_tr("s_a2", DICT["cb_l2"])
-add_tr("s_l1", DICT["cb_l4"])
-
+("cb_a1", ["debt free money", "schuldfreies ZB Geld"])
+("cb_a2", ["loans to banks", "Kredite an Banken"])
+("cb_l1", ["giro banks", "Giroguthaben Banken"])
+("cb_l2", ["giro state", "Giroguthaben Staat"])
+("cb_l3", ["giro non-banks", "Giroguthaben Nichtbanken"])
+("cb_l4", ["capital", "Eigenkapital"])
+("b_a1", DICT["cb_a1"])
+("b_a2", DICT["cb_l1"])
+("b_a3", ["loans to banks", "Kredite an Banken"])
+("b_a4", ["loans to non-banks", "Kredite an Nichtbanken"])
+("b_l1", ["debt to central bank", "Verbindlichkeit an Zentralbank"])
+("b_l2", ["debt to banks", "Verbindlichkeit an Banken"])
+("b_l3", ["deposits", "Girokonten"])
+("b_l4", ["savings", "Sparkonten"])
+("b_l5", DICT["cb_l4"])
+("nb_a1", DICT["cb_a1"])
+("nb_a2", DICT["b_l3"])
+("nb_a3", DICT["b_l4"])
+("nb_l1", DICT["b_l2"])
+("nb_l2", DICT["cb_l4"])
+("s_a1", DICT["cb_a1"])
+("s_a2", DICT["cb_l2"])
+("s_l1", DICT["cb_l4"])
 #balance sheets
-add_tr("assets", ['assets', 'Aktiven'])
-add_tr("liabilities", ['liabilities', 'Passiven'])
+("assets", ['assets', 'Aktiven'])
+("liabilities", ['liabilities', 'Passiven'])
+("central_bank", ["central bank", "Zentralbank"])
+("banks", ['banks', "Banken"])
+("bank", ['bank', "Bank"])
+("nonbanks", ['non-banks', "Nichtbanken"])
+("state", ['state', 'Staat'])
+("money_supply", ['money supply', "Geldmenge"])
+("interest", ['interest', "Zins"])
+("inflation", ['inflation', 'Inflation'])
+("money_flow", ['flow of money', 'Geldfluss'])
 
-add_tr("central_bank", ["central bank", "Zentralbank"])
-add_tr("banks", ['banks', "Banken"])
-add_tr("bank", ['bank', "Bank"])
-add_tr("nonbanks", ['non-banks', "Nichtbanken"])
-add_tr("state", ['state', 'Staat'])
-add_tr("money_supply", ['money supply', "Geldmenge"])
-add_tr("interest", ['interest', "Zins"])
-add_tr("inflation", ['inflation', 'Inflation'])
-add_tr("money_flow", ['flow of money', 'Geldfluss'])
+("tab_ms_1", ['interbank volume', 'Interbankenvolumen'])
+("tab_banks_1", ['number of customers', 'Anzahl Kunden'])
+("tab_stats_0", ['statistics', "Statistiken"])
+("tab_stats_1", ['total income', 'Einkommen'])
+("tab_stats_2", ['total expenses', 'Ausgaben'])
+("tab_stats_3", ['average income', 'Durchschnittseinkommen'])
+("tab_stats_4", ['income tax', 'Einkommenssteuer'])
+("tab_stats_5", ['wealth tax', 'Vermögenssteuer'])
+("tab_stats_6", ['gross domestic product', 'Bruttoinlandsprodukt BIP'])
+("tab_stats_7", ['basic income total', 'Total Grundeinkommen'])
+("tab_stats_8", ['basic income per citizen', 'Grundeinkommen pro Kopf'])
+("tab_stats_9", ['number of nonbanks', 'Anzahl Wirtschaftsteilnehmer'])
 
+("chart_main_1", ['Overview', 'Übersicht'])
 
-add_tr("tab_ms_1", ['interbank volume', 'Interbankenvolumen'])
-add_tr("tab_banks_1", ['number of customers', 'Anzahl Kunden'])
+("chart_ms_1", ['money supply overview', 'Geldmengen Übersicht'])
+("chart_mshist_0", ['money supply development', 'Geldmengen Entwicklung'])
+("chart_mshist_1", ['positive money M', 'Vollgeldmenge M'])
+("chart_mshist_2", DICT["tab_ms_1"])
+("chart_bd_1", ['bank debt', 'Bankverschuldung'])
+("chart_tax_0", ['taxes', 'Steuern'])
+("chart_tax_1", ['income tax', 'Einkommenssteuer'])
+("chart_tax_2", ['wealth tax', 'Vermögenssteuer'])
+("chart_tax_3", ['basic income', 'Grundeinkommen'])
 
-add_tr("tab_stats_0", ['statistics', "Statistiken"])
-add_tr("tab_stats_1", ['total income', 'Einkommen'])
-add_tr("tab_stats_2", ['total expenses', 'Ausgaben'])
-add_tr("tab_stats_3", ['average income', 'Durchschnittseinkommen'])
+("chart_wd_0", ['inequality', 'Soziale Ungleichheit'])
+("chart_wd_1", ['wealth distribution', 'Vermögensverteilung'])
+("chart_wd_2", ['debt distribution', 'Schuldenverteilung'])
+("chart_nofc_1", ['reserves / customer ratio', 'Reserven im Verhältnis zu Bankkunden'])
+("chart_nofc_2", ['number of customers', 'Anzahl Kunden'])
 
-add_tr("tab_stats_4", ['income tax', 'Einkommenssteuer'])
-add_tr("tab_stats_5", ['wealth tax', 'Vermögenssteuer'])
-add_tr("tab_stats_6", ['gross domestic product', 'Bruttoinlandsprodukt BIP'])
-add_tr("tab_stats_7", ['basic income total', 'Total Grundeinkommen'])
-add_tr("tab_stats_8", ['basic income per citizen', 'Grundeinkommen pro Kopf'])
-add_tr("tab_stats_9", ['number of nonbanks', 'Anzahl Wirtschaftsteilnehmer'])
-
-add_tr("chart_main_1", ['Overview', 'Übersicht'])
-
-add_tr("chart_ms_1", ['money supply overview', 'Geldmengen Übersicht'])
-add_tr("chart_mshist_0", ['money supply development', 'Geldmengen Entwicklung'])
-add_tr("chart_mshist_1", ['positive money M', 'Vollgeldmenge M'])
-add_tr("chart_mshist_2", DICT["tab_ms_1"])
-
-add_tr("chart_bd_1", ['bank debt', 'Bankverschuldung'])
-
-add_tr("chart_tax_0", ['taxes', 'Steuern'])
-add_tr("chart_tax_1", ['income tax', 'Einkommenssteuer'])
-add_tr("chart_tax_2", ['wealth tax', 'Vermögenssteuer'])
-add_tr("chart_tax_3", ['basic income', 'Grundeinkommen'])
-
-add_tr("chart_wd_0", ['inequality', 'Soziale Ungleichheit'])
-add_tr("chart_wd_1", ['wealth distribution', 'Vermögensverteilung'])
-add_tr("chart_wd_2", ['debt distribution', 'Schuldenverteilung'])
-
-add_tr("chart_nofc_1", ['reserves / customer ratio', 'Reserven im Verhältnis zu Bankkunden'])
-add_tr("chart_nofc_2", ['number of customers', 'Anzahl Kunden'])
-
-  
-iv = (val) ->
-  ko.observable(val)
-
-class Simulator
-  constructor: ->
-    @update_translations()
-    @init()
-
-  init: ->
-    banks = (Bank::get_random_bank() for i in [1..NUM_BANKS])
-    state = new State()
-    cb = new CentralBank(state, banks)
-    @params = new Params()
-    @microeconomy = new MicroEconomy(state, cb, banks, @params)
-    @trx_mgr = new TrxMgr(@microeconomy)
-    @visualizerMgr = new VisualizerMgr()
-
-    vizArray = [
-      new MainChart(@microeconomy, '#main_chart'),
-      new MoneySupplyChart1(@microeconomy, '#ms_chart1'),
-      new MoneySupplyChart2(@microeconomy, '#ms_chart2'),
-      new InflationChart(@microeconomy, '#infl_chart'),
-      new TaxesChart(@microeconomy, '#taxes_chart'),
-      new WealthDistributionChart(@microeconomy, '#wealth_chart'),
-      new BanksChart(@microeconomy, '#banks_chart'),
-      new BanksDebtChart(@microeconomy, '#banks_chart2'),
-      new BanksNumCustomersChart(@microeconomy, '#banks_chart3'),
-      new OverviewGraph(@microeconomy, '#overview_graph'),
-      new InterestGraph(@microeconomy, '#interest_graph'),
-      new CentralBankTable(@microeconomy, '#cb_table'),
-      new MoneySupplyTable(@microeconomy, '#ms_table'),
-      new StatisticsTable(@microeconomy, '#stats_table'),
-      new BanksTable(@microeconomy, '#banks_table'),
-    ]
-    for v in vizArray
-      @visualizerMgr.addViz v
-     
-    @init_params()
-
-  simulate: (years) ->
-    @simulate_one_year() for [1..years]
-
-  simulate_one_year: ->
-    @trx_mgr.one_year()
-    
-  reset: ->
-    InterbankMarket::reset()
-    @init()
-
-  init_params: ->
-    @step = iv(0)
-    @years_per_step =  iv(5)
-    @autorun = iv(false)
-    @autorun_id = 0
-    @gui_params = ko.mapping.fromJS(@params)
-
-    @prime_rate = ko.computed({
-      read: =>
-        (@gui_params.prime_rate() * 100).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.prime_rate(newval)
-        @params.prime_rate = newval
-    }, this)
-
-    @prime_rate_giro = ko.computed({
-      read: =>
-        ( @gui_params.prime_rate_giro() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.prime_rate_giro(newval)
-        @params.prime_rate_giro = newval
-    }, this)
-
-    @libor = ko.computed({
-      read: =>
-        ( @gui_params.libor() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.libor(newval)
-        @params.libor = newval
-    }, this)
-
-    @cap_req = ko.computed({
-      read: =>
-        ( @gui_params.cap_req() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.cap_req(newval)
-        @params.cap_req = newval
-    }, this)
-
-    @minimal_reserves = ko.computed({
-      read: =>
-        ( @gui_params.minimal_reserves() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.minimal_reserves(newval)
-        @params.minimal_reserves = newval
-    }, this)
-
-    @credit_interest = ko.computed({
-      read: =>
-        ( @gui_params.credit_interest() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.credit_interest(newval)
-        @params.credit_interest = newval
-    }, this)
-
-    @deposit_interest = ko.computed({
-      read: =>
-        ( @gui_params.deposit_interest() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.deposit_interest(newval)
-        @params.deposit_interest = newval
-    }, this)
-
-    @deposit_interest_savings = ko.computed({
-      read: =>
-        ( @gui_params.deposit_interest_savings() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.deposit_interest_savings(newval)
-        @params.deposit_interest_savings = newval
-    }, this)
-
-    @savings_rate = ko.computed({
-      read: =>
-        ( @gui_params.savings_rate() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.savings_rate(newval)
-        @params.savings_rate = newval
-    }, this)
-
-    @income_tax_rate = ko.computed({
-      read: =>
-        ( @gui_params.income_tax_rate() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.income_tax_rate(newval)
-        @params.income_tax_rate = newval
-    }, this)
-
-    @wealth_tax_rate = ko.computed({
-      read: =>
-        ( @gui_params.wealth_tax_rate() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.wealth_tax_rate(newval)
-        @params.wealth_tax_rate = newval
-    }, this)
-
-    @gov_spending = ko.computed({
-      read: =>
-        ( @gui_params.gov_spending() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.gov_spending(newval)
-        @params.gov_spending= newval
-    }, this)
-
-    @basic_income_rate = ko.computed({
-      read: =>
-        ( @gui_params.basic_income_rate() * 100 ).toFixed(1)
-      write: (value) =>
-        newval = parseFloat(value)/100
-        @gui_params.basic_income_rate(newval)
-        @params.basic_income_rate = newval
-    }, this)
-
-    @positive_money = ko.computed({
-      read: =>
-        @gui_params.positive_money()
-      write: (value) =>
-        @gui_params.positive_money(value)
-        @params.positive_money= value
-    }, this)
-
-  # functions
-  reset_params: ->
-    @step(0)
-
-  update_label: (id) ->
-    if $('#' + id).length > 0
-      $('#' + id).text(_tr(id))
-
-  update_translations: ->
-    for id, trl of DICT
-      @update_label(id)
-
-  lang_de_clicked: ->
-    LANG = 'DE'
-    @update_translations()
-    @visualizerMgr.visualize()
-    $('#instructions_english').hide()
-    $('#instructions_german').show()
-
-  lang_en_clicked: ->
-    LANG = 'EN'
-    @update_translations()
-    @visualizerMgr.visualize()
-    $('#instructions_english').show()
-    $('#instructions_german').hide()
-    
-  instructions_clicked: ->
-    $('.instructions').slideToggle()
-
-  simulate_clicked: ->
-    yps = parseInt(@years_per_step())
-    curr_s = parseInt(@step())
-    @step(yps + curr_s)
-    @simulate(yps)
-    @visualizerMgr.visualize()
-
-  toggle_autorun: ->
-    if not @autorun_id
-      @autorun_id = setInterval("simulator.simulate_clicked()", AUTORUN_DELAY)
-    else
-      clearInterval(@autorun_id)
-      @autorun_id = null
-  
-  autorun_clicked: ->
-    #needed for keyboard event
-    if not @autorun() and not @autorun_id
-      @autorun(true)
-    if @autorun() and @autorun_id
-      @autorun(false)
-    @toggle_autorun()
-    return true# needed by knockout
-
-  reset_clicked: ->
-    @reset_params()
-    @reset()
-    #visualize again after resetting
-    #@visualizerMgr.clear()
-    @visualizerMgr.visualize()
-
-  positive_money_clicked: ->
-    $('.deposit_interest').slideToggle()
-    if @positive_money()
-      @trx_mgr.enable_positive_money()
-      @deposit_interest(0)
-    else
-      @trx_mgr.disable_positive_money()
-    return true #needed by knockout
-
-class VisualizerMgr
-  vizArray: []
-  visualize: ->
-    for viz in @vizArray
-      viz.visualize()
-    return
-
-  clear: ->
-    for viz in @vizArray
-      viz.clear()
-  addViz: (viz) ->
-    @vizArray.push(viz)
-
-class Visualizer
-  constructor: (@microeconomy, @element_id) ->
-    @banks = @microeconomy.banks
-    @cb = @microeconomy.cb
-    @stats = @microeconomy.stats
-    @state = @microeconomy.state
-
-  clear: ->
-  visualize: ->
 
 class GraphVisualizer extends Visualizer
   network: null
@@ -835,7 +513,8 @@ class ChartVisualizer extends Visualizer
     @legend_visible = true
 
   draw_chart: ->
-    $(@element_id).highcharts({
+    Highcharts.chart(@element_id.replace("#", ""), {
+    
       chart:
         type: @chart_type
       title:
@@ -1231,15 +910,4 @@ class BanksNumCustomersChart extends ChartVisualizer
     }]
     return
 
-#global objects
-simulator = null
-
-$ ->
-  simulator = new Simulator()
-  # show 1st simulation step after page load
-  simulator.visualizerMgr.visualize()
-
-  #Knockout.JS specific code
-  viewModel = simulator
-  ko.applyBindings(viewModel)
 
