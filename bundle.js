@@ -2497,10 +2497,10 @@ module.exports = reactProdInvariant;
 
 
 
-var DOMNamespaces = __webpack_require__(34);
+var DOMNamespaces = __webpack_require__(35);
 var setInnerHTML = __webpack_require__(30);
 
-var createMicrosoftUnsafeLocalFunction = __webpack_require__(41);
+var createMicrosoftUnsafeLocalFunction = __webpack_require__(42);
 var setTextContent = __webpack_require__(75);
 
 var ELEMENT_NODE_TYPE = 1;
@@ -2797,7 +2797,7 @@ module.exports = ReactReconciler;
 var _assign = __webpack_require__(4);
 
 var ReactChildren = __webpack_require__(181);
-var ReactComponent = __webpack_require__(48);
+var ReactComponent = __webpack_require__(49);
 var ReactPureComponent = __webpack_require__(186);
 var ReactClass = __webpack_require__(182);
 var ReactDOMFactories = __webpack_require__(183);
@@ -2933,8 +2933,8 @@ module.exports = emptyObject;
 var _prodInvariant = __webpack_require__(3);
 
 var EventPluginRegistry = __webpack_require__(25);
-var EventPluginUtils = __webpack_require__(35);
-var ReactErrorUtils = __webpack_require__(39);
+var EventPluginUtils = __webpack_require__(36);
+var ReactErrorUtils = __webpack_require__(40);
 
 var accumulateInto = __webpack_require__(69);
 var forEachAccumulated = __webpack_require__(70);
@@ -3215,7 +3215,7 @@ module.exports = EventPluginHub;
 
 
 var EventPluginHub = __webpack_require__(21);
-var EventPluginUtils = __webpack_require__(35);
+var EventPluginUtils = __webpack_require__(36);
 
 var accumulateInto = __webpack_require__(69);
 var forEachAccumulated = __webpack_require__(70);
@@ -3409,7 +3409,7 @@ module.exports = ReactInstanceMap;
 
 var SyntheticEvent = __webpack_require__(12);
 
-var getEventTarget = __webpack_require__(44);
+var getEventTarget = __webpack_require__(45);
 
 /**
  * @interface UIEvent
@@ -3739,7 +3739,7 @@ var ReactEventEmitterMixin = __webpack_require__(141);
 var ViewportMetrics = __webpack_require__(68);
 
 var getVendorPrefixedEventName = __webpack_require__(176);
-var isEventSupported = __webpack_require__(45);
+var isEventSupported = __webpack_require__(46);
 
 /**
  * Summary of `ReactBrowserEventEmitter` event handling:
@@ -4068,7 +4068,7 @@ module.exports = ReactBrowserEventEmitter;
 var SyntheticUIEvent = __webpack_require__(24);
 var ViewportMetrics = __webpack_require__(68);
 
-var getEventModifierState = __webpack_require__(43);
+var getEventModifierState = __webpack_require__(44);
 
 /**
  * @interface MouseEvent
@@ -4502,12 +4502,12 @@ module.exports = escapeTextContentForBrowser;
 
 
 var ExecutionEnvironment = __webpack_require__(6);
-var DOMNamespaces = __webpack_require__(34);
+var DOMNamespaces = __webpack_require__(35);
 
 var WHITESPACE_TEST = /^[ \r\n\t\f]/;
 var NONVISIBLE_TEST = /<(!--|link|noscript|meta|script|style)[ \r\n\t\f\/>]/;
 
-var createMicrosoftUnsafeLocalFunction = __webpack_require__(41);
+var createMicrosoftUnsafeLocalFunction = __webpack_require__(42);
 
 // SVG temp container for IE lacking innerHTML
 var reusableSVGContainer;
@@ -4621,6 +4621,69 @@ module.exports = canDefineProperty;
 
 /***/ }),
 /* 32 */
+/***/ (function(module, exports) {
+
+var assert, randomize, randomizeInt;
+
+if (!Array.prototype.sum) {
+  Array.prototype.sum = function() {
+    var i, s;
+    i = this.length;
+    s = 0;
+    while (i > 0) {
+      s += this[--i];
+    }
+    return s;
+  };
+}
+
+if (!Array.prototype.last) {
+  Array.prototype.last = function() {
+    var i;
+    i = this.length;
+    if (i > 0) {
+      return this[i - 1];
+    } else {
+      return null;
+    }
+  };
+}
+
+assert = function(condition, message) {
+  var e;
+  if (!condition) {
+    message = message || "Assertion failed";
+    if (typeof Error !== "undefined") {
+      e = new Error(message);
+      console.log(e.stack);
+      alert(message);
+      throw e;
+    }
+    throw message;
+  }
+};
+
+randomize = function(from, to) {
+  var x;
+  x = to - from;
+  return parseFloat(from + x * Math.random());
+};
+
+randomizeInt = function(from, to) {
+  var x;
+  x = to - from + 1;
+  return Math.floor(from + x * Math.random());
+};
+
+module.exports.assert = assert;
+
+module.exports.randomize = randomize;
+
+module.exports.randomizeInt = randomizeInt;
+
+
+/***/ }),
+/* 33 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4693,7 +4756,7 @@ function shallowEqual(objA, objB) {
 module.exports = shallowEqual;
 
 /***/ }),
-/* 33 */
+/* 34 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4714,7 +4777,7 @@ var Danger = __webpack_require__(114);
 var ReactDOMComponentTree = __webpack_require__(5);
 var ReactInstrumentation = __webpack_require__(8);
 
-var createMicrosoftUnsafeLocalFunction = __webpack_require__(41);
+var createMicrosoftUnsafeLocalFunction = __webpack_require__(42);
 var setInnerHTML = __webpack_require__(30);
 var setTextContent = __webpack_require__(75);
 
@@ -4924,7 +4987,7 @@ module.exports = DOMChildrenOperations;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 34 */
+/* 35 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4949,7 +5012,7 @@ var DOMNamespaces = {
 module.exports = DOMNamespaces;
 
 /***/ }),
-/* 35 */
+/* 36 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4967,7 +5030,7 @@ module.exports = DOMNamespaces;
 
 var _prodInvariant = __webpack_require__(3);
 
-var ReactErrorUtils = __webpack_require__(39);
+var ReactErrorUtils = __webpack_require__(40);
 
 var invariant = __webpack_require__(1);
 var warning = __webpack_require__(2);
@@ -5181,7 +5244,7 @@ module.exports = EventPluginUtils;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 36 */
+/* 37 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5245,7 +5308,7 @@ var KeyEscapeUtils = {
 module.exports = KeyEscapeUtils;
 
 /***/ }),
-/* 37 */
+/* 38 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5389,7 +5452,7 @@ module.exports = LinkedValueUtils;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 38 */
+/* 39 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5441,7 +5504,7 @@ module.exports = ReactComponentEnvironment;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 39 */
+/* 40 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5523,7 +5586,7 @@ module.exports = ReactErrorUtils;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 40 */
+/* 41 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5765,7 +5828,7 @@ module.exports = ReactUpdateQueue;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 41 */
+/* 42 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5802,7 +5865,7 @@ var createMicrosoftUnsafeLocalFunction = function (func) {
 module.exports = createMicrosoftUnsafeLocalFunction;
 
 /***/ }),
-/* 42 */
+/* 43 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5857,7 +5920,7 @@ function getEventCharCode(nativeEvent) {
 module.exports = getEventCharCode;
 
 /***/ }),
-/* 43 */
+/* 44 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5905,7 +5968,7 @@ function getEventModifierState(nativeEvent) {
 module.exports = getEventModifierState;
 
 /***/ }),
-/* 44 */
+/* 45 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -5945,7 +6008,7 @@ function getEventTarget(nativeEvent) {
 module.exports = getEventTarget;
 
 /***/ }),
-/* 45 */
+/* 46 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6010,7 +6073,7 @@ function isEventSupported(eventNameSuffix, capture) {
 module.exports = isEventSupported;
 
 /***/ }),
-/* 46 */
+/* 47 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6057,7 +6120,7 @@ function shouldUpdateReactComponent(prevElement, nextElement) {
 module.exports = shouldUpdateReactComponent;
 
 /***/ }),
-/* 47 */
+/* 48 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6440,7 +6503,7 @@ module.exports = validateDOMNesting;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 48 */
+/* 49 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6458,7 +6521,7 @@ module.exports = validateDOMNesting;
 
 var _prodInvariant = __webpack_require__(16);
 
-var ReactNoopUpdateQueue = __webpack_require__(49);
+var ReactNoopUpdateQueue = __webpack_require__(50);
 
 var canDefineProperty = __webpack_require__(31);
 var emptyObject = __webpack_require__(20);
@@ -6564,7 +6627,7 @@ module.exports = ReactComponent;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
 
 /***/ }),
-/* 49 */
+/* 50 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -6664,69 +6727,6 @@ var ReactNoopUpdateQueue = {
 
 module.exports = ReactNoopUpdateQueue;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(0)))
-
-/***/ }),
-/* 50 */
-/***/ (function(module, exports) {
-
-var assert, randomize, randomizeInt;
-
-if (!Array.prototype.sum) {
-  Array.prototype.sum = function() {
-    var i, s;
-    i = this.length;
-    s = 0;
-    while (i > 0) {
-      s += this[--i];
-    }
-    return s;
-  };
-}
-
-if (!Array.prototype.last) {
-  Array.prototype.last = function() {
-    var i;
-    i = this.length;
-    if (i > 0) {
-      return this[i - 1];
-    } else {
-      return null;
-    }
-  };
-}
-
-assert = function(condition, message) {
-  var e;
-  if (!condition) {
-    message = message || "Assertion failed";
-    if (typeof Error !== "undefined") {
-      e = new Error(message);
-      console.log(e.stack);
-      alert(message);
-      throw e;
-    }
-    throw message;
-  }
-};
-
-randomize = function(from, to) {
-  var x;
-  x = to - from;
-  return parseFloat(from + x * Math.random());
-};
-
-randomizeInt = function(from, to) {
-  var x;
-  x = to - from + 1;
-  return Math.floor(from + x * Math.random());
-};
-
-module.exports.assert = assert;
-
-module.exports.randomize = randomize;
-
-module.exports.randomizeInt = randomizeInt;
-
 
 /***/ }),
 /* 51 */
@@ -7506,7 +7506,7 @@ module.exports = ReactDOMComponentFlags;
 
 var _assign = __webpack_require__(4);
 
-var LinkedValueUtils = __webpack_require__(37);
+var LinkedValueUtils = __webpack_require__(38);
 var ReactDOMComponentTree = __webpack_require__(5);
 var ReactUpdates = __webpack_require__(10);
 
@@ -7990,14 +7990,14 @@ var ReactInstanceMap = __webpack_require__(23);
 var ReactInstrumentation = __webpack_require__(8);
 var ReactMarkupChecksum = __webpack_require__(146);
 var ReactReconciler = __webpack_require__(18);
-var ReactUpdateQueue = __webpack_require__(40);
+var ReactUpdateQueue = __webpack_require__(41);
 var ReactUpdates = __webpack_require__(10);
 
 var emptyObject = __webpack_require__(20);
 var instantiateReactComponent = __webpack_require__(73);
 var invariant = __webpack_require__(1);
 var setInnerHTML = __webpack_require__(30);
-var shouldUpdateReactComponent = __webpack_require__(46);
+var shouldUpdateReactComponent = __webpack_require__(47);
 var warning = __webpack_require__(2);
 
 var ATTR_NAME = DOMProperty.ID_ATTRIBUTE_NAME;
@@ -9047,7 +9047,7 @@ var REACT_ELEMENT_TYPE = __webpack_require__(140);
 
 var getIteratorFn = __webpack_require__(174);
 var invariant = __webpack_require__(1);
-var KeyEscapeUtils = __webpack_require__(36);
+var KeyEscapeUtils = __webpack_require__(37);
 var warning = __webpack_require__(2);
 
 var SEPARATOR = '.';
@@ -9591,15 +9591,11 @@ var _highcharts = __webpack_require__(102);
 
 var _highcharts2 = _interopRequireDefault(_highcharts);
 
-var _helper = __webpack_require__(50);
+var _helper = __webpack_require__(32);
 
 var _microeconomy = __webpack_require__(84);
 
-var _microeconomy2 = _interopRequireDefault(_microeconomy);
-
-var _trxmgr = __webpack_require__(87);
-
-var _trxmgr2 = _interopRequireDefault(_trxmgr);
+var _trxmgr = __webpack_require__(86);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -9617,8 +9613,27 @@ var DFLT_LANG = 'DE';
 var LANG = DFLT_LANG;
 var NUM_BANKS = 3;
 
-var __ = function __(en, de) {
-  return LANG == 'EN' ? en : de;
+var i18n = {
+  'Controls': 'Steuerung',
+  'Parameters': 'Parameter',
+  'Year': 'Jahr',
+  'Simulate': 'Simulieren',
+  'Instructions': 'Anleitung',
+  'Prime Rate': 'Leitzins',
+  'Prime Rate Deposits': 'Leitzins Reserven',
+  'Loan Interest': 'Kreditzinsen',
+  'Deposit Interest': 'Guthabenszinsen Zahlungskonto',
+  'Deposit Interest Savings': 'Guthabenszinsen Sparkonto',
+  'Number of Transactions': 'Anzahl Transaktionen'
+};
+
+var __ = function __(en) {
+
+  if (LANG == 'EN') {
+    return en;
+  } else {
+    return i18n.hasOwnProperty(en) ? i18n[en] : 'TODO:' + en;
+  }
 };
 
 var Slider = function (_React$Component) {
@@ -9630,31 +9645,56 @@ var Slider = function (_React$Component) {
     var _this = _possibleConstructorReturn(this, (Slider.__proto__ || Object.getPrototypeOf(Slider)).call(this, props));
 
     _this.handleChange = _this.handleChange.bind(_this);
+    _this.options = _this.props.options || {};
+    _this.min = _this.options.min || 0;
+    _this.max = _this.options.max || 100;
+    _this.step = _this.options.step || 0.1;
+    _this.percent = !(_this.options.percent == false); // percent is default
     return _this;
   }
 
   _createClass(Slider, [{
     key: 'handleChange',
     value: function handleChange(event) {
-      this.props.onChange(this.props.name, event.target.value / 100);
+      var val = this.percent ? event.target.value / 100 : event.target.value;
+      this.props.onChange(this.props.name, val);
     }
   }, {
     key: 'render',
     value: function render() {
+      var paramVal = this.props.params[this.props.name];
+      var displayVal = this.percent ? (paramVal * 100).toFixed(1) : paramVal;
+
       return _react2.default.createElement(
-        'form',
-        null,
+        'div',
+        { className: 'form-group form-group-sm' },
         _react2.default.createElement(
           'label',
-          null,
+          { htmlFor: this.props.name, className: 'control-label' },
+          ' ',
           this.props.label,
+          ' '
+        ),
+        _react2.default.createElement(
+          'div',
+          { className: 'input-group' },
           _react2.default.createElement('input', {
-            type: 'range',
+            id: this.props.name,
+            className: 'form-control input-sm',
             name: this.props.name,
-            value: (this.props.params[this.props.name] * 100).toFixed(1),
+            type: 'range',
+            min: this.min,
+            max: this.max,
+            step: this.step,
+            value: displayVal,
             onChange: this.handleChange }),
-          (this.props.params[this.props.name] * 100).toFixed(1),
-          ' %'
+          _react2.default.createElement(
+            'span',
+            { className: 'input-group-addon' },
+            displayVal,
+            ' ',
+            this.percent ? '%' : ''
+          )
         )
       );
     }
@@ -9666,33 +9706,57 @@ var Slider = function (_React$Component) {
 var Parameters = function (_React$Component2) {
   _inherits(Parameters, _React$Component2);
 
-  function Parameters() {
+  function Parameters(props) {
     _classCallCheck(this, Parameters);
 
-    return _possibleConstructorReturn(this, (Parameters.__proto__ || Object.getPrototypeOf(Parameters)).apply(this, arguments));
+    var _this2 = _possibleConstructorReturn(this, (Parameters.__proto__ || Object.getPrototypeOf(Parameters)).call(this, props));
+
+    _this2.handleParamChange = _this2.handleParamChange.bind(_this2);
+    _this2.state = {
+      params: _this2.props.params
+    };
+    return _this2;
   }
 
   _createClass(Parameters, [{
+    key: 'handleParamChange',
+    value: function handleParamChange(p, val) {
+      // console.log(`handle change ${p} ${val}`);
+      this.props.params[p] = val;
+      this.setState({ params: this.props.params });
+    }
+  }, {
     key: 'getSlider',
-    value: function getSlider(id, label) {
-      return _react2.default.createElement(Slider, { name: id, params: this.props.params, label: label, onChange: this.props.onChange });
+    value: function getSlider(id, label, options) {
+      return _react2.default.createElement(Slider, {
+        name: id,
+        params: this.props.params,
+        label: label,
+        onChange: this.handleParamChange,
+        options: options
+      });
     }
   }, {
     key: 'render',
     value: function render() {
       return _react2.default.createElement(
-        'div',
-        { id: 'params', className: 'input-group' },
+        'form',
+        null,
         _react2.default.createElement(
-          'h2',
-          null,
-          __('Parameters', 'Parameter')
-        ),
-        this.getSlider('prime_rate', __("Prime Rate", "Leitzins")),
-        this.getSlider('prime_rate_giro', __("Prime Rate Deposits", "Leitzins Reserven")),
-        this.getSlider('credit_interest', __('Loan Interest', 'Kreditzinsen')),
-        this.getSlider('deposit_interest', __('Deposit Interest', 'Guthabenszinsen Zahlungskonto')),
-        this.getSlider('deposit_interest_savings', __('Deposit Interest Savings', 'Guthabenszinsen Sparkonto'))
+          'div',
+          { id: 'params' },
+          _react2.default.createElement(
+            'h2',
+            null,
+            __('Parameters')
+          ),
+          this.getSlider('num_trx', __("Number of Transactions"), { step: 1, percent: false }),
+          this.getSlider('prime_rate', __("Prime Rate")),
+          this.getSlider('prime_rate_giro', __("Prime Rate Deposits")),
+          this.getSlider('credit_interest', __('Loan Interest')),
+          this.getSlider('deposit_interest', __('Deposit Interest')),
+          this.getSlider('deposit_interest_savings', __('Deposit Interest Savings'))
+        )
       );
     }
   }]);
@@ -9718,12 +9782,12 @@ var Controls = function (_React$Component3) {
         _react2.default.createElement(
           'h2',
           null,
-          __("Controls", "Steuerung")
+          __("Controls")
         ),
         _react2.default.createElement(
           'div',
           null,
-          __("year", "Jahr"),
+          __("Year"),
           ': ',
           this.props.year
         ),
@@ -9734,7 +9798,7 @@ var Controls = function (_React$Component3) {
             className: 'btn btn-primary btn-block',
             type: 'button',
             onClick: this.props.onSimulate },
-          __("Simulate", "Simulieren")
+          __("Simulate")
         )
       );
     }
@@ -9751,18 +9815,16 @@ var Simulator = function (_React$Component4) {
 
     var _this4 = _possibleConstructorReturn(this, (Simulator.__proto__ || Object.getPrototypeOf(Simulator)).call(this, props));
 
-    _this4.microeconomy = new _microeconomy2.default(NUM_BANKS);
-    _this4.trx_mgr = new _trxmgr2.default(_this4.microeconomy);
+    _this4.microeconomy = new _microeconomy.MicroEconomy(NUM_BANKS);
+    _this4.trx_mgr = new _trxmgr.TrxMgr(_this4.microeconomy);
 
-    _this4.handleParamChange = _this4.handleParamChange.bind(_this4);
     _this4.lang_en_clicked = _this4.lang_en_clicked.bind(_this4);
     _this4.lang_de_clicked = _this4.lang_de_clicked.bind(_this4);
     _this4.simulateClicked = _this4.simulateClicked.bind(_this4);
 
     _this4.state = {
       year: 0,
-      lang: DFLT_LANG,
-      params: _this4.microeconomy.params
+      lang: DFLT_LANG
     };
     return _this4;
   }
@@ -9771,13 +9833,6 @@ var Simulator = function (_React$Component4) {
   // componentDidUpdate() {
 
   _createClass(Simulator, [{
-    key: 'handleParamChange',
-    value: function handleParamChange(p, val) {
-      //console.log(`handle change ${p} ${val}`);
-      this.microeconomy.params[p] = val;
-      this.setState({ params: this.microeconomy.params });
-    }
-  }, {
     key: 'lang_en_clicked',
     value: function lang_en_clicked() {
       LANG = 'EN';
@@ -9800,14 +9855,8 @@ var Simulator = function (_React$Component4) {
       });
     }
   }, {
-    key: 'get_instr',
-    value: function get_instr() {
-      return { __html: this.state.lang == 'EN' ? instr_en : instr_de };
-    }
-  }, {
     key: 'render',
     value: function render() {
-      console.log("render");
       return _react2.default.createElement(
         'div',
         { id: 'simulator' },
@@ -9816,17 +9865,18 @@ var Simulator = function (_React$Component4) {
           { className: 'row' },
           _react2.default.createElement(
             'div',
-            { className: 'col-md-12' },
+            { className: 'col-md-8' },
+            _react2.default.createElement(Instructions, { lang: this.state.lang }),
             _react2.default.createElement(
               'div',
               { className: 'btn-group' },
               _react2.default.createElement(
                 'a',
                 { href: '#',
-                  className: 'btn btn-default',
+                  className: 'btn btn-primary',
                   'data-toggle': 'modal',
                   'data-target': '.instr_modal' },
-                __("Instructions", "Anleitung")
+                __("Instructions")
               ),
               _react2.default.createElement(
                 'a',
@@ -9842,9 +9892,54 @@ var Simulator = function (_React$Component4) {
                   onClick: this.lang_en_clicked },
                 'EN'
               )
-            )
+            ),
+            _react2.default.createElement(
+              'h1',
+              null,
+              'BankSim'
+            ),
+            _react2.default.createElement(MicroEconomyViewer, {
+              me: this.microeconomy })
+          ),
+          _react2.default.createElement(
+            'div',
+            { className: 'col-md-4' },
+            _react2.default.createElement(Controls, {
+              year: this.state.year,
+              onSimulate: this.simulateClicked
+            }),
+            _react2.default.createElement(Parameters, {
+              params: this.microeconomy.params
+            })
           )
-        ),
+        )
+      );
+    }
+  }]);
+
+  return Simulator;
+}(_react2.default.Component);
+
+var Instructions = function (_React$Component5) {
+  _inherits(Instructions, _React$Component5);
+
+  function Instructions(props) {
+    _classCallCheck(this, Instructions);
+
+    return _possibleConstructorReturn(this, (Instructions.__proto__ || Object.getPrototypeOf(Instructions)).call(this, props));
+  }
+
+  _createClass(Instructions, [{
+    key: 'get_instr',
+    value: function get_instr() {
+      return { __html: this.props.lang == 'EN' ? instr_en : instr_de };
+    }
+  }, {
+    key: 'render',
+    value: function render() {
+      return _react2.default.createElement(
+        'div',
+        null,
         _react2.default.createElement(
           'div',
           { className: 'instr_modal modal fade' },
@@ -9873,29 +9968,16 @@ var Simulator = function (_React$Component4) {
               _react2.default.createElement('div', { id: 'instructions', dangerouslySetInnerHTML: this.get_instr() })
             )
           )
-        ),
-        _react2.default.createElement(
-          'h1',
-          null,
-          'BankSim'
-        ),
-        _react2.default.createElement(Controls, {
-          year: this.state.year,
-          onSimulate: this.simulateClicked }),
-        _react2.default.createElement(Parameters, {
-          params: this.microeconomy.params,
-          onChange: this.handleParamChange }),
-        _react2.default.createElement(MicroEconomyViewer, {
-          me: this.microeconomy })
+        )
       );
     }
   }]);
 
-  return Simulator;
+  return Instructions;
 }(_react2.default.Component);
 
-var MicroEconomyViewer = function (_React$Component5) {
-  _inherits(MicroEconomyViewer, _React$Component5);
+var MicroEconomyViewer = function (_React$Component6) {
+  _inherits(MicroEconomyViewer, _React$Component6);
 
   function MicroEconomyViewer(props) {
     _classCallCheck(this, MicroEconomyViewer);
@@ -9963,7 +10045,7 @@ exports.Bank = undefined;
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
-var _helper = __webpack_require__(50);
+var _helper = __webpack_require__(32);
 
 var _nonbank = __webpack_require__(85);
 
@@ -10057,15 +10139,21 @@ __webpack_require__(81);
 "use strict";
 
 
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.MicroEconomy = undefined;
+
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _bank = __webpack_require__(82);
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var CentralBank = __webpack_require__(86);
+var CentralBank = __webpack_require__(87);
 
 var dflt_params = {
+  num_trx: 10,
   prime_rate: 0.000, // prime rate paid by banks for central bank credits
   prime_rate_giro: 0.000, // prime rate paid by central bank to banks for deposits
   credit_interest: 0.00,
@@ -10073,7 +10161,7 @@ var dflt_params = {
   deposit_interest_savings: 0.00
 };
 
-var MicroEconomy = function () {
+var MicroEconomy = exports.MicroEconomy = function () {
   function MicroEconomy(numbanks) {
     _classCallCheck(this, MicroEconomy);
 
@@ -10102,8 +10190,6 @@ var MicroEconomy = function () {
 
   return MicroEconomy;
 }();
-
-module.exports = MicroEconomy;
 
 /***/ }),
 /* 85 */
@@ -10162,6 +10248,80 @@ var Nonbank = exports.Nonbank = function () {
 
 /***/ }),
 /* 86 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.TrxMgr = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _helper = __webpack_require__(32);
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+var TrxMgr = exports.TrxMgr = function () {
+  function TrxMgr(microeconomy) {
+    _classCallCheck(this, TrxMgr);
+
+    this.microeconomy = microeconomy;
+    this.banks = microeconomy.banks;
+    this.nonbanks = microeconomy.nonbanks;
+    this.cb = microeconomy.cb;
+    this.params = microeconomy.params;
+  }
+
+  _createClass(TrxMgr, [{
+    key: 'one_year',
+    value: function one_year() {
+      //payments, economic activity
+      this.create_transactions();
+    }
+  }, {
+    key: 'create_transactions',
+    value: function create_transactions() {
+      // the amounts transferred are randomly chosen based on customer deposit
+      // random transactions represent economic activity
+      var num_nonbanks = this.nonbanks.length;
+
+      if (num_nonbanks < 2) return;
+
+      for (var i = 0; i < this.params.num_trx; i++) {
+        var nb1_index = (0, _helper.randomizeInt)(0, num_nonbanks - 1);
+        var nb2_index = (0, _helper.randomizeInt)(0, num_nonbanks - 1);
+        while (nb2_index == nb1_index) {
+          // only transfers to another customer make sense
+          nb2_index = (0, _helper.randomizeInt)(0, num_nonbanks - 1);
+        }
+        var nb1 = this.nonbanks[nb1_index];
+        var nb2 = this.nonbanks[nb2_index];
+        var amount = (0, _helper.randomize)(0, nb1.deposit);
+        if (amount > 0) this.transfer(nb1, nb2, amount);
+      }
+    }
+    // transferring money from one nonbank to another
+
+  }, {
+    key: 'transfer',
+    value: function transfer(from, to, amount) {
+      (0, _helper.assert)(from.deposit >= amount, 'not enough deposits');
+      (0, _helper.assert)(amount > 0, 'cannot transfer negative amount');
+
+      from.deposit -= amount;
+      to.deposit += amount;
+      (0, _helper.assert)(from.deposit >= 0, 'deposit must not be negative');
+    }
+  }]);
+
+  return TrxMgr;
+}();
+
+/***/ }),
+/* 87 */
 /***/ (function(module, exports) {
 
 var CentralBank;
@@ -10234,175 +10394,6 @@ CentralBank = (function() {
 })();
 
 module.exports = CentralBank;
-
-
-/***/ }),
-/* 87 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var TrxMgr, assert, helper, randomize, randomizeInt;
-
-helper = __webpack_require__(50);
-
-randomize = helper.randomize;
-
-randomizeInt = helper.randomizeInt;
-
-assert = helper.assert;
-
-TrxMgr = (function() {
-  function TrxMgr(microeconomy) {
-    this.microeconomy = microeconomy;
-    this.banks = this.microeconomy.banks;
-    this.cb = this.microeconomy.cb;
-    this.params = this.microeconomy.params;
-  }
-
-  TrxMgr.prototype.one_year = function() {
-    return this.create_transactions();
-  };
-
-  TrxMgr.prototype.create_transactions = function() {
-    var amount, i, nb1, nb1_index, nb2, nb2_index, nonbanks, num_nonbanks, num_trx, ref, trx;
-    num_trx = randomizeInt(1, 10);
-    nonbanks = this.microeconomy.nonbanks;
-    num_nonbanks = nonbanks.length;
-    if (num_nonbanks < 2) {
-      return;
-    }
-    for (trx = i = 1, ref = num_trx; 1 <= ref ? i <= ref : i >= ref; trx = 1 <= ref ? ++i : --i) {
-      nb1_index = randomizeInt(0, num_nonbanks - 1);
-      nb2_index = randomizeInt(0, num_nonbanks - 1);
-      while (nb2_index === nb1_index) {
-        nb2_index = randomizeInt(0, num_nonbanks - 1);
-      }
-      nb1 = nonbanks[nb1_index];
-      nb2 = nonbanks[nb2_index];
-      amount = randomize(0, nb1.deposit);
-      if (amount > 0) {
-        this.transfer(nb1, nb2, amount);
-      }
-    }
-  };
-
-  TrxMgr.prototype.transfer = function(from, to, amount) {
-    assert(from.deposit >= amount, 'not enough deposits');
-    assert(amount > 0, 'cannot transfer negative amount');
-    console.log('transferring' + amount);
-    from.deposit -= amount;
-    to.deposit += amount;
-    return assert(from.deposit >= 0, 'deposit must not be negative');
-  };
-
-  TrxMgr.prototype.pay_customer_deposit_interests = function() {
-    var bank, c, debt_bank, debt_bank_deposit, debt_bank_savings, di, dis, i, len, ref, results;
-    di = this.params.deposit_interest;
-    dis = this.params.deposit_interest_savings;
-    ref = this.banks;
-    results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      bank = ref[i];
-      results.push((function() {
-        var j, len1, ref1, results1;
-        ref1 = bank.customers;
-        results1 = [];
-        for (j = 0, len1 = ref1.length; j < len1; j++) {
-          c = ref1[j];
-          debt_bank_deposit = di * c.deposit;
-          debt_bank_savings = dis * c.savings;
-          debt_bank = debt_bank_deposit + debt_bank_savings;
-          results1.push(c.deposit += debt_bank_deposit);
-        }
-        return results1;
-      })());
-    }
-    return results;
-  };
-
-  TrxMgr.prototype.get_customer_credit_interests = function() {
-    var bank, c, cr, debt_cust, diff, i, len, ref, results;
-    cr = this.params.credit_interest;
-    ref = this.banks;
-    results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      bank = ref[i];
-      results.push((function() {
-        var j, len1, ref1, results1;
-        ref1 = bank.customers;
-        results1 = [];
-        for (j = 0, len1 = ref1.length; j < len1; j++) {
-          c = ref1[j];
-          debt_cust = cr * c.loan;
-          if (c.deposit < debt_cust) {
-            diff = debt_cust - c.deposit;
-            c.loan += diff;
-            c.deposit = 0;
-            this.stats.c_b_flow += debt_cust;
-          } else {
-            c.deposit -= debt_cust;
-            c.expenses += debt_cust;
-            this.stats.c_b_flow += debt_cust;
-          }
-          results1.push(assert(c.deposit >= 0, 'deposits must not be negative'));
-        }
-        return results1;
-      }).call(this));
-    }
-    return results;
-  };
-
-  TrxMgr.prototype.get_cb_deposit_interests = function() {
-    var bank, c, i, interest, len, pr_giro, ref, results;
-    pr_giro = this.params.prime_rate_giro;
-    ref = this.banks;
-    results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      bank = ref[i];
-      interest = pr_giro * bank.reserves;
-      bank.reserves += interest;
-      if (this.params.positive_money) {
-        results.push((function() {
-          var j, len1, ref1, results1;
-          ref1 = bank.customers;
-          results1 = [];
-          for (j = 0, len1 = ref1.length; j < len1; j++) {
-            c = ref1[j];
-            interest = pr_giro * c.deposit;
-            results1.push(c.deposit += interest);
-          }
-          return results1;
-        })());
-      } else {
-        results.push(void 0);
-      }
-    }
-    return results;
-  };
-
-  TrxMgr.prototype.pay_cb_credit_interests = function() {
-    var bank, debt, diff, i, len, pr, ref, results;
-    pr = this.params.prime_rate;
-    ref = this.banks;
-    results = [];
-    for (i = 0, len = ref.length; i < len; i++) {
-      bank = ref[i];
-      debt = pr * bank.cb_debt;
-      if (debt > bank.reserves) {
-        diff = debt - bank.reserves;
-        bank.reserves = 0;
-        results.push(bank.cb_debt += diff);
-      } else {
-        results.push(bank.reserves -= debt);
-      }
-    }
-    return results;
-  };
-
-  return TrxMgr;
-
-})();
-
-module.exports = TrxMgr;
 
 
 /***/ }),
@@ -23157,8 +23148,8 @@ var ReactDOMComponentTree = __webpack_require__(5);
 var ReactUpdates = __webpack_require__(10);
 var SyntheticEvent = __webpack_require__(12);
 
-var getEventTarget = __webpack_require__(44);
-var isEventSupported = __webpack_require__(45);
+var getEventTarget = __webpack_require__(45);
+var isEventSupported = __webpack_require__(46);
 var isTextInputElement = __webpack_require__(74);
 
 var eventTypes = {
@@ -24035,8 +24026,8 @@ module.exports = HTMLDOMPropertyConfig;
 var ReactReconciler = __webpack_require__(18);
 
 var instantiateReactComponent = __webpack_require__(73);
-var KeyEscapeUtils = __webpack_require__(36);
-var shouldUpdateReactComponent = __webpack_require__(46);
+var KeyEscapeUtils = __webpack_require__(37);
+var shouldUpdateReactComponent = __webpack_require__(47);
 var traverseAllChildren = __webpack_require__(76);
 var warning = __webpack_require__(2);
 
@@ -24192,7 +24183,7 @@ module.exports = ReactChildReconciler;
 
 
 
-var DOMChildrenOperations = __webpack_require__(33);
+var DOMChildrenOperations = __webpack_require__(34);
 var ReactDOMIDOperations = __webpack_require__(127);
 
 /**
@@ -24231,9 +24222,9 @@ var _prodInvariant = __webpack_require__(3),
     _assign = __webpack_require__(4);
 
 var React = __webpack_require__(19);
-var ReactComponentEnvironment = __webpack_require__(38);
+var ReactComponentEnvironment = __webpack_require__(39);
 var ReactCurrentOwner = __webpack_require__(11);
-var ReactErrorUtils = __webpack_require__(39);
+var ReactErrorUtils = __webpack_require__(40);
 var ReactInstanceMap = __webpack_require__(23);
 var ReactInstrumentation = __webpack_require__(8);
 var ReactNodeTypes = __webpack_require__(66);
@@ -24245,8 +24236,8 @@ if (process.env.NODE_ENV !== 'production') {
 
 var emptyObject = __webpack_require__(20);
 var invariant = __webpack_require__(1);
-var shallowEqual = __webpack_require__(32);
-var shouldUpdateReactComponent = __webpack_require__(46);
+var shallowEqual = __webpack_require__(33);
+var shouldUpdateReactComponent = __webpack_require__(47);
 var warning = __webpack_require__(2);
 
 var CompositeTypes = {
@@ -25260,7 +25251,7 @@ var _prodInvariant = __webpack_require__(3),
 var AutoFocusUtils = __webpack_require__(110);
 var CSSPropertyOperations = __webpack_require__(112);
 var DOMLazyTree = __webpack_require__(17);
-var DOMNamespaces = __webpack_require__(34);
+var DOMNamespaces = __webpack_require__(35);
 var DOMProperty = __webpack_require__(13);
 var DOMPropertyOperations = __webpack_require__(58);
 var EventPluginHub = __webpack_require__(21);
@@ -25279,9 +25270,9 @@ var ReactServerRenderingTransaction = __webpack_require__(152);
 var emptyFunction = __webpack_require__(9);
 var escapeTextContentForBrowser = __webpack_require__(29);
 var invariant = __webpack_require__(1);
-var isEventSupported = __webpack_require__(45);
-var shallowEqual = __webpack_require__(32);
-var validateDOMNesting = __webpack_require__(47);
+var isEventSupported = __webpack_require__(46);
+var shallowEqual = __webpack_require__(33);
+var validateDOMNesting = __webpack_require__(48);
 var warning = __webpack_require__(2);
 
 var Flags = ReactDOMComponentFlags;
@@ -26259,7 +26250,7 @@ module.exports = ReactDOMComponent;
 
 
 
-var validateDOMNesting = __webpack_require__(47);
+var validateDOMNesting = __webpack_require__(48);
 
 var DOC_NODE_TYPE = 9;
 
@@ -26387,7 +26378,7 @@ module.exports = ReactDOMFeatureFlags;
 
 
 
-var DOMChildrenOperations = __webpack_require__(33);
+var DOMChildrenOperations = __webpack_require__(34);
 var ReactDOMComponentTree = __webpack_require__(5);
 
 /**
@@ -26430,7 +26421,7 @@ var _prodInvariant = __webpack_require__(3),
     _assign = __webpack_require__(4);
 
 var DOMPropertyOperations = __webpack_require__(58);
-var LinkedValueUtils = __webpack_require__(37);
+var LinkedValueUtils = __webpack_require__(38);
 var ReactDOMComponentTree = __webpack_require__(5);
 var ReactUpdates = __webpack_require__(10);
 
@@ -27214,13 +27205,13 @@ module.exports = ReactDOMSelection;
 var _prodInvariant = __webpack_require__(3),
     _assign = __webpack_require__(4);
 
-var DOMChildrenOperations = __webpack_require__(33);
+var DOMChildrenOperations = __webpack_require__(34);
 var DOMLazyTree = __webpack_require__(17);
 var ReactDOMComponentTree = __webpack_require__(5);
 
 var escapeTextContentForBrowser = __webpack_require__(29);
 var invariant = __webpack_require__(1);
-var validateDOMNesting = __webpack_require__(47);
+var validateDOMNesting = __webpack_require__(48);
 
 /**
  * Text nodes violate a couple assumptions that React makes about components:
@@ -27384,7 +27375,7 @@ module.exports = ReactDOMTextComponent;
 var _prodInvariant = __webpack_require__(3),
     _assign = __webpack_require__(4);
 
-var LinkedValueUtils = __webpack_require__(37);
+var LinkedValueUtils = __webpack_require__(38);
 var ReactDOMComponentTree = __webpack_require__(5);
 var ReactUpdates = __webpack_require__(10);
 
@@ -28407,7 +28398,7 @@ var PooledClass = __webpack_require__(14);
 var ReactDOMComponentTree = __webpack_require__(5);
 var ReactUpdates = __webpack_require__(10);
 
-var getEventTarget = __webpack_require__(44);
+var getEventTarget = __webpack_require__(45);
 var getUnboundedScrollPosition = __webpack_require__(94);
 
 /**
@@ -28600,8 +28591,8 @@ module.exports = ReactHostOperationHistoryHook;
 
 var DOMProperty = __webpack_require__(13);
 var EventPluginHub = __webpack_require__(21);
-var EventPluginUtils = __webpack_require__(35);
-var ReactComponentEnvironment = __webpack_require__(38);
+var EventPluginUtils = __webpack_require__(36);
+var ReactComponentEnvironment = __webpack_require__(39);
 var ReactEmptyComponent = __webpack_require__(61);
 var ReactBrowserEventEmitter = __webpack_require__(26);
 var ReactHostComponent = __webpack_require__(63);
@@ -28737,7 +28728,7 @@ module.exports = ReactMarkupChecksum;
 
 var _prodInvariant = __webpack_require__(3);
 
-var ReactComponentEnvironment = __webpack_require__(38);
+var ReactComponentEnvironment = __webpack_require__(39);
 var ReactInstanceMap = __webpack_require__(23);
 var ReactInstrumentation = __webpack_require__(8);
 
@@ -29330,7 +29321,7 @@ var ReactBrowserEventEmitter = __webpack_require__(26);
 var ReactInputSelection = __webpack_require__(64);
 var ReactInstrumentation = __webpack_require__(8);
 var Transaction = __webpack_require__(28);
-var ReactUpdateQueue = __webpack_require__(40);
+var ReactUpdateQueue = __webpack_require__(41);
 
 /**
  * Ensures that, when possible, the selection range (currently selected text
@@ -29699,7 +29690,7 @@ module.exports = ReactServerRenderingTransaction;
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var ReactUpdateQueue = __webpack_require__(40);
+var ReactUpdateQueue = __webpack_require__(41);
 
 var warning = __webpack_require__(2);
 
@@ -30175,7 +30166,7 @@ var SyntheticEvent = __webpack_require__(12);
 
 var getActiveElement = __webpack_require__(53);
 var isTextInputElement = __webpack_require__(74);
-var shallowEqual = __webpack_require__(32);
+var shallowEqual = __webpack_require__(33);
 
 var skipSelectionChangeEvent = ExecutionEnvironment.canUseDOM && 'documentMode' in document && document.documentMode <= 11;
 
@@ -30382,7 +30373,7 @@ var SyntheticUIEvent = __webpack_require__(24);
 var SyntheticWheelEvent = __webpack_require__(167);
 
 var emptyFunction = __webpack_require__(9);
-var getEventCharCode = __webpack_require__(42);
+var getEventCharCode = __webpack_require__(43);
 var invariant = __webpack_require__(1);
 
 /**
@@ -30851,9 +30842,9 @@ module.exports = SyntheticInputEvent;
 
 var SyntheticUIEvent = __webpack_require__(24);
 
-var getEventCharCode = __webpack_require__(42);
+var getEventCharCode = __webpack_require__(43);
 var getEventKey = __webpack_require__(173);
-var getEventModifierState = __webpack_require__(43);
+var getEventModifierState = __webpack_require__(44);
 
 /**
  * @interface KeyboardEvent
@@ -30940,7 +30931,7 @@ module.exports = SyntheticKeyboardEvent;
 
 var SyntheticUIEvent = __webpack_require__(24);
 
-var getEventModifierState = __webpack_require__(43);
+var getEventModifierState = __webpack_require__(44);
 
 /**
  * @interface TouchEvent
@@ -31385,7 +31376,7 @@ module.exports = findDOMNode;
 
 
 
-var KeyEscapeUtils = __webpack_require__(36);
+var KeyEscapeUtils = __webpack_require__(37);
 var traverseAllChildren = __webpack_require__(76);
 var warning = __webpack_require__(2);
 
@@ -31466,7 +31457,7 @@ module.exports = flattenChildren;
 
 
 
-var getEventCharCode = __webpack_require__(42);
+var getEventCharCode = __webpack_require__(43);
 
 /**
  * Normalization of deprecated HTML5 `key` values
@@ -32237,10 +32228,10 @@ module.exports = ReactChildren;
 var _prodInvariant = __webpack_require__(16),
     _assign = __webpack_require__(4);
 
-var ReactComponent = __webpack_require__(48);
+var ReactComponent = __webpack_require__(49);
 var ReactElement = __webpack_require__(15);
 var ReactPropTypeLocationNames = __webpack_require__(79);
-var ReactNoopUpdateQueue = __webpack_require__(49);
+var ReactNoopUpdateQueue = __webpack_require__(50);
 
 var emptyObject = __webpack_require__(20);
 var invariant = __webpack_require__(1);
@@ -33187,8 +33178,8 @@ module.exports = ReactPropTypesSecret;
 
 var _assign = __webpack_require__(4);
 
-var ReactComponent = __webpack_require__(48);
-var ReactNoopUpdateQueue = __webpack_require__(49);
+var ReactComponent = __webpack_require__(49);
+var ReactNoopUpdateQueue = __webpack_require__(50);
 
 var emptyObject = __webpack_require__(20);
 

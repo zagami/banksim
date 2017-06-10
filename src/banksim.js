@@ -9,74 +9,136 @@ const instr_de = require('./german.md');
 
 
 import {randomize, randomizeInt, assert} from './helper.coffee';
-import MicroEconomy from './microeconomy';
-import TrxMgr from './trxmgr.coffee'
+import {MicroEconomy} from './microeconomy.js';
+import {TrxMgr} from './trxmgr.js'
 
 const DFLT_LANG = 'DE';
 
 var LANG = DFLT_LANG;
 const NUM_BANKS = 3;
 
-var __ = function(en, de) {
-  return LANG == 'EN'? en : de;
+const i18n = {
+  'Controls': 'Steuerung',
+  'Parameters': 'Parameter',
+  'Year': 'Jahr',
+  'Simulate': 'Simulieren',
+  'Instructions': 'Anleitung',
+  'Prime Rate': 'Leitzins',
+  'Prime Rate Deposits': 'Leitzins Reserven',
+  'Loan Interest': 'Kreditzinsen',
+  'Deposit Interest': 'Guthabenszinsen Zahlungskonto',
+  'Deposit Interest Savings': 'Guthabenszinsen Sparkonto',
+  'Number of Transactions': 'Anzahl Transaktionen',
+}
+
+var __ = function(en) {
+
+  if(LANG == 'EN') {
+    return en 
+  } else {
+    return i18n.hasOwnProperty(en) ? i18n[en] : 'TODO:' + en;
+  }
 }
 
 class Slider extends React.Component {
+
   constructor(props) {
     super(props);
     this.handleChange = this.handleChange.bind(this);
+    this.options = this.props.options || {};
+    this.min = this.options.min || 0;
+    this.max = this.options.max || 100;
+    this.step = this.options.step || 0.1;
+    this.percent = !(this.options.percent == false); // percent is default
   }
 
   handleChange(event) {
-    this.props.onChange(this.props.name, event.target.value/100);
+    let val = this.percent? event.target.value/100 : event.target.value;
+    this.props.onChange(this.props.name, val);
   }
 
   render() {
+    let paramVal = this.props.params[this.props.name];
+    let displayVal = this.percent? (paramVal * 100).toFixed(1): paramVal
+
     return (
-      <form>
-        <label>
-          {this.props.label}
+    <div className='form-group form-group-sm'>
+        <label htmlFor={this.props.name} className='control-label'> {this.props.label} </label>
+        <div className='input-group'>
           <input 
-            type="range" 
+            id={this.props.name} 
+            className='form-control input-sm'
             name={this.props.name} 
-            value={(this.props.params[this.props.name]*100).toFixed(1)} 
+            type="range" 
+            min={this.min}
+            max={this.max}
+            step={this.step}
+            value={displayVal} 
             onChange={this.handleChange} />
-          {(this.props.params[this.props.name]*100).toFixed(1)} %
-        </label>
-      </form>
+          <span className='input-group-addon'>
+            {displayVal} {this.percent? '%' : ''} 
+          </span>      
+        </div>
+    </div>
     );
   }
 }
 
 class Parameters extends React.Component {
 
-  getSlider(id, label){
-    return <Slider name={id} params={this.props.params} label={label} onChange={this.props.onChange} />
+  constructor(props) {
+    super(props);
+    this.handleParamChange = this.handleParamChange.bind(this);
+    this.state = {
+      params: this.props.params
+    }
   }
+
+  handleParamChange(p, val) {
+    // console.log(`handle change ${p} ${val}`);
+    this.props.params[p] = val;
+    this.setState({params: this.props.params});
+  }
+
+  getSlider(id, label, options) {
+    return (<Slider 
+              name={id} 
+              params={this.props.params} 
+              label={label} 
+              onChange={this.handleParamChange} 
+              options = {options}
+            />);
+  }
+
   render() {
-    return(<div id = "params" className='input-group'>
-      <h2>{__('Parameters', 'Parameter')}</h2>
-      {this.getSlider('prime_rate', __("Prime Rate", "Leitzins"))}
-      {this.getSlider('prime_rate_giro', __("Prime Rate Deposits", "Leitzins Reserven"))}
-      {this.getSlider('credit_interest', __('Loan Interest', 'Kreditzinsen'))}
-      {this.getSlider('deposit_interest', __('Deposit Interest', 'Guthabenszinsen Zahlungskonto'))}
-      {this.getSlider('deposit_interest_savings', __('Deposit Interest Savings', 'Guthabenszinsen Sparkonto'))}
+    return(
+    <form >
+      <div id = "params">
+        <h2>{__('Parameters')}</h2>
+        {this.getSlider('num_trx', __("Number of Transactions"), {step: 1, percent: false})}
+        {this.getSlider('prime_rate', __("Prime Rate"))}
+        {this.getSlider('prime_rate_giro', __("Prime Rate Deposits"))}
+        {this.getSlider('credit_interest', __('Loan Interest'))}
+        {this.getSlider('deposit_interest', __('Deposit Interest'))}
+        {this.getSlider('deposit_interest_savings', __('Deposit Interest Savings'))}
       </div>
+    </form>
     );
   }
  }
       
 class Controls extends React.Component {
   render() {
-    return (<div id="controls">
-      <h2>{__("Controls", "Steuerung")}</h2>
-      <div>{__("year", "Jahr")}: {this.props.year}</div>
+    return (
+      <div id="controls" >
+      <h2>{__("Controls")}</h2>
+      <div>{__("Year")}: {this.props.year}</div>
       <button 
         id="simulate" 
         className="btn btn-primary btn-block" 
         type="button" 
         onClick={this.props.onSimulate}>
-          {__("Simulate", "Simulieren")}
+          {__("Simulate")}
       </button>
       </div>
     );
@@ -89,7 +151,6 @@ class Simulator extends React.Component {
     this.microeconomy = new MicroEconomy(NUM_BANKS);
     this.trx_mgr = new TrxMgr(this.microeconomy);
 
-    this.handleParamChange = this.handleParamChange.bind(this);
     this.lang_en_clicked= this.lang_en_clicked.bind(this);
     this.lang_de_clicked= this.lang_de_clicked.bind(this);
     this.simulateClicked = this.simulateClicked.bind(this);
@@ -97,19 +158,11 @@ class Simulator extends React.Component {
     this.state = {
       year: 0,
       lang: DFLT_LANG,
-      params: this.microeconomy.params
     }
   }
   
   // componentDidMount() {
   // componentDidUpdate() {
-
-  handleParamChange(p, val) {
-    //console.log(`handle change ${p} ${val}`);
-    this.microeconomy.params[p] = val;
-    this.setState({params: this.microeconomy.params});
-  }
-
 
   lang_en_clicked() {
     LANG = 'EN';
@@ -127,58 +180,76 @@ class Simulator extends React.Component {
       year: prevState.year + 1
     }));
   }
-  get_instr() {
-   return { __html: this.state.lang =='EN'? instr_en : instr_de };
-  }
+
   render() {
-    console.log("render");
-    return(<div id="simulator">
+    return(
+    <div id="simulator">
       <div className="row">
-      <div className="col-md-12"> 
-      <div className="btn-group">
-        <a href="#" 
-          className="btn btn-default" 
-          data-toggle="modal" 
-          data-target=".instr_modal">{__("Instructions", "Anleitung")}
-        </a>
-        <a href="#" 
-          className="btn btn-default"  
-          onClick = {this.lang_de_clicked}>DE</a>
-        <a href="#" 
-          className="btn btn-default" 
-          onClick = {this.lang_en_clicked}>EN</a>
+        <div className="col-md-8"> 
+          <Instructions lang={this.state.lang} />
+          <div className="btn-group">
+            <a href="#" 
+              className="btn btn-primary" 
+              data-toggle="modal" 
+              data-target=".instr_modal">{__("Instructions")}
+            </a>
+            <a href="#" 
+              className="btn btn-default"  
+              onClick = {this.lang_de_clicked}>DE</a>
+            <a href="#" 
+              className="btn btn-default" 
+              onClick = {this.lang_en_clicked}>EN</a>
+          </div> 
+          <h1>BankSim</h1>
+          <MicroEconomyViewer 
+            me={this.microeconomy}/>
+        </div>
+        <div className="col-md-4"> 
+          <Controls 
+            year = {this.state.year} 
+            onSimulate={this.simulateClicked}
+          />
+          <Parameters 
+            params={this.microeconomy.params} 
+          />
+        </div>
       </div> 
-      </div>
-      </div>
-      <div className="instr_modal modal fade">
-      <div className="modal-dialog modal-lg">
-      <div className="modal-content">
-      <div className="modal-header">
-        <button type="button" 
-          className="close" 
-          data-dismiss="modal" 
-          aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <div id="instructions" dangerouslySetInnerHTML={this.get_instr()}></div>
-      </div>
-      </div>
-      </div>
-      <h1>BankSim</h1>
-      <Controls 
-        year = {this.state.year} 
-        onSimulate={this.simulateClicked}/>
-      <Parameters 
-        params={this.microeconomy.params} 
-        onChange={this.handleParamChange} />
-      <MicroEconomyViewer 
-        me={this.microeconomy}/>
-      </div>
+    </div>
     );
   }
  }
 
+class Instructions extends React.Component {
+  constructor(props) {
+    super(props);
+  }
+  
+  get_instr() {
+    return { __html: this.props.lang =='EN'? instr_en : instr_de };
+  }
+
+  render() {
+    return (
+    <div>
+      <div className="instr_modal modal fade">
+        <div className="modal-dialog modal-lg">
+          <div className="modal-content">
+            <div className="modal-header">
+              <button type="button" 
+                className="close" 
+                data-dismiss="modal" 
+                aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div id="instructions" dangerouslySetInnerHTML={this.get_instr()}></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    );
+  }
+}
 class MicroEconomyViewer extends React.Component {
   constructor(props) {
   super(props);
